@@ -1,0 +1,99 @@
+{
+  "config": {
+    "eval_type": "mathematical",
+    "num_questions": 10,
+    "temperature": 0.0,
+    "max_tokens": 512,
+    "verification_threshold": 0.8,
+    "key_concepts": [
+      "language",
+      "text",
+      "include",
+      "words",
+      "identifying",
+      "translation",
+      "models",
+      "natural",
+      "processing",
+      "subfield",
+      "linguistics",
+      "computer",
+      "science",
+      "artificial",
+      "intelligence",
+      "concerned",
+      "interactions",
+      "between",
+      "computers",
+      "human"
+    ],
+    "corpus_segments": [
+      "\n    Natural Language Processing (NLP) is a subfield of linguistics, computer science, \n    and artificial intelligence concerned with the interactions between computers and human language.\n    \n    Key components of NLP include:\n    - Tokenization: Breaking text into individual words or tokens\n    - Part-of-speech tagging: Identifying grammatical roles of words\n    - Named entity recognition: Identifying proper nouns and entities\n    - Sentiment analysis: Determining emotional tone of text\n    - Machine translation: Converting text from one language to another\n    \n    Modern NLP systems use deep learning models like transformers, which have achieved \n    state-of-the-art results on many language understanding tasks. These models are trained \n    on large corpora of text data and can capture complex linguistic patterns.\n    \n    Applications of NLP include chatbots, search engines, text summarization, \n    and language translation services.\n    "
+    ]
+  },
+  "num_benchmarks": 5,
+  "num_results": 5,
+  "aggregate_metrics": {
+    "domain_knowledge_accuracy": {
+      "mean": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "count": 5
+    },
+    "domain_knowledge_precision": {
+      "mean": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "count": 5
+    },
+    "domain_knowledge_recall": {
+      "mean": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "count": 5
+    }
+  },
+  "eval_type_distribution": {
+    "domain_knowledge": 5
+  },
+  "test_info": {
+    "timestamp": "2025-07-31T19:53:06.651883",
+    "system_version": "Refactored v1.0",
+    "test_corpus_domain": "Natural Language Processing",
+    "classification_result": {
+      "primary_type": "domain_knowledge",
+      "secondary_types": [
+        "code_generation",
+        "factual_qa"
+      ],
+      "confidence": 0.6,
+      "analysis": "Corpus analysis identified EvaluationType.DOMAIN_KNOWLEDGE as the primary evaluation type based on content patterns",
+      "reasoning": "Statistical analysis shows strong indicators for EvaluationType.DOMAIN_KNOWLEDGE evaluation methodology",
+      "pipeline": {
+        "deterministic": true,
+        "verification": "exact_match",
+        "metrics": [
+          "accuracy",
+          "precision",
+          "recall"
+        ],
+        "eval_type": "domain_knowledge"
+      },
+      "fallback_analysis": {
+        "statistical_primary_type": "domain_knowledge",
+        "content_scores": {
+          "mathematical": 0.0,
+          "code_generation": 0.0,
+          "factual_qa": 0.0,
+          "domain_knowledge": 0.0,
+          "summarization": 0.0
+        },
+        "corpus_stats": {
+          "word_count": 120,
+          "char_count": 960,
+          "sentences": 4
+        }
+      }
+    }
+  }
+}
