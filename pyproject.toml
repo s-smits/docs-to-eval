@@ -33,6 +33,8 @@ dependencies = [
     "httpx>=0.25.0",
     "math-verify>=0.1.0",
     "numpy>=1.21.0",
+    "chonkie>=1.1.1",
+    "sentence-transformers>=5.0.0",
 ]
 
 [project.optional-dependencies]

@@ -34,6 +34,82 @@ from ...llm.base import BaseLLMInterface
 logger = logging.getLogger(__name__)
 
 
+class AdaptiveRateLimiter:
+    """
+    Adaptive rate limiter that adjusts delays based on LLM response times and error rates
+    """
+    
+    def __init__(self, base_delay: float = 0.1, max_delay: float = 5.0):
+        self.base_delay = base_delay
+        self.max_delay = max_delay
+        self.recent_response_times = []
+        self.recent_errors = []
+        self.error_count = 0
+        self.total_requests = 0
+        self.window_size = 10  # Number of recent samples to consider
+        
+    def record_request(self, response_time: float, had_error: bool = False):
+        """Record a request's response time and error status"""
+        self.total_requests += 1
+        
+        # Update response times (keep only recent)
+        self.recent_response_times.append(response_time)
+        if len(self.recent_response_times) > self.window_size:
+            self.recent_response_times.pop(0)
+        
+        # Update error tracking
+        if had_error:
+            self.error_count += 1
+        self.recent_errors.append(had_error)
+        if len(self.recent_errors) > self.window_size:
+            self.recent_errors.pop(0)
+    
+    def get_adaptive_delay(self) -> float:
+        """Calculate adaptive delay based on recent performance"""
+        if not self.recent_response_times:
+            return self.base_delay
+        
+        # Calculate average response time
+        avg_response_time = sum(self.recent_response_times) / len(self.recent_response_times)
+        
+        # Calculate recent error rate
+        recent_error_rate = sum(self.recent_errors) / len(self.recent_errors) if self.recent_errors else 0
+        
+        # Adaptive delay based on response time
+        # If responses are slow, increase delay to reduce load
+        response_factor = min(2.0, avg_response_time / 0.5)  # Scale based on 0.5s baseline
+        
+        # Error rate factor - increase delay if many errors
+        error_factor = 1.0 + (recent_error_rate * 2.0)  # Up to 3x delay for 100% error rate
+        
+        # Combined adaptive delay
+        adaptive_delay = self.base_delay * response_factor * error_factor
+        
+        return min(adaptive_delay, self.max_delay)
+    
+    async def adaptive_sleep(self):
+        """Sleep for adaptive duration based on recent performance"""
+        delay = self.get_adaptive_delay()
+        await asyncio.sleep(delay)
+        
+    def get_stats(self) -> Dict[str, Any]:
+        """Get rate limiter statistics"""
+        avg_response_time = sum(self.recent_response_times) / len(self.recent_response_times) if self.recent_response_times else 0
+        recent_error_rate = sum(self.recent_errors) / len(self.recent_errors) if self.recent_errors else 0
+        
+        return {
+            'total_requests': self.total_requests,
+            'error_count': self.error_count,
+            'overall_error_rate': self.error_count / max(1, self.total_requests),
+            'recent_error_rate': recent_error_rate,
+            'avg_response_time': avg_response_time,
+            'current_delay': self.get_adaptive_delay()
+        }
+
+
+logger = logging.getLogger(__name__)
+
+
 class AgenticBenchmarkOrchestrator:
     """
     High-level orchestrator for agentic benchmark generation
@@ -86,6 +162,9 @@ class AgenticBenchmarkOrchestrator:
             'quality_scores': [],
             'retry_cycles': 0
         }
+        
+        # CRITICAL FIX: Add adaptive rate limiter
+        self.rate_limiter = AdaptiveRateLimiter(base_delay=0.1, max_delay=5.0)
     
     async def generate(
         self,
@@ -154,8 +233,8 @@ class AgenticBenchmarkOrchestrator:
                     logger.info(f"Target reached with {len(generated_items)} items")
                     break
                 
-                # Brief pause between batches to manage rate limits
-                await asyncio.sleep(0.1)
+                # Adaptive pause between batches based on LLM performance
+                await self.rate_limiter.adaptive_sleep()
             
             # Step 2: Select best items
             final_items = self._select_best_items(generated_items, num_questions)
@@ -180,20 +259,52 @@ class AgenticBenchmarkOrchestrator:
         concept_extraction: Any
     ) -> Optional[EnhancedBenchmarkItem]:
         """
-        Run the full pipeline for a single concept with retry logic
+        Run the full pipeline for a single concept with intelligent retry logic
         """
+        
+        previous_validation_issues = []
+        base_temperature = 0.7
         
         for retry_cycle in range(self.config.max_retry_cycles + 1):
             try:
-                # Step 1: Question Writer
+                # Adaptive temperature increase on retries
+                current_temperature = base_temperature + (retry_cycle * 0.1)
+                
+                # Step 1: Question Writer (with feedback)
                 context_snippet = concept_extraction.supporting_snippets.get(concept, corpus_text[:500])
-                draft = await self.question_writer.produce(concept, corpus_text, eval_type, context_snippet)
+                
+                # CRITICAL FIX: Pass validation feedback to writer on retries
+                if retry_cycle > 0 and previous_validation_issues:
+                    # Create feedback-aware prompt for question writer
+                    feedback_prompt = f"Previous attempt failed with issues: {', '.join(previous_validation_issues)}. Please avoid these problems."
+                    draft = await self._tracked_agent_call(
+                        self.question_writer.produce,
+                        concept, corpus_text, eval_type, context_snippet, 
+                        feedback=feedback_prompt, temperature=current_temperature
+                    )
+                else:
+                    draft = await self._tracked_agent_call(
+                        self.question_writer.produce,
+                        concept, corpus_text, eval_type, context_snippet,
+                        temperature=current_temperature
+                    )
                 
                 # Step 2: Adversary (difficulty booster)
-                candidate = await self.adversary.produce(draft, difficulty)
+                candidate = await self._tracked_agent_call(
+                    self.adversary.produce, draft, difficulty
+                )
                 
-                # Step 3: Refiner (style and formatting)
-                refined_candidate = await self.refiner.produce(candidate)
+                # Step 3: Refiner (style and formatting with feedback)
+                if retry_cycle > 0 and previous_validation_issues:
+                    # Pass issues to refiner for targeted improvement
+                    refined_candidate = await self._tracked_agent_call(
+                        self.refiner.produce,
+                        candidate, improvement_focus=previous_validation_issues
+                    )
+                else:
+                    refined_candidate = await self._tracked_agent_call(
+                        self.refiner.produce, candidate
+                    )
                 
                 # Step 4: Validator (quality check)
                 validation_result = await self.validator.accept(
@@ -203,6 +314,7 @@ class AgenticBenchmarkOrchestrator:
                 
                 if validation_result.accepted:
                     # Success! Convert to final item
+                    logger.debug(f"Concept '{concept}' succeeded on retry cycle {retry_cycle}")
                     return self._create_enhanced_item(
                         refined_candidate, 
                         eval_type, 
@@ -212,18 +324,43 @@ class AgenticBenchmarkOrchestrator:
                     )
                 
                 elif retry_cycle < self.config.max_retry_cycles:
-                    # Retry with feedback
-                    logger.debug(f"Retrying concept '{concept}' (cycle {retry_cycle + 1}): {validation_result.issues}")
+                    # Store feedback for next iteration
+                    previous_validation_issues = validation_result.issues
+                    
+                    # Smart retry with feedback
+                    logger.debug(f"Retrying concept '{concept}' (cycle {retry_cycle + 1}) with feedback: {validation_result.issues}")
                     self.pipeline_stats['retry_cycles'] += 1
-                    await asyncio.sleep(0.1)  # Brief pause before retry
+                    
+                    # Adaptive delay based on retry count
+                    delay = 0.1 * (2 ** retry_cycle)  # Exponential backoff
+                    await asyncio.sleep(min(delay, 2.0))  # Cap at 2 seconds
                 
             except Exception as e:
                 logger.warning(f"Pipeline error for concept '{concept}' (cycle {retry_cycle}): {str(e)}")
                 if retry_cycle == self.config.max_retry_cycles:
                     return None
-                await asyncio.sleep(0.2)
+                
+                # Exponential backoff for errors too
+                error_delay = 0.2 * (2 ** retry_cycle)
+                await asyncio.sleep(min(error_delay, 5.0))
         
+        logger.warning(f"Concept '{concept}' exhausted all {self.config.max_retry_cycles + 1} retry attempts")
         return None
+    
+    async def _tracked_agent_call(self, agent_method, *args, **kwargs):
+        """Wrapper for agent calls to track performance for adaptive rate limiting"""
+        start_time = time.time()
+        had_error = False
+        
+        try:
+            result = await agent_method(*args, **kwargs)
+            return result
+        except Exception as e:
+            had_error = True
+            raise e
+        finally:
+            response_time = time.time() - start_time
+            self.rate_limiter.record_request(response_time, had_error)
     
     async def _execute_batch_with_timeout(
         self, 
@@ -303,6 +440,7 @@ class AgenticBenchmarkOrchestrator:
             options=candidate.options,
             eval_type=eval_type,
             metadata=metadata,
+            concept=candidate.concept,  # CRITICAL FIX: Maintain concept ownership
             expected_answer_type=candidate.expected_answer_type,
             reasoning_chain=candidate.reasoning_chain,
             variables=candidate.variables
@@ -332,7 +470,7 @@ class AgenticBenchmarkOrchestrator:
             if len(selected_items) >= target_count:
                 break
             
-            concept = getattr(item, 'concept', item.metadata.dict().get('concept', 'unknown'))
+            concept = item.concept  # FIXED: Direct access since concept is now properly maintained
             if concept not in used_concepts:
                 selected_items.append(item)
                 used_concepts.add(concept)
@@ -357,15 +495,12 @@ class AgenticBenchmarkOrchestrator:
         quality_scores = [item.metadata.validation_score for item in items if item.metadata.validation_score]
         self.pipeline_stats['quality_scores'].extend(quality_scores)
         
-        # Update agent stats
+        # Update agent stats (thread-safe)
         agents = [self.concept_miner, self.question_writer, self.adversary, self.refiner, self.validator]
         for agent in agents:
             agent_name = agent.agent_name
-            self.pipeline_stats['agent_stats'][agent_name] = {
-                'call_count': agent.call_count,
-                'total_time': agent.total_processing_time,
-                'avg_time': agent.total_processing_time / max(1, agent.call_count)
-            }
+            stats = agent.get_stats()  # Now synchronous
+            self.pipeline_stats['agent_stats'][agent_name] = stats
     
     async def _fallback_generation(
         self, 
@@ -385,7 +520,7 @@ class AgenticBenchmarkOrchestrator:
         for i in range(min(num_questions, 10)):  # Limit fallback items
             concept = f"{concepts[i % len(concepts)]}_{i+1}"
             
-            # Create basic item
+            # Create basic item with fallback flagging
             metadata = create_enhanced_metadata(
                 difficulty=difficulty,
                 agents_used=['FallbackGenerator@v1'],
@@ -393,12 +528,21 @@ class AgenticBenchmarkOrchestrator:
                 validation_score=0.5  # Neutral score for fallback
             )
             
+            # CRITICAL FIX: Add fallback flagging to metadata
+            metadata.provenance.update({
+                'generation_mode': 'agentic_fallback',
+                'quality_warning': 'Generated using emergency agentic fallback - main pipeline failed',
+                'fallback_reason': 'Agentic pipeline failure',
+                'quality_degraded': True
+            })
+            
             item = EnhancedBenchmarkItem(
                 question=f"What is the significance of {concept} in the given context?",
                 answer=f"The {concept} is significant because...",
                 context=corpus_text[:200] if corpus_text else None,
                 eval_type=eval_type,
                 metadata=metadata,
+                concept=concept,  # Add concept field
                 expected_answer_type='free_text',
                 reasoning_chain=["Basic template generation"],
                 variables={}
@@ -421,6 +565,9 @@ class AgenticBenchmarkOrchestrator:
         if stats['total_generated'] > 0:
             stats['acceptance_rate'] = stats['total_accepted'] / stats['total_generated']
             stats['avg_generation_time'] = stats['total_processing_time'] / stats['total_generated']
+        
+        # Add adaptive rate limiter statistics
+        stats['rate_limiter'] = self.rate_limiter.get_stats()
         
         return stats
     

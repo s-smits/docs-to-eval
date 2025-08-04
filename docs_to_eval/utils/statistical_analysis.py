@@ -23,6 +23,7 @@ class StatisticalResults:
     confidence_interval_99: Tuple[float, float]
     num_samples: int
     statistical_significance: float
+    baseline_tested: float = 0.5  # The baseline value tested against
     bootstrap_samples: int = 1000
     
 
@@ -71,15 +72,17 @@ class EvaluationStatistics:
             return (float(max(0.0, mean_score - error)), float(min(1.0, mean_score + error)))
     
     @staticmethod
-    def calculate_comprehensive_metrics(scores: List[float]) -> StatisticalResults:
+    def calculate_comprehensive_metrics(scores: List[float], eval_type: str = "factual_qa", 
+                                      num_options: int = None) -> StatisticalResults:
         """
         Calculate comprehensive statistical metrics following lm-evaluation-harness standards
         """
         if not scores:
+            baseline = EvaluationStatistics.calculate_task_specific_baseline(eval_type, num_options)
             return StatisticalResults(
                 mean=0.0, std=0.0, median=0.0, min_val=0.0, max_val=0.0,
                 confidence_interval_95=(0.0, 0.0), confidence_interval_99=(0.0, 0.0),
-                num_samples=0, statistical_significance=1.0
+                num_samples=0, statistical_significance=1.0, baseline_tested=baseline
             )
         
         scores_array = np.array(scores)
@@ -95,20 +98,9 @@ class EvaluationStatistics:
         ci_95 = EvaluationStatistics.bootstrap_confidence_interval(scores, 0.95)
         ci_99 = EvaluationStatistics.bootstrap_confidence_interval(scores, 0.99)
         
-        # Statistical significance (p-value for difference from random chance)
-        # For accuracy metrics, random chance is typically 0.5 or 1/num_choices
-        # We'll test against 0.5 as a conservative baseline
-        if len(scores) > 1 and std_score > 0:
-            t_stat = (mean_score - 0.5) / (std_score / math.sqrt(len(scores)))
-            # Simplified p-value calculation (two-tailed test)
-            p_value = 2 * (1 - abs(t_stat) / (abs(t_stat) + math.sqrt(len(scores) - 1)))
-            p_value = max(0.001, min(1.0, p_value))  # Clamp to reasonable range
-        elif std_score == 0 and len(scores) > 1:
-            # If std deviation is 0, all scores are identical
-            # If mean is far from 0.5, it's likely significant
-            p_value = 0.001 if abs(mean_score - 0.5) > 0.1 else 0.5
-        else:
-            p_value = 1.0
+        # Statistical significance (proper one-sample t-test against task-specific baseline)
+        baseline = EvaluationStatistics.calculate_task_specific_baseline(eval_type, num_options)
+        p_value = EvaluationStatistics.calculate_statistical_significance(scores, baseline=baseline)
         
         return StatisticalResults(
             mean=mean_score,
@@ -119,12 +111,74 @@ class EvaluationStatistics:
             confidence_interval_95=ci_95,
             confidence_interval_99=ci_99,
             num_samples=len(scores),
-            statistical_significance=p_value
+            statistical_significance=p_value,
+            baseline_tested=baseline
         )
     
     @staticmethod
+    def calculate_statistical_significance(scores: List[float], baseline: float = 0.5) -> float:
+        """
+        Calculate statistical significance using proper one-sample t-test
+        Following lm-evaluation-harness statistical rigor
+        """
+        if len(scores) < 2:
+            return 1.0  # Cannot determine significance with <2 samples
+        
+        n = len(scores)
+        mean_score = np.mean(scores)
+        std_score = np.std(scores, ddof=1)  # Sample standard deviation
+        
+        if std_score == 0:
+            # Perfect consistency - if different from baseline, very significant
+            return 0.001 if abs(mean_score - baseline) > 0.01 else 1.0
+        
+        # One-sample t-test: H0: mean = baseline, H1: mean ≠ baseline
+        t_stat = (mean_score - baseline) / (std_score / math.sqrt(n))
+        
+        # Degrees of freedom
+        df = n - 1
+        
+        # Two-tailed p-value approximation using t-distribution
+        # For reasonably large samples, use normal approximation
+        if df >= 30:
+            # Normal approximation
+            from math import erfc
+            p_value = erfc(abs(t_stat) / math.sqrt(2))
+        else:
+            # Better approximation for small samples using gamma function
+            try:
+                # Approximate t-distribution CDF
+                x = abs(t_stat)
+                # Use approximation: P(t > x) ≈ (1 + x²/df)^(-df/2) for small df
+                p_one_tail = math.pow(1 + (x * x) / df, -df / 2)
+                p_value = 2 * p_one_tail  # Two-tailed
+            except (OverflowError, ZeroDivisionError):
+                # Fallback calculation
+                p_value = 2 * (1 - 1 / (1 + abs(t_stat) / math.sqrt(df)))
+        
+        # Clamp to reasonable range
+        return max(0.001, min(1.0, p_value))
+    
+    @staticmethod
+    def calculate_task_specific_baseline(eval_type: str, num_options: int = None) -> float:
+        """
+        Calculate appropriate random baseline for different evaluation types
+        """
+        baseline_map = {
+            'multiple_choice': 1.0 / num_options if num_options else 0.25,  # 1/num_choices
+            'factual_qa': 0.0,  # Very strict - exact match required
+            'mathematical': 0.0,  # Mathematical answers are exact
+            'code_generation': 0.0,  # Code either works or doesn't
+            'domain_knowledge': 0.1,  # Some partial credit possible
+            'creative_writing': 0.3,  # Subjective, some baseline quality expected
+            'summarization': 0.2,  # Some overlap expected by chance
+            'translation': 0.1,  # Minimal overlap expected
+        }
+        return baseline_map.get(eval_type, 0.5)  # Default 50% baseline
+    
+    @staticmethod
     def calculate_accuracy_metrics(predictions: List[str], ground_truths: List[str], 
-                                 scores: List[float]) -> Dict[str, Any]:
+                                 scores: List[float], eval_type: str = "factual_qa") -> Dict[str, Any]:
         """
         Calculate accuracy-based metrics following lm-evaluation-harness patterns
         """
@@ -146,9 +200,9 @@ class EvaluationStatistics:
             normalized_scores.append(normalized_score)
         
         return {
-            "exact_match_accuracy": EvaluationStatistics.calculate_comprehensive_metrics(exact_matches),
-            "raw_accuracy": EvaluationStatistics.calculate_comprehensive_metrics(scores),
-            "normalized_accuracy": EvaluationStatistics.calculate_comprehensive_metrics(normalized_scores)
+            "exact_match_accuracy": EvaluationStatistics.calculate_comprehensive_metrics(exact_matches, eval_type),
+            "raw_accuracy": EvaluationStatistics.calculate_comprehensive_metrics(scores, eval_type),
+            "normalized_accuracy": EvaluationStatistics.calculate_comprehensive_metrics(normalized_scores, eval_type)
         }
     
     @staticmethod
@@ -232,7 +286,8 @@ class EvaluationStatistics:
         }
     
     @staticmethod
-    def generate_evaluation_report(verification_results: List[Dict], corpus_text: str = "") -> Dict[str, Any]:
+    def generate_evaluation_report(verification_results: List[Dict], corpus_text: str = "", 
+                                 eval_type: str = "factual_qa") -> Dict[str, Any]:
         """
         Generate comprehensive evaluation report following lm-evaluation-harness standards
         """
@@ -245,17 +300,17 @@ class EvaluationStatistics:
         ground_truths = [r["ground_truth"] for r in verification_results]
         methods = [r.get("method", "unknown") for r in verification_results]
         
-        # Calculate comprehensive statistics
-        main_stats = EvaluationStatistics.calculate_comprehensive_metrics(scores)
+        # Calculate comprehensive statistics with task-specific baseline
+        main_stats = EvaluationStatistics.calculate_comprehensive_metrics(scores, eval_type)
         
         # Calculate accuracy metrics
         accuracy_metrics = EvaluationStatistics.calculate_accuracy_metrics(
-            predictions, ground_truths, scores
+            predictions, ground_truths, scores, eval_type
         )
         
         # Calculate F1 scores
         f1_scores = EvaluationStatistics.calculate_f1_scores(predictions, ground_truths)
-        f1_stats = EvaluationStatistics.calculate_comprehensive_metrics(f1_scores)
+        f1_stats = EvaluationStatistics.calculate_comprehensive_metrics(f1_scores, eval_type)
         
         # Method breakdown
         method_breakdown = {}
@@ -264,7 +319,7 @@ class EvaluationStatistics:
             method_scores = [s for s, m in zip(scores, methods) if m == method]
             method_breakdown[method] = {
                 "count": count,
-                "statistics": EvaluationStatistics.calculate_comprehensive_metrics(method_scores)
+                "statistics": EvaluationStatistics.calculate_comprehensive_metrics(method_scores, eval_type)
             }
         
         # Contamination detection
@@ -292,7 +347,9 @@ class EvaluationStatistics:
 if __name__ == "__main__":
     # Test the statistical analysis
     test_scores = [0.8, 0.9, 0.7, 0.85, 0.75, 0.95, 0.6, 0.88, 0.92, 0.78]
-    stats = EvaluationStatistics.calculate_comprehensive_metrics(test_scores)
+    stats = EvaluationStatistics.calculate_comprehensive_metrics(test_scores, eval_type="factual_qa")
     print(f"Mean: {stats.mean:.3f}")
+    print(f"Baseline tested: {stats.baseline_tested:.3f}")
     print(f"95% CI: [{stats.confidence_interval_95[0]:.3f}, {stats.confidence_interval_95[1]:.3f}]")
     print(f"Statistical significance (p-value): {stats.statistical_significance:.3f}")
+    print(f"Statistically significant: {stats.statistical_significance < 0.05}")

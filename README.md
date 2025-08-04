@@ -1,290 +1,417 @@
-# docs-to-eval - Automated LLM Evaluation System
+# AutoEval - Production-Ready Automated LLM Evaluation System
 
-🤖 **docs-to-eval** is a comprehensive Python system that automatically generates domain-specific benchmarks from text corpora and evaluates LLMs using appropriate methodologies. It intelligently determines whether to use deterministic (exact match) or non-deterministic (similarity-based) evaluation methods based on the content type.
+🚀 **AutoEval** is a sophisticated, production-ready system for automated LLM evaluation that generates domain-specific benchmarks and evaluates language models using multiple methodologies. Built with enterprise-grade architecture, statistical rigor following lm-evaluation-harness standards, and comprehensive quality assurance.
 
 ## 🌟 Key Features
 
-### 🧠 Intelligent Evaluation Type Classification
-- **LLM-powered analysis** of text corpora to determine optimal evaluation methodology
-- **10+ evaluation types** including mathematical, code generation, factual QA, creative writing, etc.
-- **Automatic differentiation** between deterministic vs non-deterministic evaluation needs
+### 🧠 Intelligent Evaluation Pipeline
+- **Smart content detection** with automatic template-content mismatch prevention
+- **Intelligent verification routing** based on actual question content analysis
+- **10+ evaluation types** with task-specific statistical baselines
+- **Agentic benchmark generation** with multi-agent quality enhancement
 
-### 🏗️ Advanced Benchmark Generation
-- **Agentic question generation** using multiple strategies (conceptual, application, comparison, analytical, synthesis)
-- **Quality scoring and improvement** of generated questions
-- **Domain-specific question tailoring** based on corpus content analysis
+### 🏗️ Production-Grade Architecture
+- **Async-native pipeline** with concurrency safety and adaptive rate limiting
+- **Comprehensive error handling** with explicit quality warnings
+- **Statistical rigor** following lm-evaluation-harness gold standards
+- **Bootstrap confidence intervals** with bias-corrected sampling
+- **Thread-safe operations** with async locks and proper resource management
 
-### 🔍 Comprehensive Verification Systems
-- **Deterministic verification**: exact match, numerical matching, code execution, multiple choice
-- **Mathematical verification**: Enhanced math expression parsing with math-verify library
-- **Non-deterministic verification**: token overlap, n-gram similarity, ROUGE-L, semantic similarity
-- **LLM-judge evaluation** for subjective content
+### 🔍 Advanced Verification Systems
+- **Mathematical verification** with math-verify integration for LaTeX and expressions
+- **Intelligent routing** based on content analysis (mathematical, factual, code, creative)
+- **Multi-modal verification** including exact match, similarity, execution, and LLM-judge
+- **Task-specific baselines** (0.0 for mathematical, 0.25 for multiple choice, etc.)
 
-### 📊 Rich Reporting & Analytics
-- **Executive summaries** with performance categorization
-- **Detailed analysis** including score distributions and error patterns
-- **Benchmark quality assessment** and improvement recommendations
-- **Comparative analysis** against baseline performance
+### 📊 Comprehensive Analytics & Quality Assurance
+- **Statistical significance testing** with proper one-sample t-tests
+- **Quality status tracking** with fallback detection and degradation warnings
+- **Performance monitoring** with adaptive rate limiting based on LLM response times
+- **Detailed reporting** following lm-evaluation-harness standards
 
 ## 🏗️ System Architecture
 
 ```
-📁 docs-to-eval/
-├── core_evaluation.py          # Core framework and data structures
-├── eval_classifier.py          # LLM-based evaluation type classification
-├── benchmark_generators.py     # Benchmark generation for different types
-├── agentic_generator.py        # Advanced agentic question generation
-├── verification_systems.py     # Deterministic & non-deterministic verification
-├── mock_llm_interface.py       # Mock LLM for testing pipeline
-├── reporting_system.py         # Comprehensive reporting and visualization
-├── main_interface.py           # Interactive user interface
-└── demo.py                     # Quick demonstration script
+📁 AutoEval Production System/
+├── 🎯 Core Engine
+│   ├── pipeline.py              # Unified evaluation pipeline orchestrator
+│   ├── evaluation.py            # Evaluation framework & type definitions
+│   ├── classification.py        # Intelligent evaluation type classifier
+│   ├── verification.py          # Multi-modal verification with smart routing
+│   ├── benchmarks.py           # Benchmark generation factory
+│   └── agentic/                # Advanced agentic benchmark generation
+│       ├── orchestrator.py     # Multi-agent pipeline with adaptive rate limiting
+│       ├── agents.py           # Specialized agents (ConceptMiner, QuestionWriter, etc.)
+│       ├── models.py           # Enhanced data models with concept ownership
+│       └── validation.py       # Quality validation and improvement
+├── 🔧 Interfaces
+│   ├── cli/                    # Command-line interface (Typer + Rich)
+│   │   ├── main.py            # Full CLI with progress bars and statistics
+│   │   └── interactive.py     # Step-by-step guided evaluation
+│   └── ui_api/                # Web API (FastAPI + WebSockets)
+│       ├── main.py            # CORS, static files, lifespan management
+│       ├── routes.py          # API endpoints with background tasks
+│       └── websockets.py      # Real-time progress updates
+├── 🤖 LLM Integration
+│   ├── base.py                # Abstract LLM interface with capability scoring
+│   ├── mock_interface.py      # Comprehensive testing and simulation
+│   └── openrouter_interface.py # Production LLM access via OpenRouter
+├── 🛠️ Utilities
+│   ├── config.py              # Pydantic configuration with validation
+│   ├── statistical_analysis.py # Bootstrap CI, significance testing
+│   ├── similarity.py          # Multi-method similarity calculations
+│   ├── text_processing.py     # Answer normalization and extraction
+│   └── logging.py            # Structured JSON logging with context
+└── 🧪 Testing Framework
+    ├── test_system_integration.py # End-to-end workflow testing
+    ├── test_math_verify_integration.py # Mathematical verification
+    ├── test_pipeline.py        # Core pipeline functionality
+    └── test_benchmark_factory.py # Generator factory testing
 ```
 
 ## 🚀 Quick Start
 
-### Basic Usage
+### Installation
 
-```python
-python main_interface.py
+```bash
+# Clone repository
+git clone <repository-url>
+cd docs-to-eval
+
+# Install dependencies (using uv recommended)
+uv sync --python 3.11
+# Or using pip
+pip install -e .
+
+# Optional: Install math-verify for enhanced mathematical verification
+pip install math-verify>=0.1.0
 ```
 
-Follow the interactive prompts to:
-1. **Input your corpus** (text entry, file upload, or sample)
-2. **Configure parameters** (number of questions, evaluation type)
-3. **Generate benchmark** (standard or advanced agentic generation)
-4. **Run evaluation** (with mock LLM)
-5. **View results** (comprehensive analysis and recommendations)
+### Environment Setup
+
+```bash
+# Optional: Set environment variables
+export DOCS_TO_EVAL_LOG_LEVEL=DEBUG
+export OPENROUTER_API_KEY=your_key_here  # For production LLM evaluation
+```
+
+### Command Line Usage
+
+```bash
+# Full evaluation with progress tracking
+uv run python -m docs_to_eval.cli.main evaluate corpus.txt --questions 20 --agentic
+
+# Interactive guided evaluation
+uv run python -m docs_to_eval.cli.main interactive
+
+# Classification only
+uv run python -m docs_to_eval.cli.main classify corpus.txt
+
+# Start web API server
+uv run python -m docs_to_eval.cli.main server --port 8000 --reload
+```
 
 ### Programmatic Usage
 
 ```python
-from main_interface import docs-to-evalSystem
+from docs_to_eval.core.pipeline import PipelineFactory
+from docs_to_eval.utils.config import create_default_config
 
-# Initialize system
-system = docs-to-evalSystem()
+# Create pipeline with default configuration
+config = create_default_config()
+config.generation.num_questions = 10
+config.llm.use_agentic = True
 
-# Or use individual components
-from eval_classifier import classify_and_configure
-from benchmark_generators import generate_domain_benchmark
-from verification_systems import VerificationOrchestrator
+pipeline = PipelineFactory.create_pipeline(config)
 
-# Classify corpus and generate config
-corpus = "Your domain-specific text here..."
-config = classify_and_configure(corpus, num_questions=50)
+# Run evaluation
+corpus_text = "Your domain-specific text here..."
+results = await pipeline.run_async(corpus_text)
 
-# Generate benchmark
-benchmark = generate_domain_benchmark(corpus, config['eval_type'], 50)
+print(f"Mean Score: {results['mean_score']:.3f}")
+print(f"95% CI: [{results['confidence_interval_95'][0]:.3f}, {results['confidence_interval_95'][1]:.3f}]")
+print(f"Statistically Significant: {results['statistically_significant']}")
+```
 
-# Verify responses (example)
-verifier = VerificationOrchestrator()
-result = verifier.verify("prediction", "ground_truth", config['eval_type'])
+### Web API Usage
+
+```bash
+# Start server
+uv run python -m docs_to_eval.cli.main server
+
+# API Examples
+curl -X POST http://localhost:8000/api/v1/evaluation/start \
+  -H "Content-Type: application/json" \
+  -d '{"corpus_text": "Your text here", "num_questions": 10, "use_agentic": true}'
+
+# WebSocket connection for real-time progress
+# Connect to: ws://localhost:8000/ws/{run_id}
 ```
 
 ## 📋 Supported Evaluation Types
 
-### 🎯 Deterministic Evaluations (Exact Answers)
-- **Mathematical**: Enhanced mathematical expression verification using math-verify library
-- **Math Expression**: Plain mathematical expressions (e.g., "1/2" ≡ "0.5")
-- **LaTeX Math**: LaTeX mathematical expressions (e.g., "$\\sqrt{4}$" ≡ "$2$")
-- **Code Generation**: Function correctness, syntax validation, execution testing
-- **Factual QA**: Objective facts with exact match verification
-- **Multiple Choice**: Standardized answer selection
-- **Domain Knowledge**: Specific domain facts and concepts
+### 🎯 Deterministic Evaluations (Exact/Verifiable)
+- **Mathematical**: Enhanced with math-verify library supporting LaTeX and expressions
+  - Example: `"${1,2,3,4}$" ≡ "${1,3} \\cup {2,4}$"` → Score: 1.0
+  - Baseline: 0.0 (mathematical answers are exact)
+- **Code Generation**: Functional correctness with sandbox execution
+  - Example: Function definition with unit tests → Pass/Fail verification
+  - Baseline: 0.0 (code either works or doesn't)
+- **Multiple Choice**: Normalized accuracy with length adjustment
+  - Example: A/B/C/D selection with confidence scoring
+  - Baseline: 0.25 (random chance for 4 options)
+- **Factual QA**: Exact match with fallback to similarity
+  - Example: "What is the capital of France?" → "Paris"
+  - Baseline: 0.0 (factual answers require precision)
 
 ### 🎨 Non-Deterministic Evaluations (Similarity-Based)
+- **Creative Writing**: LLM-judge evaluation with quality scoring
+  - Baseline: 0.3 (subjective quality expectations)
 - **Summarization**: ROUGE-L, semantic similarity, content coverage
-- **Translation**: BLEU scores, semantic preservation
-- **Reading Comprehension**: Hybrid exact match + similarity
-- **Creative Writing**: LLM-judge evaluation for creativity, coherence, fluency
+  - Baseline: 0.2 (some overlap expected by chance)
+- **Translation**: BLEU scores with semantic preservation
+  - Baseline: 0.1 (minimal lexical overlap expected)
+- **Domain Knowledge**: Partial credit for conceptual understanding
+  - Baseline: 0.1 (some domain knowledge overlap possible)
 
 ## 🔧 Core Components
 
-### EvaluationTypeClassifier
-Uses LLM reasoning to analyze corpus content and determine the most appropriate evaluation methodology:
+### Enhanced Pipeline Orchestrator
+Unified workflow with intelligent routing and quality assurance:
 
 ```python
-classifier = EvaluationTypeClassifier()
-result = classifier.classify_corpus(corpus_text)
-# Returns: primary_type, secondary_types, confidence, reasoning
+from docs_to_eval.core.pipeline import EvaluationPipeline
+
+pipeline = EvaluationPipeline(config)
+results = await pipeline.run_async(corpus_text)
+
+# Automatic phases:
+# 1. Classification → Benchmark Generation → LLM Evaluation → 
+# 2. Verification → Results Aggregation → Statistical Analysis
 ```
 
-### AgenticQuestionGenerator
-Advanced question generation using multiple strategies:
+### Agentic Benchmark Generation
+Multi-agent system with concept ownership and feedback loops:
 
 ```python
-generator = AgenticQuestionGenerator()
-benchmark = generator.generate_comprehensive_benchmark(
-    corpus_text, num_questions=50, eval_type='domain_knowledge'
+from docs_to_eval.core.agentic import AgenticBenchmarkOrchestrator
+
+orchestrator = AgenticBenchmarkOrchestrator(llm_pool, config)
+benchmark = await orchestrator.generate(
+    corpus_text, eval_type, num_questions=50, difficulty="hard"
 )
-# Includes quality scoring, category diversity, difficulty balancing
+
+# Agents: ConceptMiner → QuestionWriter → Adversary → Refiner → Validator
+# Features: Adaptive retry with feedback, concept ownership, quality tracking
 ```
 
-### VerificationOrchestrator
-Intelligent verification system that chooses appropriate methods:
+### Intelligent Verification System
+Content-aware verification with automatic method selection:
 
 ```python
+from docs_to_eval.core.verification import VerificationOrchestrator
+
 verifier = VerificationOrchestrator()
-result = verifier.verify(prediction, ground_truth, eval_type)
-# Automatically selects: exact_match, similarity, code_execution, llm_judge, math_verify
+result = verifier.verify(
+    prediction="2", 
+    ground_truth="$\\sqrt{4}$", 
+    eval_type="mathematical",  # Will auto-detect and use LaTeX verification
+    question="What is the square root of 4?"
+)
+# Automatically detects LaTeX and uses math-verify library
 ```
 
-### MathVerifyVerifier
-Enhanced mathematical verification using the math-verify library:
+### Statistical Analysis with lm-eval-harness Standards
+Comprehensive statistical analysis following gold-standard practices:
 
 ```python
-from docs_to_eval.core.verification import MathVerifyVerifier
+from docs_to_eval.utils.statistical_analysis import EvaluationStatistics
 
-# Initialize verifier
-math_verifier = MathVerifyVerifier()
+# Calculate with task-specific baseline
+stats = EvaluationStatistics.calculate_comprehensive_metrics(
+    scores=[0.8, 0.9, 0.7, 0.85], 
+    eval_type="mathematical"  # Uses 0.0 baseline
+)
 
-# Basic mathematical verification (supports LaTeX and expressions)
-result = math_verifier.math_verify_match("${1,2,3,4}$", "${1,3} \\cup {2,4}$")
-print(f"Score: {result.score}")  # 1.0 for mathematically equivalent
-
-# LaTeX expression matching
-result = math_verifier.latex_expression_match("$\\sqrt{4}$", "$2$")
-
-# Plain expression matching  
-result = math_verifier.expression_match("0.5", "1/2")
-
-# Through orchestrator (recommended)
-orchestrator = VerificationOrchestrator()
-result = orchestrator.verify("0.5", "1/2", "math_expression")
-result = orchestrator.verify("$\\sqrt{4}$", "$2$", "latex_math") 
-result = orchestrator.verify("${1,2,3,4}$", "${1,3} \\cup {2,4}$", "mathematical")
+print(f"Mean: {stats.mean:.3f}")
+print(f"95% CI: [{stats.confidence_interval_95[0]:.3f}, {stats.confidence_interval_95[1]:.3f}]")
+print(f"Statistical significance (p-value): {stats.statistical_significance:.3f}")
+print(f"Significant at α=0.05: {stats.statistical_significance < 0.05}")
 ```
 
-## 📊 Evaluation Metrics
+## 📊 Quality Assurance Features
 
-### Deterministic Metrics
-- **Accuracy**: Exact match percentage
-- **Pass Rate**: For code execution tasks
-- **Normalized Accuracy**: Length-adjusted for multiple choice
+### Fallback Detection and Quality Warnings
+The system now explicitly tracks and reports quality degradation:
 
-### Non-Deterministic Metrics  
-- **ROUGE-L**: Longest common subsequence similarity
-- **BLEU**: N-gram overlap for translation-like tasks
-- **Token Overlap F1**: Precision, recall, and F1 of token intersections
-- **Semantic Similarity**: Contextual embedding similarity (mocked)
+```python
+# API Response includes quality status
+{
+  "aggregate_metrics": { ... },
+  "quality_status": {
+    "has_fallback_questions": false,
+    "quality_degraded": false,
+    "warnings": [],
+    "generation_modes": ["agentic"],
+    "total_warnings": 0,
+    "fallback_percentage": 0.0
+  }
+}
+```
 
-### Quality Metrics
-- **Question Quality Score**: Clarity, relevance, difficulty appropriateness
-- **Coverage Analysis**: Topic diversity and vocabulary richness
-- **Benchmark Reliability**: Consistency across multiple runs
+### Content-Type Mismatch Prevention
+Automatic detection prevents nonsensical questions:
 
-## 🎛️ Configuration Options
+```python
+# Before fix: "Solve for male." (random word + math template)
+# After fix: Detects Etruscan mythology content → Uses factual_qa templates
+# Result: "What is the significance of Tinia in Etruscan mythology?"
+```
 
-### Corpus Analysis
-- **Automatic classification** with confidence scoring
-- **Manual override** for evaluation type selection
-- **Content analysis** (mathematical patterns, code structures, factual content)
+### Adaptive Performance Monitoring
+Rate limiting adapts to LLM performance:
 
-### Generation Methods
-- **Standard generation**: Pattern-based question creation
-- **Agentic generation**: Multi-strategy approach with quality improvement
-- **Question count**: 1-200 questions per benchmark
-
-### Verification Settings
-- **Temperature control**: 0.0 for deterministic, 0.7 for creative tasks
-- **Similarity thresholds**: Configurable acceptance criteria
-- **Multi-metric evaluation**: Combined scoring approaches
+```python
+# Pipeline automatically adjusts delays based on:
+# - Average response times
+# - Error rates  
+# - Recent performance history
+# - Exponential backoff for failures
+```
 
 ## 📈 Sample Output
 
 ```
-🎯 Overall Performance:
-   Mean Score: 0.756
-   Median Score: 0.782
-   Min Score: 0.445
-   Max Score: 0.950
-   Questions Evaluated: 50
+🎯 AutoEval Results - Production Grade
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📈 Detailed Metrics:
-   exact_match_mean: 0.720
-   token_overlap_f1_mean: 0.785
-   rouge_l_f1_mean: 0.762
+📊 Statistical Analysis (lm-evaluation-harness standard)
+Mean Score: 0.847
+95% Confidence Interval: [0.789, 0.905]
+Statistical Significance: ✓ Significant (p=0.003)
+Baseline Tested: 0.0 (mathematical)
+Sample Size: 25 questions
 
-🔍 Sample Evaluations:
-   Example 1:
-   Question: What is machine learning in the context of artificial intelligence?
-   Expected: A subset of AI that learns from data...
-   Predicted: Machine learning is a field of AI that uses algorithms...
-   Score: 0.850
-   Method: token_overlap
+🔬 Evaluation Quality
+Generation Mode: agentic (100%)
+Quality Status: ✓ No degradation warnings
+Sufficient Samples: ✓ Yes (≥20)
+Reliable CI: ✓ Yes (width < 0.2)
+
+🎯 Verification Methods
+mathematical (math-verify): 15 questions (avg: 0.893)
+factual_qa (exact+similarity): 8 questions (avg: 0.782)
+domain_knowledge (similarity): 2 questions (avg: 0.845)
+
+⚡ Performance Stats
+Total Processing Time: 45.2s
+Average Question Generation: 1.8s
+Rate Limiter: Adaptive (current delay: 0.3s)
+Agent Success Rate: 96.8%
 ```
 
-## 🏭 Industrial Applications
+## 🏭 Production Applications
 
 ### 🎓 Educational Technology
-- **Automated quiz generation** from textbooks and course materials
-- **Student assessment** with domain-appropriate metrics
-- **Content quality evaluation** for educational resources
+- **Automated assessment generation** from textbooks with proper difficulty scaling
+- **Student evaluation** with statistical significance testing
+- **Content quality assurance** with fallback detection
 
-### 🏢 Enterprise AI
-- **Model evaluation pipelines** for domain-specific deployments  
-- **Benchmark creation** for proprietary knowledge bases
-- **Performance monitoring** of production LLM systems
+### 🏢 Enterprise AI Evaluation
+- **Model benchmarking** with task-specific baselines and confidence intervals
+- **Performance monitoring** with quality degradation alerts
+- **A/B testing** with proper statistical significance testing
 
 ### 🔬 Research & Development
-- **Reproducible evaluation** across different model architectures
-- **Domain adaptation assessment** for specialized applications
-- **Comparative studies** with standardized benchmarks
+- **Reproducible evaluation** following lm-evaluation-harness standards
+- **Comparative studies** with bootstrap confidence intervals
+- **Domain adaptation assessment** with intelligent content detection
 
 ## 🛠️ Technical Requirements
 
-- **Python 3.7+**
-- **Functional programming approach** (no explicit type annotations)
-- **Mock LLM interface** for testing (easily replaceable with real LLMs)
-- **JSON-based configuration** and result storage
-- **Modular architecture** for easy extension
+- **Python 3.8+** (Tested with 3.11)
+- **Dependencies**: FastAPI, Typer, Rich, Pydantic, NumPy
+- **Optional**: math-verify library for enhanced mathematical verification
+- **Production**: OpenRouter API key for real LLM evaluation
 
-## 🔄 Extensibility
-
-The system is designed for easy extension:
+## 🔄 Extension Points
 
 ### Adding New Evaluation Types
 ```python
-# In benchmark_generators.py
-class CustomBenchmarkGenerator(BenchmarkGenerator):
-    def generate_benchmark(self, corpus_text, num_questions):
-        # Custom generation logic
-        pass
+# 1. Add to EvaluationType enum in evaluation.py
+# 2. Create generator in benchmarks.py
+# 3. Add verification logic in verification.py
+# 4. Update task-specific baseline in statistical_analysis.py
+```
 
-# Register in factory
-BenchmarkGeneratorFactory.generators['custom_type'] = CustomBenchmarkGenerator
+### Adding New LLM Interfaces
+```python
+# Inherit from BaseLLMInterface
+class CustomLLMInterface(BaseLLMInterface):
+    async def generate_response(self, prompt: str, **kwargs) -> LLMResponse:
+        # Implementation here
+        pass
 ```
 
 ### Adding New Verification Methods
 ```python
-# In verification_systems.py
-def custom_verification(prediction, ground_truth):
-    # Custom verification logic
-    return VerificationResult(score, metrics, method)
-
-# Add to orchestrator
-VerificationOrchestrator.verify_methods['custom'] = custom_verification
+# Add verifier class in verification.py
+# Update VerificationOrchestrator routing
+# Add to VerificationMethod enum in config.py
 ```
 
-## 📝 Future Enhancements
+## 🧪 Testing
 
-- **Real LLM integration** (OpenAI, Anthropic, Hugging Face APIs)
-- **Semantic embedding models** for improved similarity metrics
-- **Multi-language support** for international corpora
-- **Batch processing** for large-scale evaluations
-- **Web interface** for non-technical users
-- **Integration plugins** for popular ML frameworks
+```bash
+# Run full test suite
+uv run pytest
 
-## 🤝 Contributing
+# Run specific test categories
+uv run pytest tests/test_math_verify_integration.py  # Mathematical verification
+uv run pytest tests/test_system_integration.py      # End-to-end workflow
+uv run pytest tests/test_pipeline.py                # Core pipeline
 
-This system demonstrates a complete automated evaluation pipeline. Key areas for enhancement:
+# Test with different evaluation types
+uv run python -m docs_to_eval.cli.main evaluate sample_corpus.txt --questions 5 --eval-type mathematical
+```
 
-1. **Real LLM Integration**: Replace mock interfaces with actual model APIs
-2. **Advanced Similarity Metrics**: Implement semantic embedding similarity
-3. **Expanded Evaluation Types**: Add more domain-specific evaluation methods
-4. **Performance Optimization**: Batch processing and caching improvements
-5. **UI/UX Enhancement**: Web interface and visualization improvements
+## 📈 Performance & Scalability
+
+### Optimization Features
+- **Async-native pipeline** for concurrent processing
+- **Adaptive rate limiting** based on LLM performance
+- **Batch request processing** with configurable concurrency
+- **Intelligent caching** for repeated evaluations
+- **Background task processing** for web API
+
+### Monitoring & Observability
+- **Structured JSON logging** with evaluation context
+- **Performance metrics tracking** (response times, success rates)
+- **Quality status monitoring** (fallback usage, degradation alerts)
+- **Statistical confidence reporting** with sample size recommendations
+
+## 🔒 Production Deployment
+
+### Security Considerations
+- **API key management** via environment variables
+- **Input validation** with Pydantic models
+- **Rate limiting** for API endpoints
+- **No secret logging** or storage
+
+### Infrastructure Requirements
+- **Python runtime** with async support
+- **File system access** for logs and outputs
+- **Network access** for LLM API calls (if using real LLMs)
+- **Optional: Redis** for caching (future enhancement)
 
 ---
 
-**docs-to-eval** provides a solid foundation for automated LLM evaluation that can be adapted to various domains and use cases. Its modular design and comprehensive feature set make it suitable for both research and production environments.
+## 🎯 What Makes AutoEval Production-Ready
+
+1. **Statistical Rigor**: Bootstrap confidence intervals, task-specific baselines, proper significance testing
+2. **Quality Assurance**: Explicit fallback detection, content-mismatch prevention, degradation warnings
+3. **Robustness**: Thread-safe operations, adaptive rate limiting, comprehensive error handling
+4. **Observability**: Structured logging, performance monitoring, quality status tracking
+5. **Standards Compliance**: Following lm-evaluation-harness principles and best practices
+
+**AutoEval** bridges the gap between research-grade evaluation tools and production-ready systems, providing enterprise-scale reliability with the flexibility needed for diverse evaluation scenarios.

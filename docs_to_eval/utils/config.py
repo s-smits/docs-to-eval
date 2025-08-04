@@ -50,6 +50,7 @@ class LLMConfig(BaseModel):
     max_tokens: int = Field(gt=0, le=131072, default=32768)
     timeout: int = Field(gt=0, default=30)
     max_retries: int = Field(ge=0, default=3)
+    max_concurrent: int = Field(ge=1, le=20, default=5)  # Concurrent requests for evaluation
     api_key: Optional[str] = None
     base_url: Optional[str] = "https://openrouter.ai/api/v1"
     provider: str = "openrouter"  # openrouter, openai, anthropic
@@ -71,6 +72,36 @@ class LLMConfig(BaseModel):
             return "https://api.openai.com/v1"
         elif provider == 'anthropic':
             return "https://api.anthropic.com"
+        return v
+
+
+class ChunkingConfig(BaseModel):
+    """Advanced chunking configuration with Chonkie integration"""
+    target_chunk_size: int = Field(default=3000, ge=1000, le=8000, description="Target chunk size in characters (2k-4k recommended)")
+    overlap_percent: float = Field(default=5.0, ge=0, le=20, description="Overlap percentage between chunks")
+    force_chunker: Optional[str] = Field(default=None, description="Force specific chunker (semantic, recursive, sentence, late)")
+    semantic_threshold: float = Field(default=0.5, ge=0, le=1, description="Semantic similarity threshold")
+    enable_chonkie: bool = Field(default=True, description="Enable Chonkie advanced chunking")
+    adaptive_sizing: bool = Field(default=True, description="Enable adaptive chunk sizing based on content")
+    preserve_code_blocks: bool = Field(default=True, description="Preserve code block integrity")
+    preserve_math_expressions: bool = Field(default=True, description="Preserve mathematical expressions")
+    min_chunk_size: int = Field(default=500, ge=100, le=2000, description="Minimum chunk size in characters")
+    max_chunk_size: int = Field(default=5000, ge=2000, le=10000, description="Maximum chunk size in characters")
+    
+    @validator('target_chunk_size')
+    def validate_target_chunk_size(cls, v, values):
+        min_size = values.get('min_chunk_size', 500)
+        max_size = values.get('max_chunk_size', 5000)
+        if not min_size <= v <= max_size:
+            raise ValueError(f'Target chunk size must be between {min_size} and {max_size}')
+        return v
+    
+    @validator('force_chunker')
+    def validate_force_chunker(cls, v):
+        if v is not None:
+            valid_chunkers = ['semantic', 'recursive', 'sentence', 'late', 'token']
+            if v not in valid_chunkers:
+                raise ValueError(f'Force chunker must be one of {valid_chunkers}')
         return v
 
 
@@ -126,6 +157,7 @@ class EvaluationConfig(BaseModel):
     """Complete evaluation configuration"""
     eval_type: EvaluationType = EvaluationType.DOMAIN_KNOWLEDGE
     llm: LLMConfig = Field(default_factory=LLMConfig)
+    chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     generation: GenerationConfig = Field(default_factory=GenerationConfig)
     verification: VerificationConfig = Field(default_factory=VerificationConfig)
     reporting: ReportingConfig = Field(default_factory=ReportingConfig)

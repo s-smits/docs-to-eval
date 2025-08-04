@@ -40,6 +40,8 @@ class BaseAgent(ABC):
         self.agent_version = "v1"
         self.call_count = 0
         self.total_processing_time = 0.0
+        # CRITICAL FIX: Add async lock for concurrency safety
+        self._stats_lock = asyncio.Lock()
     
     @abstractmethod
     async def produce(self, *args, **kwargs) -> Any:
@@ -77,6 +79,22 @@ class BaseAgent(ABC):
                 await asyncio.sleep(0.5 * (2 ** attempt))  # Exponential backoff
         
         raise RuntimeError(f"Failed to get response from LLM after {self.config.retry_attempts} retries")
+    
+    async def _update_stats(self, processing_time: float):
+        """Thread-safe statistics update"""
+        async with self._stats_lock:
+            self.call_count += 1
+            self.total_processing_time += processing_time
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Thread-safe statistics retrieval (snapshot read)"""
+        # Snapshot read - acceptable for statistics without lock
+        # Updates are still protected by async lock
+        return {
+            'call_count': self.call_count,
+            'total_time': self.total_processing_time,
+            'avg_time': self.total_processing_time / max(1, self.call_count)
+        }
 
 
 class ConceptMiner(BaseAgent):
@@ -89,12 +107,23 @@ class ConceptMiner(BaseAgent):
     """
     
     async def produce(self, corpus_text: str, k: int = 20, min_chunk_size: int = 400) -> ConceptExtractionResult:
-        """Extract key concepts from corpus"""
+        """Extract key concepts from corpus using optimized 3k chunks with 5% overlap"""
         start_time = time.time()
         
         try:
-            # Create windowed chunks with overlap
-            chunks = self._create_windowed_chunks(corpus_text, chunk_size=800, overlap=100)
+            # Use smart chunking with 3k target size and 5% overlap for optimal LLM processing
+            from ...utils.text_processing import create_smart_chunks
+            chunk_data = create_smart_chunks(
+                corpus_text, 
+                target_chunk_size=3000,  # 3k chunks for balanced context
+                overlap_percent=5.0      # 5% overlap as requested
+            )
+            chunks = [chunk["text"] for chunk in chunk_data]
+            
+            # Log chunking information
+            if chunks:
+                avg_chunk_size = sum(len(chunk) for chunk in chunks) / len(chunks)
+                print(f"[ConceptMiner] Created {len(chunks)} chunks with avg size {avg_chunk_size:.0f} chars")
             
             # Extract concepts from each chunk
             all_concepts = {}
@@ -133,8 +162,7 @@ class ConceptMiner(BaseAgent):
             filtered_snippets = {concept: supporting_snippets[concept] for concept in key_concepts}
             
             processing_time = time.time() - start_time
-            self.call_count += 1
-            self.total_processing_time += processing_time
+            await self._update_stats(processing_time)
             
             return ConceptExtractionResult(
                 key_concepts=key_concepts,
@@ -240,8 +268,7 @@ class QuestionWriter(BaseAgent):
             answer_type = self._determine_answer_type(question_data['answer'], eval_type)
             
             processing_time = time.time() - start_time
-            self.call_count += 1
-            self.total_processing_time += processing_time
+            await self._update_stats(processing_time)
             
             return BenchmarkDraft(
                 question=question_data['question'][:200],  # Enforce max length
@@ -437,8 +464,7 @@ class Adversary(BaseAgent):
                     enhanced_question, enhanced_answer = self._transform_to_code_problem(enhanced_question, enhanced_answer, draft)
             
             processing_time = time.time() - start_time
-            self.call_count += 1
-            self.total_processing_time += processing_time
+            await self._update_stats(processing_time)
             
             return BenchmarkCandidate(
                 question=enhanced_question[:150],  # Enforce limit
@@ -632,8 +658,7 @@ class Refiner(BaseAgent):
             variables = self._extract_variables(refined_question, refined_answer)
             
             processing_time = time.time() - start_time
-            self.call_count += 1
-            self.total_processing_time += processing_time
+            await self._update_stats(processing_time)
             
             return BenchmarkCandidate(
                 question=refined_question,
@@ -839,8 +864,7 @@ class Validator(BaseAgent):
             accepted = quality_score >= min_score and len(issues) == 0
             
             processing_time = time.time() - start_time
-            self.call_count += 1
-            self.total_processing_time += processing_time
+            await self._update_stats(processing_time)
             
             return ValidationResult(
                 accepted=accepted,
