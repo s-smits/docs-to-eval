@@ -45,18 +45,32 @@ class SimilarityMethod(str, Enum):
 
 class LLMConfig(BaseModel):
     """Configuration for LLM interface"""
-    model_name: str = "gpt-3.5-turbo"
+    model_name: str = "anthropic/claude-sonnet-4"
     temperature: float = Field(ge=0, le=2, default=0.7)
-    max_tokens: int = Field(gt=0, le=8192, default=512)
+    max_tokens: int = Field(gt=0, le=131072, default=32768)
     timeout: int = Field(gt=0, default=30)
     max_retries: int = Field(ge=0, default=3)
     api_key: Optional[str] = None
-    base_url: Optional[str] = None
+    base_url: Optional[str] = "https://openrouter.ai/api/v1"
+    provider: str = "openrouter"  # openrouter, openai, anthropic
+    site_url: Optional[str] = "https://docs-to-eval.ai"  # For OpenRouter
+    app_name: Optional[str] = "docs-to-eval"  # For OpenRouter
     
     @validator('temperature')
     def validate_temperature(cls, v):
         if not 0 <= v <= 2:
             raise ValueError('Temperature must be between 0 and 2')
+        return v
+    
+    @validator('base_url')
+    def set_base_url_by_provider(cls, v, values):
+        provider = values.get('provider', 'openrouter')
+        if provider == 'openrouter':
+            return "https://openrouter.ai/api/v1"
+        elif provider == 'openai':
+            return "https://api.openai.com/v1"
+        elif provider == 'anthropic':
+            return "https://api.anthropic.com"
         return v
 
 
@@ -66,7 +80,7 @@ class GenerationConfig(BaseModel):
     use_agentic: bool = True
     difficulty_levels: List[str] = Field(default=["basic", "intermediate", "advanced", "expert"])
     question_categories: List[str] = Field(default=["factual", "analytical", "synthesis", "application"])
-    max_context_length: int = Field(gt=0, default=2000)
+    max_context_length: int = Field(gt=0, default=128000)
     min_question_length: int = Field(gt=0, default=10)
     max_question_length: int = Field(gt=0, default=500)
     quality_threshold: float = Field(ge=0, le=1, default=0.5)
@@ -273,9 +287,12 @@ class ConfigManager:
             'DOCS_TO_EVAL_LOG_LEVEL': ['system', 'log_level'],
             'DOCS_TO_EVAL_OUTPUT_DIR': ['system', 'output_dir'],
             'DOCS_TO_EVAL_API_KEY': ['llm', 'api_key'],
+            'OPENROUTER_API_KEY': ['llm', 'api_key'],  # Support standard OpenRouter env var
             'DOCS_TO_EVAL_MODEL_NAME': ['llm', 'model_name'],
             'DOCS_TO_EVAL_MAX_TOKENS': ['llm', 'max_tokens'],
             'DOCS_TO_EVAL_TEMPERATURE': ['llm', 'temperature'],
+            'DOCS_TO_EVAL_PROVIDER': ['llm', 'provider'],
+            'DOCS_TO_EVAL_BASE_URL': ['llm', 'base_url'],
         }
         
         config_dict = self.config.dict()

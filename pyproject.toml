@@ -6,7 +6,7 @@ authors = [
     {name = "docs-to-eval", email = "noreply@example.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 keywords = ["llm", "evaluation", "benchmarking", "nlp", "ai"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -14,8 +14,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -32,6 +30,9 @@ dependencies = [
     "websockets>=13.1",
     "pyyaml>=6.0.2",
     "python-multipart>=0.0.20",
+    "httpx>=0.25.0",
+    "math-verify>=0.1.0",
+    "numpy>=1.21.0",
 ]
 
 [project.optional-dependencies]

@@ -55,7 +55,7 @@ class DeterministicVerifier:
         )
     
     @staticmethod
-    def numerical_match(prediction: str, ground_truth: str, tolerance: float = 0.01) -> VerificationResult:
+    def numerical_match(prediction: str, ground_truth: str, tolerance: float = 0.05) -> VerificationResult:
         """Numerical matching with tolerance for floating point answers"""
         pred_numbers = extract_numbers(prediction)
         truth_numbers = extract_numbers(ground_truth)
@@ -225,43 +225,69 @@ class MathVerifyVerifier:
     
     @staticmethod
     def math_verify_match(prediction: str, ground_truth: str) -> VerificationResult:
-        """Mathematical verification using math-verify library for LaTeX and expression parsing"""
-        if not MATH_VERIFY_AVAILABLE:
-            # Fallback to numerical match if math-verify is not available
-            return DeterministicVerifier.numerical_match(prediction, ground_truth)
+        """Smart mathematical verification with multiple strategies"""
         
-        try:
-            # Parse both prediction and ground truth using math-verify
-            # The library supports LaTeX expressions and plain mathematical expressions
-            gold_parsed = parse(ground_truth)
-            answer_parsed = parse(prediction)
-            
-            # Use math-verify's verification function
-            # Order is important: verify(gold, answer)
-            is_match = verify(gold_parsed, answer_parsed)
-            score = 1.0 if is_match else 0.0
-            
-            return VerificationResult(
-                score=score,
-                metrics={'math_verify_match': score},
-                method='math_verify',
-                details={
-                    'gold_parsed': str(gold_parsed),
-                    'answer_parsed': str(answer_parsed),
-                    'library_available': True,
-                    'exact_match': is_match
-                }
-            )
-            
-        except Exception as e:
-            # If parsing fails, fallback to numerical matching
-            fallback_result = DeterministicVerifier.numerical_match(prediction, ground_truth)
-            fallback_result.details.update({
-                'math_verify_error': str(e),
-                'fallback_used': True,
-                'library_available': True
-            })
-            return fallback_result
+        # First try to extract and compare numbers for basic mathematical answers
+        pred_numbers = extract_numbers(prediction)
+        truth_numbers = extract_numbers(ground_truth)
+        
+        # Handle percentage and fraction cases
+        if pred_numbers and truth_numbers:
+            try:
+                pred_val = float(pred_numbers[0])
+                truth_val = float(truth_numbers[0])
+                
+                # Check for direct match with tolerance
+                if abs(pred_val - truth_val) <= max(0.1, abs(truth_val) * 0.01):  # 1% or 0.1 tolerance
+                    return VerificationResult(
+                        score=1.0,
+                        metrics={'numerical_match': 1.0},
+                        method='smart_numerical',
+                        details={'values_compared': (pred_val, truth_val), 'match_type': 'direct'}
+                    )
+                
+                # Check for percentage/decimal conversion issues
+                if abs(pred_val * 100 - truth_val) <= 0.1:  # pred is decimal, truth is percentage
+                    return VerificationResult(
+                        score=1.0,
+                        metrics={'percentage_conversion': 1.0},
+                        method='smart_percentage',
+                        details={'conversion': f"{pred_val} → {pred_val * 100}% (matches {truth_val}%)"}
+                    )
+                
+                if abs(truth_val * 100 - pred_val) <= 0.1:  # truth is decimal, pred is percentage
+                    return VerificationResult(
+                        score=1.0,
+                        metrics={'decimal_conversion': 1.0},
+                        method='smart_decimal',
+                        details={'conversion': f"{truth_val} → {truth_val * 100}% (matches {pred_val}%)"}
+                    )
+                    
+            except (ValueError, IndexError):
+                pass
+        
+        # Try math-verify library if available
+        if MATH_VERIFY_AVAILABLE:
+            try:
+                gold_parsed = parse(ground_truth)
+                answer_parsed = parse(prediction)
+                
+                is_match = verify(gold_parsed, answer_parsed)
+                if is_match:
+                    return VerificationResult(
+                        score=1.0,
+                        metrics={'math_verify_match': 1.0},
+                        method='math_verify',
+                        details={'library_available': True, 'exact_match': True}
+                    )
+                    
+            except Exception as e:
+                pass
+        
+        # Fallback to numerical matching with higher tolerance
+        fallback_result = DeterministicVerifier.numerical_match(prediction, ground_truth, tolerance=0.1)
+        fallback_result.method = 'fallback_numerical'
+        return fallback_result
     
     @staticmethod
     def latex_expression_match(prediction: str, ground_truth: str) -> VerificationResult:
@@ -456,17 +482,57 @@ completeness: 0.75 - Covers main points adequately
 class VerificationOrchestrator:
     """Orchestrates different verification methods based on evaluation type"""
     
-    def __init__(self):
+    def __init__(self, corpus_text: str = ""):
         self.deterministic_verifier = DeterministicVerifier()
         self.non_deterministic_verifier = NonDeterministicVerifier()
         self.llm_judge = LLMJudgeVerifier()
         self.math_verify_verifier = MathVerifyVerifier()
+        
+        # Import and initialize domain-specific verifier
+        try:
+            from .domain_verification import DomainSpecificVerifier
+            self.domain_verifier = DomainSpecificVerifier(corpus_text)
+        except ImportError:
+            self.domain_verifier = None
     
     def verify(self, prediction: str, ground_truth: str, eval_type: str, 
-              options: Optional[List[str]] = None) -> VerificationResult:
+              options: Optional[List[str]] = None, question: str = "") -> VerificationResult:
         """Main verification method that routes to appropriate verifier"""
         
-        # Route based on evaluation type
+        # Use domain-specific verification for better accuracy
+        if self.domain_verifier and eval_type in ['mathematical', 'factual_qa', 'domain_knowledge']:
+            # Determine if question is mathematical based on content, not just eval_type
+            has_numbers = bool(extract_numbers(question) or extract_numbers(ground_truth))
+            has_math_keywords = any(keyword in question.lower() for keyword in 
+                                  ['calculate', 'compute', 'volume', 'percentage', 'ratio', 'years', 'divide', 'multiply'])
+            
+            if has_numbers and has_math_keywords:
+                # This is a mathematical question regardless of eval_type
+                print(f"[DEBUG] Using domain mathematical verification for: {question[:50]}...")
+                domain_result = self.domain_verifier.verify_mathematical_reasoning(
+                    prediction, ground_truth, question
+                )
+            else:
+                print(f"[DEBUG] Using domain factual verification for: {question[:50]}...")
+                domain_result = self.domain_verifier.verify_factual_knowledge(
+                    prediction, ground_truth, question
+                )
+            
+            # Convert domain result to standard VerificationResult
+            return VerificationResult(
+                score=domain_result.score,
+                metrics={
+                    'overall_score': domain_result.score,
+                    'reasoning_quality': domain_result.reasoning_quality,
+                    'factual_accuracy': domain_result.factual_accuracy,
+                    'mathematical_accuracy': domain_result.mathematical_accuracy,
+                    'contextual_relevance': domain_result.contextual_relevance
+                },
+                method=domain_result.method_used,
+                details=domain_result.details
+            )
+        
+        # Fallback to original verification methods
         if eval_type in ['mathematical', 'math_expression', 'latex_math', 'factual_qa', 'multiple_choice', 'domain_knowledge']:
             if eval_type == 'mathematical':
                 # Use math-verify for enhanced mathematical verification

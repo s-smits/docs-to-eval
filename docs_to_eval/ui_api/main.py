@@ -60,17 +60,23 @@ def create_app() -> FastAPI:
     # Mount static files (for serving the frontend)
     static_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
     if static_path.exists():
-        app.mount("/", StaticFiles(directory=str(static_path), html=True), name="static")
+        app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
     
-    # Root endpoint
+    # Root endpoint - serve the frontend
     @app.get("/")
     async def root():
-        return {
-            "message": "docs-to-eval API",
-            "version": "1.0.0",
-            "docs_url": "/docs",
-            "websocket_url": "/api/v1/ws/{run_id}"
-        }
+        static_path = Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html"
+        if static_path.exists():
+            from fastapi.responses import FileResponse
+            return FileResponse(static_path)
+        else:
+            return {
+                "message": "docs-to-eval API",
+                "version": "1.0.0",
+                "docs_url": "/docs",
+                "websocket_url": "/api/v1/ws/{run_id}",
+                "frontend": "Frontend files not found"
+            }
     
     # Health check
     @app.get("/health")

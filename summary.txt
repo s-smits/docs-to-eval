@@ -1,0 +1,425 @@
+⏺ AutoEval - Comprehensive System Analysis and Replication Guide
+
+  Executive Summary
+
+  The AutoEval system is a sophisticated, production-ready Automated LLM Evaluation System that generates domain-specific benchmarks and evaluates LLMs using multiple methodologies.
+  The system features math-verify integration for enhanced mathematical expression verification, a unified pipeline architecture, and both CLI and web API interfaces.
+
+  Architecture Overview
+
+  Core Components Hierarchy
+
+  AutoEval System
+  ├── Core Engine (docs_to_eval/core/)
+  │   ├── Pipeline Orchestrator
+  │   ├── Evaluation Framework
+  │   ├── Classification Engine
+  │   ├── Verification System (with math-verify)
+  │   ├── Benchmark Generators
+  │   └── Agentic System (advanced)
+  ├── Interface Layer
+  │   ├── CLI (Typer + Rich)
+  │   ├── Web API (FastAPI + WebSockets)
+  │   └── Interactive Session
+  ├── LLM Integration
+  │   ├── Mock Interface (testing)
+  │   ├── OpenRouter Interface (production)
+  │   └── Base Abstractions
+  ├── Utilities
+  │   ├── Configuration Management
+  │   ├── Logging System
+  │   ├── Text Processing
+  │   └── Similarity Calculations
+  └── Testing Framework
+      ├── Integration Tests
+      ├── Math-Verify Tests
+      ├── Pipeline Tests
+      └── Factory Tests
+
+  Detailed Component Analysis
+
+  1. Core Engine (docs_to_eval/core/)
+
+  Pipeline Orchestrator (pipeline.py)
+
+  Primary Function: Unified workflow orchestration
+  - Key Class: EvaluationPipeline
+  - Responsibilities:
+    - Corpus classification → Benchmark generation → LLM evaluation → Response verification → Results aggregation
+    - Async-native for scalability
+    - Configuration-driven operation
+    - UI-agnostic design
+  - Connected To: All core components, CLI, API
+  - Critical Methods:
+    - run_async(): Main pipeline execution
+    - _classify_corpus(), _generate_benchmark(), _evaluate_with_llm(), _verify_responses()
+
+  Evaluation Framework (evaluation.py)
+
+  Primary Function: Core evaluation logic and type definitions
+  - Key Classes: EvaluationFramework, BenchmarkConfig, EvaluationResult
+  - Supported Types: Mathematical, Code Generation, Factual QA, Multiple Choice, Summarization, Translation, Creative Writing, Reading Comprehension, Domain Knowledge
+  - Responsibilities:
+    - Evaluation type configuration
+    - Benchmark item creation
+    - Corpus analysis and content scoring
+    - Aggregate metrics computation
+  - Connected To: Pipeline, Classification, Benchmarks
+  - Critical Functions:
+    - analyze_corpus_content(): Pattern-based content analysis
+    - determine_primary_eval_type(): Automatic type detection
+    - sample_corpus_segments(): Intelligent text segmentation
+
+  Classification Engine (classification.py)
+
+  Primary Function: Intelligent evaluation type determination
+  - Key Classes: EvaluationTypeClassifier, ClassificationResult
+  - Methodology: Statistical pattern analysis with LLM backup
+  - Responsibilities:
+    - Content pattern recognition
+    - Evaluation type recommendation
+    - Confidence scoring
+    - Pipeline configuration generation
+  - Connected To: Pipeline, Evaluation Framework
+  - Critical Methods:
+    - classify_corpus(): Main classification logic
+    - _parse_classification_response(): LLM response parsing
+    - classify_with_examples(): Enhanced classification with examples
+
+  Verification System (verification.py)
+
+  Primary Function: Multi-modal response verification with math-verify integration
+  - Key Classes:
+    - VerificationOrchestrator: Main routing
+    - DeterministicVerifier: Exact match verification
+    - NonDeterministicVerifier: Similarity-based verification
+    - MathVerifyVerifier: Mathematical expression verification
+    - LLMJudgeVerifier: Quality-based verification
+  - Math-Verify Integration:
+    - math_verify_match(): General mathematical verification
+    - latex_expression_match(): LaTeX-specific matching
+    - expression_match(): Plain expression matching
+    - Graceful fallback when library unavailable
+  - Connected To: Pipeline, all interfaces
+  - Verification Types: exact_match, numerical, code_execution, mathematical, similarity, llm_judge
+
+  Benchmark Generators (benchmarks.py)
+
+  Primary Function: Domain-specific question generation
+  - Key Classes:
+    - BenchmarkGeneratorFactory: Strategy pattern implementation
+    - AgenticGeneratorWrapper: Async agentic integration
+    - Specialized generators: MathematicalBenchmarkGenerator, FactualQABenchmarkGenerator, etc.
+  - Generation Methods: Standard templates + Advanced agentic system
+  - Connected To: Pipeline, Agentic system
+  - Critical Features:
+    - Automatic generator selection based on evaluation type
+    - Async/sync compatibility
+    - Extensible architecture for new generator types
+
+  2. Interface Layer
+
+  CLI System (docs_to_eval/cli/)
+
+  Entry Point: main.py
+  - Framework: Typer + Rich for beautiful terminal output
+  - Commands:
+    - evaluate: Full evaluation pipeline
+    - classify: Corpus classification only
+    - config: Configuration management
+    - server: Start web API server
+    - version: System information
+  - Features:
+    - Progress bars and status indicators
+    - Corpus statistics display
+    - Results visualization
+    - Configuration validation
+  - Interactive Mode: interactive.py - Step-by-step guided evaluation
+
+  Web API (docs_to_eval/ui_api/)
+
+  Framework: FastAPI with WebSocket support
+  - Main Application: main.py - CORS, static files, lifespan management
+  - API Routes: routes.py
+    - POST /api/v1/corpus/upload: Text corpus upload
+    - POST /api/v1/corpus/upload-file: File upload
+    - POST /api/v1/evaluation/start: Start evaluation (background task)
+    - GET /api/v1/evaluation/{run_id}/status: Real-time status
+    - GET /api/v1/evaluation/{run_id}/results: Results retrieval
+    - GET /api/v1/evaluation/{run_id}/download: Download results
+    - GET /api/v1/runs: List all evaluations
+  - WebSocket System: websockets.py
+    - Real-time progress updates
+    - Phase tracking
+    - Error notifications
+    - Connection management
+
+  3. LLM Integration (docs_to_eval/llm/)
+
+  Base Abstractions (base.py)
+
+  - Core Interface: BaseLLMInterface - Abstract base for all LLM implementations
+  - Response Model: LLMResponse - Structured response format
+  - Capabilities: LLMCapability enum for capability scoring
+  - Utilities: LLMAdapter, RateLimiter
+
+  Mock Interface (mock_interface.py)
+
+  Purpose: Comprehensive testing and development
+  - Features:
+    - Realistic response simulation
+    - Pattern-based question classification
+    - Temperature-based noise injection
+    - Performance statistics tracking
+  - Response Types: Mathematical, Code, Factual, Creative, Reading Comprehension
+  - Integration: MockLLMEvaluator for benchmark evaluation
+
+  OpenRouter Interface (openrouter_interface.py)
+
+  Purpose: Production LLM access via OpenRouter API
+  - Models Supported: Qwen3 30B, Claude 3, GPT-4, Gemini Pro, etc.
+  - Features:
+    - API key management
+    - Rate limiting
+    - Error handling with fallbacks
+    - Usage tracking
+  - Specialized: QwenInterface with optimized prompting
+
+  4. Utilities (docs_to_eval/utils/)
+
+  Configuration Management (config.py)
+
+  Framework: Pydantic models with validation
+  - Models: EvaluationConfig, LLMConfig, GenerationConfig, VerificationConfig
+  - Features:
+    - YAML/JSON support
+    - Environment variable override
+    - CLI argument integration
+    - Validation with warnings
+  - Manager: ConfigManager for dynamic configuration handling
+
+  Logging System (logging.py)
+
+  - Structured Logging: JSON format with context
+  - Evaluation Context: Phase tracking and progress monitoring
+  - Performance Metrics: Response times, token usage, success rates
+
+  Text Processing (text_processing.py)
+
+  - Functions: normalize_answer(), extract_numbers(), extract_keywords()
+  - Use Cases: Answer normalization, numerical extraction, concept identification
+
+  Similarity Calculations (similarity.py)
+
+  - Methods: Token overlap, N-gram, ROUGE-L, Character overlap, Levenshtein
+  - Functions: calculate_similarity(), calculate_multi_similarity()
+
+  5. Testing Framework (tests/)
+
+  Test Coverage
+
+  - Integration Tests: test_system_integration.py - End-to-end workflow testing
+  - Math-Verify Tests: test_math_verify_integration.py - Mathematical verification testing
+  - Pipeline Tests: test_pipeline.py - Core pipeline functionality
+  - Factory Tests: test_benchmark_factory.py - Generator factory testing
+
+  System Dependencies and Architecture
+
+  Core Dependencies
+
+  dependencies = [
+      "requests>=2.25.0",          # HTTP client
+      "beautifulsoup4>=4.9.0",     # HTML parsing
+      "typer>=0.16.0",             # CLI framework
+      "rich>=14.1.0",              # Terminal formatting
+      "fastapi>=0.116.1",          # Web API framework
+      "uvicorn>=0.33.0",           # ASGI server
+      "websockets>=13.1",          # Real-time communication
+      "pyyaml>=6.0.2",             # Configuration files
+      "python-multipart>=0.0.20",  # File uploads
+  ]
+
+  optional-dependencies = [
+      "math-verify>=0.1.0",        # Mathematical verification
+      "openai",                    # OpenRouter integration
+      "pytest>=6.0",               # Testing framework
+  ]
+
+  Component Interconnection Map
+
+  Configuration System (config.py)
+      ↓ (feeds into)
+  Pipeline Orchestrator (pipeline.py)
+      ↓ (orchestrates)
+  ┌─────────────────────────────────────────────────────────┐
+  │ 1. Classification (classification.py)                   │
+  │    ↓ (determines eval_type)                            │
+  │ 2. Benchmark Generation (benchmarks.py)                │
+  │    ↓ (creates questions)                               │
+  │ 3. LLM Evaluation (llm/*.py)                          │
+  │    ↓ (generates responses)                             │
+  │ 4. Verification (verification.py + math-verify)        │
+  │    ↓ (scores responses)                                │
+  │ 5. Results Aggregation                                 │
+  └─────────────────────────────────────────────────────────┘
+      ↓ (outputs to)
+  Interface Layer (CLI/API)
+      ↓ (presents to)
+  User (Terminal/Web Browser)
+
+  Parallel Systems:
+  - Logging (logging.py) ← connects to all components
+  - Text Processing (text_processing.py) ← used by verification
+  - Similarity (similarity.py) ← used by verification
+  - WebSocket (websockets.py) ← real-time updates from pipeline
+
+  Key Innovation: Math-Verify Integration
+
+  Implementation Details
+
+  Location: docs_to_eval/core/verification.py:223-356
+
+  Enhanced Verification Types:
+  - mathematical: General math with LaTeX and plain expressions
+  - math_expression: Plain mathematical expressions
+  - latex_math: LaTeX mathematical expressions
+
+  Methods:
+  1. math_verify_match(): Uses parse() then verify(gold, answer)
+  2. latex_expression_match(): Uses LatexExtractionConfig
+  3. expression_match(): Uses ExprExtractionConfig
+
+  Fallback Strategy: Graceful degradation to numerical matching when library unavailable
+
+  Example Usage:
+  # Set operations (from math-verify docs)
+  result = verifier.math_verify_match("${1,2,3,4}$", "${1,3} \\cup {2,4}$")
+
+  # LaTeX expressions
+  result = verifier.latex_expression_match("$\\sqrt{4}$", "$2$")
+
+  # Plain expressions
+  result = verifier.expression_match("0.5", "1/2")
+
+  Replication Instructions
+
+  1. Environment Setup
+
+  # Using uv (recommended)
+  uv sync --python 3.11
+
+  # Or using pip
+  pip install -e .
+  pip install math-verify>=0.1.0  # Optional for enhanced math verification
+
+  2. Configuration
+
+  # Create default configuration
+  uv run python -m docs_to_eval.cli.main config --create
+
+  # Environment variables (optional)
+  export DOCS_TO_EVAL_LOG_LEVEL=DEBUG
+  export OPENROUTER_API_KEY=your_key_here  # For production LLM
+
+  3. Core Functionality Usage
+
+  CLI Interface
+
+  # Full evaluation
+  uv run python -m docs_to_eval.cli.main evaluate corpus.txt --questions 20 --agentic
+
+  # Classification only
+  uv run python -m docs_to_eval.cli.main classify corpus.txt
+
+  # Start web server
+  uv run python -m docs_to_eval.cli.main server --port 8000 --reload
+
+  Python API
+
+  from docs_to_eval.core.pipeline import PipelineFactory
+  from docs_to_eval.utils.config import create_default_config
+
+  # Create pipeline
+  config = create_default_config()
+  config.generation.num_questions = 10
+  pipeline = PipelineFactory.create_pipeline(config)
+
+  # Run evaluation
+  results = await pipeline.run_async(corpus_text)
+
+  Web API
+
+  # Start server
+  uv run python -m docs_to_eval.cli.main server
+
+  # Access endpoints
+  curl -X POST http://localhost:8000/api/v1/evaluation/start \
+    -H "Content-Type: application/json" \
+    -d '{"corpus_text": "Your text here", "num_questions": 10}'
+
+  4. Testing
+
+  # Run all tests
+  uv run pytest
+
+  # Run specific test suites
+  uv run pytest tests/test_math_verify_integration.py
+  uv run pytest tests/test_system_integration.py
+
+  5. Extension Points
+
+  Adding New Evaluation Types
+
+  1. Add to EvaluationType enum in evaluation.py
+  2. Create generator in benchmarks.py
+  3. Add verification logic in verification.py
+  4. Update configuration in config.py
+
+  Adding New LLM Interfaces
+
+  1. Inherit from BaseLLMInterface in base.py
+  2. Implement generate_response() method
+  3. Add to LLM pool creation functions
+
+  Adding New Verification Methods
+
+  1. Create verifier class in verification.py
+  2. Add to VerificationOrchestrator routing
+  3. Update VerificationMethod enum in config.py
+
+  Production Deployment Considerations
+
+  Scalability Features
+
+  - Async pipeline execution
+  - Background task processing (FastAPI)
+  - WebSocket real-time updates
+  - Configurable concurrency limits
+  - Rate limiting for LLM APIs
+
+  Monitoring and Observability
+
+  - Structured logging with JSON format
+  - Performance metrics tracking
+  - Token usage monitoring
+  - Error tracking and fallback strategies
+
+  Security Considerations
+
+  - API key management via environment variables
+  - Input validation with Pydantic
+  - Rate limiting for API endpoints
+  - No secret logging or storage
+
+  Infrastructure Requirements
+
+  - Python 3.8+ environment
+  - Optional: Redis for caching (future enhancement)
+  - Optional: Database for persistent storage (future enhancement)
+  - File system access for logs and outputs
+
+  Summary
+
+  The AutoEval system represents a sophisticated, production-ready evaluation framework that successfully bridges the gap between traditional benchmarking and modern LLM evaluation
+  needs. Its modular architecture, comprehensive testing suite, and multi-interface design make it both powerful for research use and practical for production deployment. The
+  math-verify integration demonstrates thoughtful enhancement of core capabilities while maintaining backward compatibility and graceful degradation.
