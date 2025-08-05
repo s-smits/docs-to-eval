@@ -182,38 +182,44 @@ class AgenticBenchmarkOrchestrator:
         """
         Run the full pipeline for a single concept with retry logic
         """
+        previous_validation_issues = []
         
         for retry_cycle in range(self.config.max_retry_cycles + 1):
             try:
-                # Step 1: Question Writer
+                # Step 1: Question Writer with adaptive temperature
                 context_snippet = concept_extraction.supporting_snippets.get(concept, corpus_text[:500])
-<<<<<<< HEAD
                 
-                # CRITICAL FIX: Pass validation feedback to writer on retries
-                # Set temperature in agent config before calling
-                original_temp = self.question_writer.config.temperature
-                self.question_writer.config.temperature = current_temperature
+                # Adaptive temperature: start conservative, increase for retries
+                current_temperature = min(0.9, 0.3 + (retry_cycle * 0.15))
+                original_temp = getattr(self.question_writer.config, 'temperature', 0.7)
+                
+                # Temporarily adjust temperature for this attempt
+                if hasattr(self.question_writer.config, 'temperature'):
+                    self.question_writer.config.temperature = current_temperature
                 
                 try:
-                    if retry_cycle > 0 and previous_validation_issues:
-                        # Create feedback-aware prompt for question writer
-                        feedback_prompt = f"Previous attempt failed with issues: {', '.join(previous_validation_issues)}. Please avoid these problems."
-                        draft = await self._tracked_agent_call(
-                            self.question_writer.produce,
-                            concept, corpus_text, eval_type, context_snippet, 
-                            feedback=feedback_prompt
+                    if retry_cycle > 0:
+                        # Use validation feedback for retries
+                        validation_context = {
+                            'previous_issues': previous_validation_issues,
+                            'retry_count': retry_cycle,
+                            'suggestions': [
+                                'Make the question more specific',
+                                'Ensure the answer is directly derivable from context',
+                                'Check for clarity and unambiguity'
+                            ]
+                        }
+                        draft = await self.question_writer.produce_with_feedback(
+                            concept, corpus_text, eval_type, context_snippet, validation_context
                         )
                     else:
-                        draft = await self._tracked_agent_call(
-                            self.question_writer.produce,
+                        draft = await self.question_writer.produce(
                             concept, corpus_text, eval_type, context_snippet
                         )
                 finally:
                     # Restore original temperature
-                    self.question_writer.config.temperature = original_temp
-=======
-                draft = await self.question_writer.produce(concept, corpus_text, eval_type, context_snippet)
->>>>>>> parent of 6898d60 (increase concurrency and benchmark complexity and math)
+                    if hasattr(self.question_writer.config, 'temperature'):
+                        self.question_writer.config.temperature = original_temp
                 
                 # Step 2: Adversary (difficulty booster)
                 candidate = await self.adversary.produce(draft, difficulty)
@@ -238,10 +244,18 @@ class AgenticBenchmarkOrchestrator:
                     )
                 
                 elif retry_cycle < self.config.max_retry_cycles:
-                    # Retry with feedback
-                    logger.debug(f"Retrying concept '{concept}' (cycle {retry_cycle + 1}): {validation_result.issues}")
+                    # Collect validation issues for next retry
+                    if hasattr(validation_result, 'issues'):
+                        previous_validation_issues.extend(validation_result.issues)
+                    elif hasattr(validation_result, 'message'):
+                        previous_validation_issues.append(validation_result.message)
+                    
+                    logger.debug(f"Retrying concept '{concept}' (cycle {retry_cycle + 1}): {previous_validation_issues}")
                     self.pipeline_stats['retry_cycles'] += 1
-                    await asyncio.sleep(0.1)  # Brief pause before retry
+                    
+                    # Exponential backoff for retries
+                    backoff_time = min(0.5, 0.1 * (2 ** retry_cycle))
+                    await asyncio.sleep(backoff_time)
                 
             except Exception as e:
                 logger.warning(f"Pipeline error for concept '{concept}' (cycle {retry_cycle}): {str(e)}")

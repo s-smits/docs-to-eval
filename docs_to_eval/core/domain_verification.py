@@ -33,6 +33,10 @@ class DomainSpecificVerifier:
         """
         Verify mathematical answers with focus on reasoning process, not just final numbers
         """
+        # Ensure inputs are strings
+        prediction = str(prediction) if prediction is not None else ""
+        ground_truth = str(ground_truth) if ground_truth is not None else ""
+        question = str(question) if question is not None else ""
         details = {
             "question_type": "mathematical_reasoning",
             "extraction_method": "multi_stage"
@@ -109,6 +113,10 @@ class DomainSpecificVerifier:
         """
         Verify factual answers with emphasis on domain knowledge accuracy
         """
+        # Ensure inputs are strings
+        prediction = str(prediction) if prediction is not None else ""
+        ground_truth = str(ground_truth) if ground_truth is not None else ""
+        question = str(question) if question is not None else ""
         details = {
             "question_type": "factual_knowledge",
             "verification_approach": "semantic_matching"
@@ -246,8 +254,19 @@ class DomainSpecificVerifier:
         """
         Calculate semantic content overlap between prediction and ground truth
         """
-        pred_words = set(prediction.lower().split())
-        truth_words = set(ground_truth.lower().split())
+        # Ensure inputs are strings
+        prediction = str(prediction) if prediction is not None else ""
+        ground_truth = str(ground_truth) if ground_truth is not None else ""
+        
+        try:
+            pred_words = set(prediction.lower().split())
+            truth_words = set(ground_truth.lower().split())
+        except Exception as e:
+            # Log the error for debugging
+            print(f"[DEBUG] Error in _calculate_content_overlap: {e}")
+            print(f"[DEBUG] prediction type: {type(prediction)}, value: {repr(prediction)}")
+            print(f"[DEBUG] ground_truth type: {type(ground_truth)}, value: {repr(ground_truth)}")
+            return 0.0
         
         if not truth_words:
             return 0.0
@@ -279,8 +298,11 @@ class DomainSpecificVerifier:
             return 0.0
         
         # Compare the most significant numbers (usually the final answers)
-        key_pred = pred_numbers[-1]  # Last number is usually the final answer
-        key_truth = truth_numbers[-1]
+        try:
+            key_pred = float(pred_numbers[-1])  # Convert string to float
+            key_truth = float(truth_numbers[-1])
+        except (ValueError, TypeError):
+            return 0.0  # If conversion fails, no match
         
         if key_truth == 0:
             return 1.0 if abs(key_pred) <= 0.1 else 0.0

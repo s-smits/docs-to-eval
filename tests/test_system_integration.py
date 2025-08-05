@@ -31,10 +31,10 @@ class TestCoreEvaluation:
         sample_corpus = "Machine learning is a subset of artificial intelligence."
         
         framework = EvaluationFramework()
-        config = framework.create_benchmark_from_corpus(sample_corpus, num_questions=10)
+        config = framework.create_benchmark_from_corpus(sample_corpus, num_questions=50)
         
         assert isinstance(config, BenchmarkConfig)
-        assert config.num_questions == 10
+        assert config.num_questions == 50
         assert config.eval_type in EvaluationType
         assert len(config.key_concepts) > 0
         assert len(config.corpus_segments) > 0

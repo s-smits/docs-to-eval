@@ -6,11 +6,8 @@ import asyncio
 import uuid
 import json
 import shutil
-<<<<<<< HEAD
 import httpx
 import re
-=======
->>>>>>> parent of 6898d60 (increase concurrency and benchmark complexity and math)
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -45,16 +42,24 @@ class EvaluationRequest(BaseModel):
     use_agentic: bool = True
     temperature: float = Field(default=0.7, ge=0, le=2)
     run_name: Optional[str] = None
+    
+    # Finetune test set configuration
+    finetune_test_set_enabled: bool = Field(default=True, description="Enable creation of finetune test set")
+    finetune_test_set_percentage: float = Field(default=0.2, ge=0.1, le=0.5, description="Percentage of questions for test set (e.g., 0.2 = 20%)")
+    finetune_random_seed: int = Field(default=42, ge=0, description="Random seed for reproducible splits")
 
 
 class EvaluationStatus(BaseModel):
     run_id: str
     status: str
     phase: Optional[str] = None
-    progress_percent: float = 0
-    message: str = ""
-    start_time: datetime
-    estimated_completion: Optional[datetime] = None
+
+
+class QwenEvaluationRequest(BaseModel):
+    corpus_text: str
+    num_questions: int = Field(default=5, ge=1, le=20)
+    use_fictional: bool = True
+    run_name: Optional[str] = "Qwen Local Test"
 
 
 class EvaluationResult(BaseModel):
@@ -65,8 +70,69 @@ class EvaluationResult(BaseModel):
     duration_seconds: Optional[float] = None
 
 
-# In-memory storage for evaluation runs (in production, use a database)
-evaluation_runs: Dict[str, Dict[str, Any]] = {}
+# In-memory storage for evaluation runs with size limits
+from collections import OrderedDict
+import time
+from pathlib import Path
+
+class EvaluationRunManager:
+    def __init__(self, max_runs: int = 100, max_age_hours: int = 24):
+        self._runs: OrderedDict[str, Dict[str, Any]] = OrderedDict()
+        self.max_runs = max_runs
+        self.max_age_seconds = max_age_hours * 3600
+    
+    def add_run(self, run_id: str, run_info: Dict[str, Any]):
+        """Add run with automatic cleanup"""
+        # Clean old runs first
+        self._cleanup_old_runs()
+        
+        # Add new run
+        self._runs[run_id] = run_info
+        
+        # Enforce size limit
+        while len(self._runs) > self.max_runs:
+            self._runs.popitem(last=False)  # Remove oldest
+    
+    def get_run(self, run_id: str) -> Optional[Dict[str, Any]]:
+        """Get run info"""
+        return self._runs.get(run_id)
+    
+    def update_run(self, run_id: str, updates: Dict[str, Any]):
+        """Update run info"""
+        if run_id in self._runs:
+            self._runs[run_id].update(updates)
+    
+    def delete_run(self, run_id: str):
+        """Delete run"""
+        self._runs.pop(run_id, None)
+    
+    def list_runs(self) -> Dict[str, Dict[str, Any]]:
+        """List all runs"""
+        self._cleanup_old_runs()
+        return dict(self._runs)
+    
+    def _cleanup_old_runs(self):
+        """Remove old completed runs"""
+        current_time = time.time()
+        to_remove = []
+        
+        for run_id, run_info in self._runs.items():
+            start_time = run_info.get('start_time')
+            if isinstance(start_time, datetime):
+                start_time = start_time.timestamp()
+            elif not isinstance(start_time, (int, float)):
+                start_time = current_time
+            
+            # Remove old completed/error runs
+            if (run_info.get('status') in ['completed', 'error'] and 
+                current_time - start_time > self.max_age_seconds):
+                to_remove.append(run_id)
+        
+        for run_id in to_remove:
+            self._runs.pop(run_id, None)
+
+# Replace global dict with managed storage
+evaluation_runs = EvaluationRunManager()
 
 
 @router.websocket("/ws/{run_id}")
@@ -133,16 +199,59 @@ async def upload_corpus_text(request: CorpusUploadRequest):
 
 @router.post("/corpus/upload-file")
 async def upload_corpus_file(file: UploadFile = File(...), name: Optional[str] = Form(None)):
-    """Upload corpus from file"""
+    """Upload corpus from file with validation"""
     try:
-        # Read file content
+        # Validate file size (10MB limit)
+        MAX_FILE_SIZE = 10 * 1024 * 1024
         content = await file.read()
         
-        # Detect encoding and decode
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413, 
+                detail=f"File too large: {len(content)} bytes exceeds {MAX_FILE_SIZE} bytes limit"
+            )
+        
+        # Validate file extension
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="File must have a name")
+        
+        allowed_extensions = {'.txt', '.md', '.py', '.js', '.json', '.csv', '.html', '.xml', '.yml', '.yaml', '.cfg', '.ini', '.log'}
+        file_ext = Path(file.filename).suffix.lower()
+        
+        if file_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"File type {file_ext} not allowed. Supported: {', '.join(allowed_extensions)}"
+            )
+        
+        # Safely decode content
         try:
             text = content.decode('utf-8')
         except UnicodeDecodeError:
-            text = content.decode('latin-1')
+            try:
+                text = content.decode('latin-1')
+            except UnicodeDecodeError:
+                raise HTTPException(status_code=400, detail="Cannot decode file as text")
+        
+        # Validate text length
+        MAX_TEXT_LENGTH = 5 * 1024 * 1024  # 5MB text limit
+        if len(text) > MAX_TEXT_LENGTH:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Text content too long: {len(text)} characters exceeds {MAX_TEXT_LENGTH} limit"
+            )
+        
+        # Basic content validation - check for suspicious patterns
+        suspicious_patterns = [
+            r'<script[^>]*>.*?</script>',
+            r'javascript:',
+            r'data:.*base64',
+            r'\\x[0-9a-fA-F]{2}'
+        ]
+        
+        for pattern in suspicious_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                raise HTTPException(status_code=400, detail="File contains suspicious content")
         
         # Create request
         request = CorpusUploadRequest(
@@ -153,9 +262,11 @@ async def upload_corpus_file(file: UploadFile = File(...), name: Optional[str] =
         
         return await upload_corpus_text(request)
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error uploading file: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/corpus/upload-multiple")
@@ -248,9 +359,26 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
                    temperature=request.temperature,
                    run_name=request.run_name)
         
-        # Validate required fields
+        # Enhanced validation
         if not request.corpus_text or not request.corpus_text.strip():
             raise HTTPException(status_code=422, detail="corpus_text is required and cannot be empty")
+        
+        # Validate corpus text length
+        MAX_CORPUS_LENGTH = 10 * 1024 * 1024  # 10MB
+        if len(request.corpus_text) > MAX_CORPUS_LENGTH:
+            raise HTTPException(
+                status_code=413, 
+                detail=f"Corpus text too long: {len(request.corpus_text)} characters exceeds {MAX_CORPUS_LENGTH} limit"
+            )
+        
+        # Validate number of questions
+        if not 1 <= request.num_questions <= 200:
+            raise HTTPException(status_code=422, detail="num_questions must be between 1 and 200")
+        
+        # Validate temperature
+        if not 0 <= request.temperature <= 2:
+            raise HTTPException(status_code=422, detail="temperature must be between 0 and 2")
+        
         # Generate run ID
         run_id = str(uuid.uuid4())
         
@@ -304,7 +432,7 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
             "error": None
         }
         
-        evaluation_runs[run_id] = run_info
+        evaluation_runs.add_run(run_id, run_info)
         
         # Start evaluation in background
         background_tasks.add_task(run_evaluation, run_id, request, config)
@@ -326,6 +454,198 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/evaluation/qwen-local")
+async def start_qwen_local_evaluation(request: QwenEvaluationRequest, background_tasks: BackgroundTasks):
+    """🤖 Start local Qwen evaluation with fictional content testing"""
+    try:
+        logger.info(f"Qwen local evaluation request received", 
+                   corpus_text_length=len(request.corpus_text) if request.corpus_text else 0,
+                   num_questions=request.num_questions,
+                   use_fictional=request.use_fictional,
+                   run_name=request.run_name)
+        
+        # Validate required fields
+        if not request.corpus_text or not request.corpus_text.strip():
+            raise HTTPException(status_code=422, detail="corpus_text is required and cannot be empty")
+        
+        # Generate run ID
+        run_id = str(uuid.uuid4())
+        
+        # Store run information
+        run_info = {
+            "run_id": run_id,
+            "status": "queued",
+            "phase": "qwen_local_testing",
+            "request": request.dict(),
+            "start_time": datetime.now(),
+            "progress_percent": 0,
+            "message": "Qwen local evaluation queued",
+            "results": None,
+            "error": None,
+            "evaluation_type": "qwen_local"
+        }
+        
+        evaluation_runs.add_run(run_id, run_info)
+        
+        # Start Qwen evaluation in background
+        background_tasks.add_task(run_qwen_local_evaluation, run_id, request)
+        
+        logger.info(f"Qwen local evaluation started", run_id=run_id)
+        
+        return {
+            "run_id": run_id,
+            "status": "queued",
+            "message": "Qwen local evaluation started",
+            "websocket_url": f"/api/v1/ws/{run_id}",
+            "evaluation_type": "qwen_local"
+        }
+        
+    except ValidationError as e:
+        logger.error(f"Validation error starting Qwen evaluation: {e}")
+        raise HTTPException(status_code=422, detail=f"Validation error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error starting Qwen evaluation: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def verify_ground_truth_against_corpus(question: str, proposed_answer: str, corpus_text: str, llm_config, tracker) -> Dict[str, Any]:
+    """Verify that the proposed answer is actually correct according to the corpus"""
+    import httpx
+    import json
+    
+    verification_prompt = f"""You are a fact-checker and complexity assessor. Your task is to:
+1. Verify if the proposed answer is factually correct according to the source text
+2. Assess the complexity/difficulty of the question for modern LLMs
+
+SOURCE TEXT:
+{corpus_text[:50000]}
+
+QUESTION: {question}
+PROPOSED ANSWER: {proposed_answer}
+
+Your task: Determine correctness AND assess complexity for LLM evaluation.
+
+Respond with a JSON object in this exact format:
+{{
+  "is_correct": true/false,
+  "verified_answer": "corrected answer if needed, or original if correct",
+  "confidence": 0.0-1.0,
+  "complexity": 0.0-1.0,
+  "reasoning": "brief explanation of your decision",
+  "evidence": "specific quote from source text that supports the answer",
+  "complexity_analysis": "why this question is easy/medium/hard for modern LLMs"
+}}
+
+COMPLEXITY SCORING (0.0-1.0):
+- 0.0-0.3: TOO EASY - Simple facts, basic math, obvious answers (reject these)
+- 0.4-0.6: MODERATE - Requires some reasoning, domain knowledge, multi-step thinking
+- 0.7-1.0: CHALLENGING - Complex reasoning, obscure facts, multi-layered analysis
+
+Examples:
+- "What is 2+2?" → complexity: 0.1 (TOO EASY - reject)
+- "What year did X happen?" → complexity: 0.2 (TOO EASY - reject)  
+- "How do concepts A and B interact in context C?" → complexity: 0.7 (GOOD)
+- "What are the implications of X for Y given constraints Z?" → complexity: 0.9 (EXCELLENT)
+
+Rules:
+1. Answer correct ONLY if directly supported by source text
+2. REJECT questions with complexity < 0.4 (too easy for modern LLMs)
+3. Prefer questions requiring reasoning, synthesis, or domain expertise
+4. Consider: Would GPT-4/Claude-3.5 find this challenging?
+
+Return only the JSON object, no other text."""
+
+    try:
+        headers = {
+            "Authorization": f"Bearer {llm_config.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        if llm_config.provider == "openrouter":
+            headers.update({
+                "HTTP-Referer": llm_config.site_url or "https://docs-to-eval.ai",
+                "X-Title": llm_config.app_name or "docs-to-eval"
+            })
+        
+        payload = {
+            "model": llm_config.model_name,
+            "messages": [
+                {"role": "user", "content": verification_prompt}
+            ],
+            "max_tokens": 1000,
+            "temperature": 0.1  # Low temperature for factual verification
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                llm_config.base_url + "/chat/completions",
+                headers=headers,
+                json=payload
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                verification_content = result["choices"][0]["message"]["content"].strip()
+                
+                try:
+                    verification_result = json.loads(verification_content)
+                    
+                    # Ensure all required fields are present
+                    complexity = verification_result.get("complexity", 0.0)
+                    is_correct = verification_result.get("is_correct", False)
+                    
+                    # CRITICAL: Reject questions that are too easy for modern LLMs
+                    if complexity < 0.4:
+                        is_correct = False  # Override - reject easy questions regardless of correctness
+                    
+                    return {
+                        "is_correct": is_correct,
+                        "verified_answer": verification_result.get("verified_answer", proposed_answer),
+                        "confidence": verification_result.get("confidence", 0.0),
+                        "complexity": complexity,
+                        "reasoning": verification_result.get("reasoning", "Verification failed"),
+                        "evidence": verification_result.get("evidence", "No evidence found"),
+                        "complexity_analysis": verification_result.get("complexity_analysis", "No complexity analysis"),
+                        "verification_method": "llm_corpus_check_with_complexity"
+                    }
+                    
+                except json.JSONDecodeError:
+                    return {
+                        "is_correct": False,
+                        "verified_answer": proposed_answer,
+                        "confidence": 0.0,
+                        "complexity": 0.0,
+                        "reasoning": "Failed to parse verification response",
+                        "evidence": "",
+                        "complexity_analysis": "Parse error - cannot assess complexity",
+                        "verification_method": "failed_parse"
+                    }
+            else:
+                return {
+                    "is_correct": False,
+                    "verified_answer": proposed_answer,
+                    "confidence": 0.0,
+                    "complexity": 0.0,
+                    "reasoning": f"Verification API failed: {response.status_code}",
+                    "evidence": "",
+                    "complexity_analysis": "API error - cannot assess complexity",
+                    "verification_method": "api_error"
+                }
+                
+    except Exception as e:
+        await tracker.send_log("error", f"Ground truth verification error: {str(e)}")
+        return {
+            "is_correct": False,
+            "verified_answer": proposed_answer,
+            "confidence": 0.0,
+            "complexity": 0.0,
+            "reasoning": f"Verification exception: {str(e)}",
+            "evidence": "",
+            "complexity_analysis": "Exception occurred - cannot assess complexity",
+            "verification_method": "exception"
+        }
+
+
 async def generate_agentic_questions(corpus_text: str, num_questions: int, eval_type: str, llm_config, tracker) -> List[Dict]:
     """Generate questions using real LLM (agentic approach)"""
     import httpx
@@ -344,30 +664,53 @@ async def generate_agentic_questions(corpus_text: str, num_questions: int, eval_
     
     prompt_instruction = eval_prompts.get(eval_type, eval_prompts["domain_knowledge"])
     
-    system_prompt = f"""You are an expert educational assessment creator. Your task is to generate high-quality evaluation questions based on the provided corpus.
+    system_prompt = f"""You are an expert educational assessment creator specializing in CHALLENGING evaluation questions for modern LLMs.
 
-Instructions:
+CRITICAL REQUIREMENTS:
 1. {prompt_instruction}
-2. Generate exactly {num_questions} questions
-3. Each question should be clear, specific, and directly based on the corpus content
-4. For mathematical questions, provide the FINAL NUMERICAL ANSWER only (e.g., "574.56 cubic cm" or "22.9%")
-5. For factual questions, provide concise direct answers (e.g., "54 years" or "Etruscan bronze artifact")
-6. Questions should vary in difficulty from basic to advanced
-7. Focus on the most important concepts from the corpus
+2. Generate exactly {num_questions} CHALLENGING questions (not basic facts!)
+3. Questions must be answerable WITHOUT corpus access but require deep reasoning
+4. Target modern LLM capabilities - make questions that will challenge GPT-4/Claude-3.5
+5. Provide EXACT, SPECIFIC answers as ground truth
 
-Format your response as a JSON array with this structure:
+DIFFICULTY FOCUS - Create questions that are:
+❌ AVOID: "What year did X happen?" (too easy - basic fact lookup)
+❌ AVOID: "What is 2+2?" (too easy - trivial math)
+❌ AVOID: "Define concept Y" (too easy - dictionary lookup)
+
+✅ CREATE: "How do concepts A and B interact to produce outcome C?"
+✅ CREATE: "What are the implications of X given constraints Y and Z?" 
+✅ CREATE: "Why would approach A be preferred over B in situation C?"
+✅ CREATE: Multi-step reasoning, synthesis, analysis questions
+
+Question Types to Emphasize:
+- Analytical reasoning requiring 2-3 logical steps
+- Synthesis questions combining multiple concepts
+- Comparative analysis between ideas/approaches
+- Implication/consequence questions
+- Problem-solving scenarios
+- Multi-layered conceptual relationships
+
+Answer Guidelines:
+- Mathematical: Complex calculations or multi-step problems
+- Factual: Nuanced facts requiring domain expertise  
+- Conceptual: Sophisticated explanations showing deep understanding
+- Avoid simple yes/no or single-word answers
+
+Format as JSON array:
 [
   {{
-    "question": "Your question here",
-    "answer": "Final answer only - no calculations or explanations",
-    "concept": "Main concept being tested",
-    "difficulty": "basic|intermediate|advanced"
+    "question": "Complex, thought-provoking question requiring reasoning",
+    "answer": "Comprehensive answer demonstrating deep understanding",
+    "concept": "Main concept tested",
+    "difficulty": "intermediate|advanced|expert",
+    "verification_type": "exact|numerical|factual|analytical"
   }}
 ]
 
-IMPORTANT: Keep answers simple and focused. For math problems, only give the final number/result, not the calculation steps.
+GOAL: Create a benchmark that will actually challenge state-of-the-art LLMs and reveal their limitations.
 
-Only return the JSON array, no other text."""
+Return only the JSON array, no other text."""
 
     user_prompt = f"""Based on this corpus, generate {num_questions} evaluation questions:
 
@@ -415,23 +758,87 @@ Generate the questions as specified in the instructions."""
             result = response.json()
             content = result["choices"][0]["message"]["content"]
             
-            # Parse JSON response
+            # Parse JSON response and verify ground truth
             import json
             try:
                 questions_data = json.loads(content.strip())
+                verified_questions = []
+                
+                await tracker.send_log("info", f"Verifying {len(questions_data)} generated questions against corpus...")
+                
+                # Track progress per accepted question, not per generated question
+                verified_count = 0
                 
                 for i, q_data in enumerate(questions_data[:num_questions]):
-                    questions.append({
-                        "question": q_data.get("question", f"Question {i+1}"),
-                        "answer": q_data.get("answer", "Answer not provided"),
-                        "context": q_data.get("concept", ""),
-                        "eval_type": eval_type,
-                        "concept": q_data.get("concept", f"concept_{i+1}"),
-                        "difficulty": q_data.get("difficulty", "intermediate"),
-                        "source": "agentic_llm"
-                    })
+                    question = q_data.get("question", f"Question {i+1}")
+                    answer = q_data.get("answer", "Answer not provided")
                     
-                    await tracker.increment_progress(message=f"Generated agentic question {i+1}: {q_data.get('question', '')[:50]}...")
+                    # CRITICAL: Verify the answer is actually correct according to corpus
+                    verification_result = await verify_ground_truth_against_corpus(
+                        question, answer, corpus_text, llm_config, tracker
+                    )
+                    
+                    if verification_result["is_correct"]:
+                        # Use verified/corrected answer
+                        complexity = verification_result.get("complexity", 0.0)
+                        verified_questions.append({
+                            "question": question,
+                            "answer": verification_result["verified_answer"],
+                            "context": q_data.get("concept", ""),
+                            "eval_type": eval_type,
+                            "concept": q_data.get("concept", f"concept_{i+1}"),
+                            "difficulty": q_data.get("difficulty", "intermediate"),
+                            "verification_type": q_data.get("verification_type", "exact"),
+                            "complexity": complexity,
+                            "source": "agentic_llm_verified",
+                            "corpus_verification": verification_result
+                        })
+                        verified_count += 1
+                        # Only increment progress when a question is actually accepted
+                        await tracker.increment_progress(message=f"✅ Verified Q{verified_count}/{num_questions} (complexity: {complexity:.2f}): {question[:50]}...")
+                    else:
+                        complexity = verification_result.get("complexity", 0.0)
+                        reasoning = verification_result.get("reasoning", "Unknown reason")
+                        
+                        if complexity < 0.4:
+                            await tracker.send_log("warning", f"❌ Rejected Q{i+1}: TOO EASY (complexity: {complexity:.2f}) - {reasoning}")
+                        else:
+                            await tracker.send_log("warning", f"❌ Rejected Q{i+1}: INCORRECT - {reasoning}")
+                
+                # Update questions list with only verified questions
+                for verified_q in verified_questions:
+                    questions.append(verified_q)
+                
+                # Log verification statistics with complexity breakdown
+                total_generated = len(questions_data)
+                verified_count = len(verified_questions)
+                rejection_rate = (total_generated - verified_count) / total_generated if total_generated > 0 else 0
+                
+                # Calculate complexity statistics
+                if verified_questions:
+                    complexities = [q.get("complexity", 0.0) for q in verified_questions]
+                    avg_complexity = sum(complexities) / len(complexities)
+                    easy_count = sum(1 for c in complexities if c < 0.4)
+                    moderate_count = sum(1 for c in complexities if 0.4 <= c < 0.7)
+                    hard_count = sum(1 for c in complexities if c >= 0.7)
+                    
+                    complexity_stats = f"Avg complexity: {avg_complexity:.2f} | Easy: {easy_count} | Moderate: {moderate_count} | Hard: {hard_count}"
+                else:
+                    complexity_stats = "No complexity data available"
+                
+                await tracker.send_log("info", f"Ground truth verification: {verified_count}/{total_generated} questions verified ({rejection_rate:.1%} rejected)")
+                await tracker.send_log("info", f"Complexity distribution: {complexity_stats}")
+                
+                # If too many questions were rejected, generate additional ones
+                if verified_count < num_questions * 0.8:  # If less than 80% success rate
+                    additional_needed = min(num_questions - verified_count, num_questions // 2)
+                    if additional_needed > 0:
+                        await tracker.send_log("info", f"Generating {additional_needed} additional questions due to high rejection rate")
+                        # Recursive call with adjusted prompt for better quality
+                        additional_questions = await generate_agentic_questions(
+                            corpus_text, additional_needed, eval_type, llm_config, tracker
+                        )
+                        questions.extend(additional_questions[:additional_needed])
                     
             except json.JSONDecodeError as e:
                 await tracker.send_log("warning", f"Failed to parse LLM JSON response: {e}")
@@ -448,7 +855,7 @@ Generate the questions as specified in the instructions."""
                         "source": "agentic_llm_fallback"
                     })
                     
-                    await tracker.increment_progress(message=f"Extracted question {i+1}")
+                    await tracker.increment_progress(message=f"Extracted question {i+1}/{len(question_lines[:num_questions])}")
     
     except Exception as e:
         await tracker.send_log("error", f"Agentic generation failed: {str(e)}")
@@ -469,28 +876,28 @@ Generate the questions as specified in the instructions."""
 
 
 async def evaluate_with_real_llm(questions: List[Dict], llm_config, tracker) -> List[Dict]:
-    """Evaluate questions using real LLM"""
+    """Proper agentic evaluation - LLM answers questions WITHOUT seeing expected answers"""
     import httpx
     
     llm_results = []
+    evaluated_count = 0
     
     for i, question in enumerate(questions):
         try:
-            # Prepare evaluation prompt with context if available
-            if question.get('context'):
-                evaluation_prompt = f"""Context: {question['context']}
-
-Based on the context above, please answer the following question:
+            # CRITICAL: LLM answers question WITHOUT context or expected answer
+            # This is the proper evaluation setup - blind testing
+            evaluation_prompt = f"""Please answer the following question based on your knowledge:
 
 Question: {question['question']}
 
-Provide a clear, accurate answer. If the question is mathematical, show your work. If it's factual, provide specific details."""
-            else:
-                evaluation_prompt = f"""Please answer the following question based on your knowledge:
+Instructions:
+- Provide a direct, concise answer
+- For mathematical questions: give the final numerical result
+- For factual questions: provide specific facts
+- For conceptual questions: give clear explanations
+- Do not use external context or hints
 
-Question: {question['question']}
-
-Provide a clear, accurate answer. If the question is mathematical, show your work. If it's factual, provide specific details."""
+Your answer:"""
 
             headers = {
                 "Authorization": f"Bearer {llm_config.api_key}",
@@ -532,7 +939,8 @@ Provide a clear, accurate answer. If the question is mathematical, show your wor
                         "model": llm_config.model_name
                     })
                     
-                    await tracker.increment_progress(message=f"Evaluated question {i+1} with {llm_config.model_name}")
+                    evaluated_count += 1
+                    await tracker.increment_progress(message=f"Evaluated question {evaluated_count}/{len(questions)} with {llm_config.model_name}")
                 else:
                     # Fallback for failed requests
                     llm_results.append({
@@ -542,6 +950,8 @@ Provide a clear, accurate answer. If the question is mathematical, show your wor
                         "confidence": 0.0,
                         "source": "api_error"
                     })
+                    evaluated_count += 1
+                    await tracker.increment_progress(message=f"Evaluated question {evaluated_count}/{len(questions)} (API error)")
                     await tracker.send_log("warning", f"API request failed for question {i+1}: {response.status_code}")
                     
         except Exception as e:
@@ -554,6 +964,8 @@ Provide a clear, accurate answer. If the question is mathematical, show your wor
                 "confidence": 0.0,
                 "source": "evaluation_error"
             })
+            evaluated_count += 1
+            await tracker.increment_progress(message=f"Evaluated question {evaluated_count}/{len(questions)} (error)")
             await tracker.send_log("warning", f"Failed to evaluate question {i+1}: {str(e)}")
         
         # Small delay to avoid rate limits
@@ -563,12 +975,7 @@ Provide a clear, accurate answer. If the question is mathematical, show your wor
 
 
 async def generate_corpus_questions(corpus_text: str, num_questions: int, eval_type: str, tracker) -> List[Dict]:
-<<<<<<< HEAD
     """Generate questions using improved template approach with content-type detection"""
-=======
-    """Generate questions based on corpus content"""
-    import re
->>>>>>> parent of 6898d60 (increase concurrency and benchmark complexity and math)
     import random
     
     questions = []
@@ -616,6 +1023,7 @@ async def generate_corpus_questions(corpus_text: str, num_questions: int, eval_t
         ]
     
     # Generate questions
+    generated_count = 0
     for i in range(num_questions):
         try:
             # Pick a random sentence or concept
@@ -656,7 +1064,9 @@ async def generate_corpus_questions(corpus_text: str, num_questions: int, eval_t
                 "concept": concept
             })
             
-            await tracker.increment_progress(message=f"Generated question {i+1}: {question[:50]}...")
+            generated_count += 1
+            # Track progress based on successfully generated questions
+            await tracker.increment_progress(message=f"Generated question {generated_count}/{num_questions}: {question[:50]}...")
             await asyncio.sleep(0.05)  # Brief pause
             
         except Exception as e:
@@ -668,6 +1078,8 @@ async def generate_corpus_questions(corpus_text: str, num_questions: int, eval_t
                 "context": None,
                 "eval_type": eval_type
             })
+            generated_count += 1
+            await tracker.increment_progress(message=f"Generated fallback question {generated_count}/{num_questions}")
     
     return questions
 
@@ -678,7 +1090,7 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
     
     try:
         # Update status
-        evaluation_runs[run_id]["status"] = "running"
+        evaluation_runs.update_run(run_id, {"status": "running"})
         await tracker.send_log("info", "Starting evaluation")
         
         # Phase 1: Classification
@@ -713,6 +1125,22 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
         
         await tracker.end_phase({"questions_generated": len(questions)})
         
+        # Phase 2.5: Create Finetune Test Set (if enabled)
+        finetune_test_set = None
+        if request.finetune_test_set_enabled and len(questions) > 1:
+            await tracker.send_log("info", f"Creating finetune test set with {request.finetune_test_set_percentage*100:.0f}% test questions")
+            
+            # Import the function we created
+            from ..core.evaluation import create_finetune_test_set
+            
+            finetune_test_set = create_finetune_test_set(
+                questions=questions,
+                test_percentage=request.finetune_test_set_percentage,
+                random_seed=request.finetune_random_seed
+            )
+            
+            await tracker.send_log("info", f"Finetune test set created: {finetune_test_set.train_set_size} train + {finetune_test_set.test_set_size} test questions")
+        
         # Phase 3: LLM Evaluation
         await tracker.start_phase("evaluation", "Evaluating with LLM", len(questions))
         
@@ -739,7 +1167,7 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
                 }
                 llm_results.append(result)
                 
-                await tracker.increment_progress(message=f"Mock evaluated question {i+1}")
+                await tracker.increment_progress(message=f"Mock evaluated question {i+1}/{len(questions)}")
                 await asyncio.sleep(0.1)  # Simulate work
         
         await tracker.end_phase({"evaluations_completed": len(llm_results)})
@@ -772,7 +1200,7 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
             }
             verification_results.append(verification)
             
-            await tracker.increment_progress(message=f"Verified response {i+1}: {verification_result.method} score={verification_result.score:.2f}")
+            await tracker.increment_progress(message=f"Verified response {i+1}/{len(llm_results)}: {verification_result.method} score={verification_result.score:.2f}")
             await asyncio.sleep(0.1)  # Simulate work
         
         await tracker.end_phase({"verifications_completed": len(verification_results)})
@@ -802,6 +1230,27 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
             statistical_report = {"error": f"Statistical analysis failed: {str(e)}"}
             main_stats = None
         
+        # Create finetune test set summary
+        finetune_summary = {}
+        if finetune_test_set:
+            finetune_summary = {
+                "enabled": True,
+                "total_questions": len(questions),
+                "train_questions": finetune_test_set.train_set_size,
+                "test_questions": finetune_test_set.test_set_size,
+                "test_percentage": finetune_test_set.test_percentage,
+                "random_seed": finetune_test_set.random_seed,
+                "split_timestamp": finetune_test_set.split_timestamp
+            }
+        else:
+            finetune_summary = {
+                "enabled": False,
+                "total_questions": len(questions),
+                "train_questions": len(questions),
+                "test_questions": 0,
+                "test_percentage": 0.0
+            }
+
         final_results = {
             "run_id": run_id,
             "evaluation_config": config.dict(),
@@ -818,13 +1267,14 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
             "detailed_statistics": statistical_report,
             "individual_results": verification_results[:10],  # First 10 only
             "performance_stats": llm.get_performance_stats() if llm else {},
+            "finetune_test_set": finetune_summary,
             "completed_at": datetime.now().isoformat()
         }
         
         await tracker.end_phase({"report_generated": True})
         
         # Update final status
-        evaluation_runs[run_id].update({
+        evaluation_runs.update_run(run_id, {
             "status": "completed",
             "results": final_results,
             "end_time": datetime.now(),
@@ -842,7 +1292,7 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
         error_msg = str(e)
         logger.error(f"Evaluation error", run_id=run_id, error=error_msg)
         
-        evaluation_runs[run_id].update({
+        evaluation_runs.update_run(run_id, {
             "status": "error",
             "error": error_msg,
             "end_time": datetime.now(),
@@ -852,13 +1302,149 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
         await tracker.send_error(error_msg)
 
 
+async def run_qwen_local_evaluation(run_id: str, request: QwenEvaluationRequest):
+    """Run Qwen local evaluation in background"""
+    tracker = get_progress_tracker(run_id)
+    
+    try:
+        # Update status
+        evaluation_runs.update_run(run_id, {"status": "running"})
+        await tracker.send_log("info", "Starting Qwen local evaluation")
+        
+        # Import our local evaluation system
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+        from LOCAL_QWEN_TEST import LocalQwenEvaluator
+        
+        # Phase 1: Initialize evaluator
+        await tracker.start_phase("initialization", "Setting up Qwen local evaluator")
+        evaluator = LocalQwenEvaluator()
+        await tracker.end_phase({"evaluator_ready": True})
+        
+        # Phase 2: Generate questions
+        await tracker.start_phase("question_generation", f"Generating {request.num_questions} questions from corpus")
+        
+        corpus_text = request.corpus_text
+        if request.use_fictional:
+            # Add some fictional enhancement to make it more interesting
+            corpus_text = f"""
+            FICTIONAL EVALUATION DOMAIN:
+            
+            {corpus_text}
+            
+            This content has been enhanced for domain-agnostic evaluation testing.
+            """
+        
+        questions = await evaluator.create_fictional_benchmark(
+            corpus_text,
+            num_questions=request.num_questions
+        )
+        
+        if not questions:
+            raise ValueError("Failed to generate questions from corpus")
+        
+        await tracker.end_phase({"questions_generated": len(questions)})
+        
+        # Phase 3: Simulate Qwen responses
+        await tracker.start_phase("qwen_simulation", "Simulating Qwen model responses")
+        qwen_responses = await evaluator.simulate_qwen_responses(questions)
+        await tracker.end_phase({"responses_generated": len(qwen_responses)})
+        
+        # Phase 4: Evaluate responses
+        await tracker.start_phase("evaluation", "Evaluating Qwen responses with verification system")
+        evaluation_results, scores = evaluator.evaluate_responses(qwen_responses)
+        
+        # Calculate metrics
+        mean_score = sum(scores) / len(scores) if scores else 0
+        max_score = max(scores) if scores else 0
+        min_score = min(scores) if scores else 0
+        exact_match_rate = sum(1 for s in scores if s >= 0.9) / len(scores) if scores else 0
+        
+        await tracker.end_phase({"mean_score": mean_score, "evaluations_completed": len(evaluation_results)})
+        
+        # Phase 5: Generate report
+        await tracker.start_phase("reporting", "Generating comprehensive evaluation report")
+        
+        corpus_info = {
+            'domain': f'{"Fictional Enhanced" if request.use_fictional else "Original"} Content',
+            'description': f'Local Qwen evaluation on {len(corpus_text)} character corpus'
+        }
+        
+        report = evaluator.generate_report(evaluation_results, scores, corpus_info)
+        
+        # Create final results
+        final_results = {
+            "run_id": run_id,
+            "evaluation_type": "qwen_local",
+            "model": "Simulated Qwen (Local)",
+            "corpus_info": corpus_info,
+            "request_details": request.dict(),
+            "aggregate_metrics": {
+                "mean_score": mean_score,
+                "max_score": max_score,
+                "min_score": min_score,
+                "exact_match_rate": exact_match_rate,
+                "num_questions": len(questions),
+                "num_responses": len(qwen_responses),
+                "num_evaluations": len(evaluation_results)
+            },
+            "detailed_results": evaluation_results,
+            "system_capabilities": {
+                "domain_agnostic": True,
+                "fictional_content": request.use_fictional,
+                "local_execution": True,
+                "no_api_required": True,
+                "context_aware": True,
+                "multi_method_verification": True
+            },
+            "performance_summary": {
+                "questions_generated": len(questions),
+                "qwen_responses_simulated": len(qwen_responses),
+                "verification_methods_used": ["domain_factual_similarity", "semantic_similarity"],
+                "evaluation_completed": True
+            },
+            "completed_at": datetime.now().isoformat()
+        }
+        
+        await tracker.end_phase({"report_generated": True})
+        
+        # Update final status
+        evaluation_runs.update_run(run_id, {
+            "status": "completed",
+            "results": final_results,
+            "end_time": datetime.now(),
+            "progress_percent": 100,
+            "message": f"Qwen local evaluation completed! Mean Score: {mean_score:.3f}"
+        })
+        
+        # Send completion notification
+        await tracker.notifier.send_evaluation_complete(final_results)
+        
+        logger.info(f"Qwen local evaluation completed", run_id=run_id, mean_score=mean_score, num_questions=len(questions))
+        
+    except Exception as e:
+        # Handle errors
+        error_msg = str(e)
+        logger.error(f"Qwen local evaluation error", run_id=run_id, error=error_msg)
+        
+        evaluation_runs.update_run(run_id, {
+            "status": "error",
+            "error": error_msg,
+            "end_time": datetime.now(),
+            "message": f"Qwen local evaluation failed: {error_msg}"
+        })
+        
+        await tracker.send_error("Qwen local evaluation failed", error_msg)
+
+
 @router.get("/evaluation/{run_id}/status")
 async def get_evaluation_status(run_id: str):
     """Get evaluation status"""
-    if run_id not in evaluation_runs:
+    if evaluation_runs.get_run(run_id) is None:
         raise HTTPException(status_code=404, detail="Run not found")
     
-    run_info = evaluation_runs[run_id]
+    run_info = evaluation_runs.get_run(run_id)
     
     return EvaluationStatus(
         run_id=run_id,
@@ -874,10 +1460,10 @@ async def get_evaluation_status(run_id: str):
 @router.get("/evaluation/{run_id}/results")
 async def get_evaluation_results(run_id: str):
     """Get evaluation results"""
-    if run_id not in evaluation_runs:
+    if evaluation_runs.get_run(run_id) is None:
         raise HTTPException(status_code=404, detail="Run not found")
     
-    run_info = evaluation_runs[run_id]
+    run_info = evaluation_runs.get_run(run_id)
     
     return EvaluationResult(
         run_id=run_id,
@@ -894,10 +1480,10 @@ async def get_evaluation_results(run_id: str):
 @router.get("/evaluation/{run_id}/download")
 async def download_results(run_id: str):
     """Download evaluation results as JSON file"""
-    if run_id not in evaluation_runs:
+    if evaluation_runs.get_run(run_id) is None:
         raise HTTPException(status_code=404, detail="Run not found")
     
-    run_info = evaluation_runs[run_id]
+    run_info = evaluation_runs.get_run(run_id)
     
     if run_info["status"] != "completed":
         raise HTTPException(status_code=400, detail="Evaluation not completed")
@@ -924,7 +1510,7 @@ async def download_results(run_id: str):
 async def list_evaluation_runs():
     """List all evaluation runs"""
     runs = []
-    for run_id, run_info in evaluation_runs.items():
+    for run_id, run_info in evaluation_runs.list_runs().items():
         try:
             # Handle missing fields gracefully
             config = run_info.get("config", {})
@@ -948,13 +1534,45 @@ async def list_evaluation_runs():
 @router.delete("/runs/{run_id}")
 async def delete_evaluation_run(run_id: str):
     """Delete an evaluation run"""
-    if run_id not in evaluation_runs:
+    if evaluation_runs.get_run(run_id) is None:
         raise HTTPException(status_code=404, detail="Run not found")
     
-    del evaluation_runs[run_id]
+    evaluation_runs.delete_run(run_id)
     logger.info(f"Evaluation run deleted", run_id=run_id)
     
     return {"message": "Run deleted successfully"}
+
+
+@router.get("/evaluation/{run_id}/finetune-test-set")
+async def get_finetune_test_set(run_id: str):
+    """Get finetune test set details for a completed evaluation"""
+    run_data = evaluation_runs.get_run(run_id)
+    if run_data is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    
+    if run_data.get("status") != "completed":
+        raise HTTPException(status_code=400, detail="Evaluation must be completed to access finetune test set")
+    
+    results = run_data.get("results", {})
+    finetune_data = results.get("finetune_test_set", {})
+    
+    if not finetune_data.get("enabled", False):
+        raise HTTPException(status_code=404, detail="Finetune test set was not enabled for this evaluation")
+    
+    return {
+        "run_id": run_id,
+        "finetune_test_set": finetune_data,
+        "summary": {
+            "total_questions": finetune_data.get("total_questions", 0),
+            "train_questions": finetune_data.get("train_questions", 0),
+            "test_questions": finetune_data.get("test_questions", 0),
+            "test_percentage": f"{finetune_data.get('test_percentage', 0)*100:.1f}%"
+        },
+        "access_endpoints": {
+            "train_questions": f"/api/v1/evaluation/{run_id}/finetune-test-set/train",
+            "test_questions": f"/api/v1/evaluation/{run_id}/finetune-test-set/test"
+        }
+    }
 
 
 @router.get("/config/default")
@@ -1103,6 +1721,6 @@ async def health_check():
     """API health check"""
     return {
         "status": "healthy",
-        "active_runs": len(evaluation_runs),
+        "active_runs": len(evaluation_runs.list_runs()),
         "websocket_connections": len(websocket_manager.active_connections)
     }

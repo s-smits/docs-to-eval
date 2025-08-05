@@ -505,7 +505,7 @@ if __name__ == "__main__":
     
     benchmark = generator.generate_comprehensive_benchmark(
         sample_corpus, 
-        num_questions=10, 
+        num_questions=50, 
         eval_type=EvaluationType.DOMAIN_KNOWLEDGE
     )
     

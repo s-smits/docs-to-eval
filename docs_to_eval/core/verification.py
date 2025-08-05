@@ -554,15 +554,6 @@ class VerificationOrchestrator:
         elif eval_type == 'numerical':
             return self.deterministic_verifier.numerical_match(prediction, ground_truth)
         
-        elif eval_type == 'mathematical':
-            return self.math_verify_verifier.math_verify_match(prediction, ground_truth)
-        
-        elif eval_type == 'math_expression':
-            return self.math_verify_verifier.expression_match(prediction, ground_truth)
-        
-        elif eval_type == 'latex_math':
-            return self.math_verify_verifier.latex_expression_match(prediction, ground_truth)
-        
         elif eval_type == 'exact':
             return self.deterministic_verifier.exact_match(prediction, ground_truth)
         

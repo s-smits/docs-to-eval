@@ -84,6 +84,11 @@ class GenerationConfig(BaseModel):
     min_question_length: int = Field(gt=0, default=10)
     max_question_length: int = Field(gt=0, default=500)
     quality_threshold: float = Field(ge=0, le=1, default=0.5)
+    
+    # Finetune test set configuration
+    finetune_test_set_enabled: bool = Field(default=True, description="Enable creation of finetune test set")
+    finetune_test_set_percentage: float = Field(ge=0.1, le=0.5, default=0.2, description="Percentage of questions to reserve for finetune testing (20% = 0.2)")
+    finetune_random_seed: int = Field(ge=0, default=42, description="Random seed for reproducible train/test splits")
 
 
 class VerificationConfig(BaseModel):

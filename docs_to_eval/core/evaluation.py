@@ -257,8 +257,173 @@ class BenchmarkConfig(BaseModel):
     key_concepts: List[str] = Field(default_factory=list)
     corpus_segments: List[str] = Field(default_factory=list)
     
+    # Finetune test set configuration
+    finetune_test_set_enabled: bool = Field(default=True)
+    finetune_test_set_percentage: float = Field(ge=0.1, le=0.5, default=0.2)
+    finetune_random_seed: int = Field(ge=0, default=42)
+    
     class Config:
         use_enum_values = True
+
+
+class FinetuneTestSet(BaseModel):
+    """Data structure for finetune test set"""
+    test_questions: List[Dict[str, Any]] = Field(default_factory=list, description="Questions reserved for finetune testing")
+    train_questions: List[Dict[str, Any]] = Field(default_factory=list, description="Questions for finetuning")
+    test_set_size: int = Field(ge=0, description="Number of questions in test set")
+    train_set_size: int = Field(ge=0, description="Number of questions in training set")
+    test_percentage: float = Field(ge=0, le=1, description="Actual percentage of questions in test set")
+    random_seed: int = Field(ge=0, description="Random seed used for split")
+    split_timestamp: str = Field(description="Timestamp when split was created")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "test_set_size": 10,
+                "train_set_size": 40,
+                "test_percentage": 0.2,
+                "random_seed": 42,
+                "split_timestamp": "2025-08-05T12:00:00Z"
+            }
+        }
+
+
+class BenchmarkWithFinetuneSet(BaseModel):
+    """Benchmark results with finetune test set separation"""
+    config: BenchmarkConfig
+    all_questions: List[Dict[str, Any]] = Field(default_factory=list, description="All generated questions")
+    finetune_test_set: Optional[FinetuneTestSet] = Field(None, description="Finetune train/test split")
+    generation_metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadata about generation process")
+    
+    def get_train_questions(self) -> List[Dict[str, Any]]:
+        """Get questions for finetuning (training set)"""
+        if self.finetune_test_set:
+            return self.finetune_test_set.train_questions
+        return self.all_questions
+    
+    def get_test_questions(self) -> List[Dict[str, Any]]:
+        """Get questions for evaluating finetuned model (test set)"""
+        if self.finetune_test_set:
+            return self.finetune_test_set.test_questions
+        return []
+    
+    def get_finetune_summary(self) -> Dict[str, Any]:
+        """Get summary of finetune test set configuration"""
+        if not self.finetune_test_set:
+            return {
+                "enabled": False,
+                "total_questions": len(self.all_questions),
+                "train_questions": len(self.all_questions),
+                "test_questions": 0,
+                "test_percentage": 0.0
+            }
+        
+        return {
+            "enabled": True,
+            "total_questions": len(self.all_questions),
+            "train_questions": self.finetune_test_set.train_set_size,
+            "test_questions": self.finetune_test_set.test_set_size,
+            "test_percentage": self.finetune_test_set.test_percentage,
+            "random_seed": self.finetune_test_set.random_seed
+        }
+
+
+def create_finetune_test_set(
+    questions: List[Dict[str, Any]], 
+    test_percentage: float = 0.2, 
+    random_seed: int = 42
+) -> FinetuneTestSet:
+    """
+    Create a finetune test set by splitting questions into train/test sets
+    
+    Args:
+        questions: List of all generated questions
+        test_percentage: Percentage of questions to reserve for testing (0.2 = 20%)
+        random_seed: Random seed for reproducible splits
+        
+    Returns:
+        FinetuneTestSet with train/test split
+    """
+    import random
+    from datetime import datetime
+    
+    if not questions:
+        return FinetuneTestSet(
+            test_questions=[],
+            train_questions=[],
+            test_set_size=0,
+            train_set_size=0,
+            test_percentage=0.0,
+            random_seed=random_seed,
+            split_timestamp=datetime.utcnow().isoformat() + "Z"
+        )
+    
+    # Set random seed for reproducible splits
+    random.seed(random_seed)
+    
+    # Shuffle questions to ensure random distribution
+    shuffled_questions = questions.copy()
+    random.shuffle(shuffled_questions)
+    
+    # Calculate split sizes
+    total_questions = len(questions)
+    test_size = max(1, int(total_questions * test_percentage))  # At least 1 test question
+    train_size = total_questions - test_size
+    
+    # Ensure we don't exceed available questions
+    if test_size >= total_questions:
+        test_size = max(1, total_questions // 2)  # Use half if percentage is too high
+        train_size = total_questions - test_size
+    
+    # Split the questions
+    test_questions = shuffled_questions[:test_size]
+    train_questions = shuffled_questions[test_size:]
+    
+    # Calculate actual percentage
+    actual_percentage = test_size / total_questions if total_questions > 0 else 0.0
+    
+    return FinetuneTestSet(
+        test_questions=test_questions,
+        train_questions=train_questions,
+        test_set_size=test_size,
+        train_set_size=train_size,
+        test_percentage=actual_percentage,
+        random_seed=random_seed,
+        split_timestamp=datetime.utcnow().isoformat() + "Z"
+    )
+
+
+def create_benchmark_with_finetune_set(
+    questions: List[Dict[str, Any]], 
+    config: BenchmarkConfig,
+    generation_metadata: Optional[Dict[str, Any]] = None
+) -> BenchmarkWithFinetuneSet:
+    """
+    Create a benchmark with optional finetune test set
+    
+    Args:
+        questions: All generated questions
+        config: Benchmark configuration
+        generation_metadata: Additional metadata about generation process
+        
+    Returns:
+        BenchmarkWithFinetuneSet with optional train/test split
+    """
+    finetune_test_set = None
+    
+    if config.finetune_test_set_enabled and len(questions) > 1:
+        finetune_test_set = create_finetune_test_set(
+            questions=questions,
+            test_percentage=config.finetune_test_set_percentage,
+            random_seed=config.finetune_random_seed
+        )
+    
+    return BenchmarkWithFinetuneSet(
+        config=config,
+        all_questions=questions,
+        finetune_test_set=finetune_test_set,
+        generation_metadata=generation_metadata or {}
+    )
 
 
 def generate_benchmark_config(corpus_text: str, num_questions: int = 50) -> BenchmarkConfig:
@@ -382,6 +547,6 @@ if __name__ == "__main__":
     metrics like accuracy, precision, and recall.
     """
     
-    config = framework.create_benchmark_from_corpus(sample_corpus, num_questions=10)
+    config = framework.create_benchmark_from_corpus(sample_corpus, num_questions=50)
     print("Generated benchmark configuration:")
     print(config.json(indent=2))
