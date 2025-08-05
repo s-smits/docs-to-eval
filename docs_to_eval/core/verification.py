@@ -495,119 +495,18 @@ class VerificationOrchestrator:
         except ImportError:
             self.domain_verifier = None
     
-    def _detect_actual_question_type(self, question: str, ground_truth: str, prediction: str) -> str:
-        """Detect the actual question type based on content analysis"""
-        
-        # Mathematical indicators (high confidence)
-        math_indicators = [
-            r'\b(calculate|compute|solve|find)\s+(the\s+)?(value|result|answer|solution)',
-            r'\b\d+\s*[+\-*/=]\s*\d+',  # Mathematical expressions
-            r'\$[^$]+\$',  # LaTeX math
-            r'\\[a-zA-Z]+\{[^}]*\}',  # LaTeX commands
-            r'\b(equation|formula|derivative|integral|calculate|solve)\b',
-            r'\b\d+(?:\.\d+)?\s*(?:grams?|meters?|seconds?|degrees?|percent|kg|cm|years?)\b'
-        ]
-        
-        # Code generation indicators
-        code_indicators = [
-            r'\b(write|implement|create|code|program|function|algorithm)\b.*\b(code|function|program|algorithm)\b',
-            r'\bdef\s+\w+\(',  # Function definitions
-            r'\bclass\s+\w+\b',  # Class definitions
-            r'\b(import|from|#include)\b',
-            r'\b(javascript|python|java|c\+\+|html|css)\b'
-        ]
-        
-        # Multiple choice indicators  
-        mc_indicators = [
-            r'\b[ABCD]\.\s',  # A. B. C. D. format
-            r'\b(choose|select|pick|which|option)\b',
-            r'\bcorrect\s+answer\s+is\b'
-        ]
-        
-        # Creative writing indicators
-        creative_indicators = [
-            r'\b(write|compose|create)\s+(a\s+)?(story|poem|essay|narrative|dialogue)\b',
-            r'\b(creative|imaginative|fictional|literary)\b',
-            r'\btell\s+(a\s+)?story\b'
-        ]
-        
-        # Count matches
-        combined_text = f"{question} {ground_truth}".lower()
-        
-        math_score = sum(1 for pattern in math_indicators if re.search(pattern, combined_text, re.IGNORECASE))
-        code_score = sum(1 for pattern in code_indicators if re.search(pattern, combined_text, re.IGNORECASE))
-        mc_score = sum(1 for pattern in mc_indicators if re.search(pattern, combined_text, re.IGNORECASE))
-        creative_score = sum(1 for pattern in creative_indicators if re.search(pattern, combined_text, re.IGNORECASE))
-        
-        # Determine type based on highest score
-        scores = {
-            'mathematical': math_score,
-            'code_generation': code_score,
-            'multiple_choice': mc_score,
-            'creative_writing': creative_score
-        }
-        
-        max_score = max(scores.values())
-        if max_score >= 2:  # Require at least 2 matches for confidence
-            return max(scores, key=scores.get)
-        
-        # Special case: If question asks to "solve for X" but contains non-mathematical content
-        if re.search(r'\b(solve\s+for|calculate|find\s+the\s+value)', question, re.IGNORECASE):
-            if not re.search(r'\b\d', combined_text):  # No numbers found
-                return 'factual_qa'  # Likely misclassified, treat as factual
-        
-        return 'factual_qa'  # Safe default
-
     def verify(self, prediction: str, ground_truth: str, eval_type: str, 
               options: Optional[List[str]] = None, question: str = "") -> VerificationResult:
-        """Main verification method with intelligent routing based on content analysis"""
+        """Main verification method that routes to appropriate verifier"""
         
-        # CRITICAL FIX: Detect actual question type to prevent verification mismatches
-        detected_type = self._detect_actual_question_type(question, ground_truth, prediction)
-        
-        # Log type mismatch for debugging
-        if detected_type != eval_type and question:
-            print(f"[VERIFY] Type mismatch detected - Requested: {eval_type}, Detected: {detected_type}")
-            print(f"[VERIFY] Question: {question[:100]}...")
-            eval_type = detected_type  # Use detected type
-        
-        # Enhanced domain-specific verification with advanced reasoning support
+        # Use domain-specific verification for better accuracy
         if self.domain_verifier and eval_type in ['mathematical', 'factual_qa', 'domain_knowledge']:
-            # Check if this is an advanced reasoning question
-            has_complexity_layer = any(hasattr(question, 'get') and question.get('complexity_layer') for question in [question] if isinstance(question, dict))
-            
-            # Also check for advanced reasoning indicators in the question text
-            advanced_indicators = [
-                'synthesis', 'inference', 'ambiguity', 'extrapolation', 'comparative analysis',
-                'what-if', 'scenario', 'multiple perspectives', 'interdisciplinary',
-                'recalculate', 'factor in', 'considering that', 'given that'
-            ]
-            
-            is_advanced_question = any(indicator in question.lower() for indicator in advanced_indicators)
-            
-            # Determine verification approach
+            # Determine if question is mathematical based on content, not just eval_type
             has_numbers = bool(extract_numbers(question) or extract_numbers(ground_truth))
             has_math_keywords = any(keyword in question.lower() for keyword in 
                                   ['calculate', 'compute', 'volume', 'percentage', 'ratio', 'years', 'divide', 'multiply'])
             
-            if is_advanced_question:
-                # Use advanced reasoning verification for sophisticated questions
-                print(f"[DEBUG] Using advanced reasoning verification for: {question[:50]}...")
-                
-                # Try to determine complexity layer from question content
-                complexity_layer = "synthesis"  # default
-                if any(word in question.lower() for word in ['infer', 'suggest', 'implies', 'conclude']):
-                    complexity_layer = "inference"
-                elif any(word in question.lower() for word in ['uncertain', 'unclear', 'ambiguous', 'alternative']):
-                    complexity_layer = "ambiguity"
-                elif any(word in question.lower() for word in ['extrapolat', 'project', 'extend', 'beyond', 'future']):
-                    complexity_layer = "extrapolation"
-                
-                domain_result = self.domain_verifier.verify_advanced_reasoning(
-                    prediction, ground_truth, question, complexity_layer
-                )
-                
-            elif has_numbers and has_math_keywords:
+            if has_numbers and has_math_keywords:
                 # This is a mathematical question regardless of eval_type
                 print(f"[DEBUG] Using domain mathematical verification for: {question[:50]}...")
                 domain_result = self.domain_verifier.verify_mathematical_reasoning(
@@ -633,33 +532,21 @@ class VerificationOrchestrator:
                 details=domain_result.details
             )
         
-        # Improved routing logic based on detected type
-        if eval_type == 'mathematical':
-            # For mathematical questions, try different approaches based on content
-            if re.search(r'\$[^$]+\$', question + ground_truth):
-                # LaTeX detected
-                return self.math_verify_verifier.latex_expression_match(prediction, ground_truth)
-            elif re.search(r'\b\d+\s*[+\-*/=]\s*\d+', question + ground_truth):
-                # Mathematical expression detected
-                return self.math_verify_verifier.expression_match(prediction, ground_truth)
-            else:
-                # General mathematical verification
+        # Fallback to original verification methods
+        if eval_type in ['mathematical', 'math_expression', 'latex_math', 'factual_qa', 'multiple_choice', 'domain_knowledge']:
+            if eval_type == 'mathematical':
+                # Use math-verify for enhanced mathematical verification
                 return self.math_verify_verifier.math_verify_match(prediction, ground_truth)
-                
-        elif eval_type == 'math_expression':
-            return self.math_verify_verifier.expression_match(prediction, ground_truth)
-        elif eval_type == 'latex_math':
-            return self.math_verify_verifier.latex_expression_match(prediction, ground_truth)
-        elif eval_type == 'multiple_choice':
-            return self.deterministic_verifier.multiple_choice_match(prediction, ground_truth, options)
-        elif eval_type in ['factual_qa', 'domain_knowledge']:
-            # For factual questions, use exact match with fallback to similarity
-            exact_result = self.deterministic_verifier.exact_match(prediction, ground_truth)
-            if exact_result.score > 0:
-                return exact_result
+            elif eval_type == 'math_expression':
+                # Use math-verify for plain mathematical expressions
+                return self.math_verify_verifier.expression_match(prediction, ground_truth)
+            elif eval_type == 'latex_math':
+                # Use math-verify for LaTeX mathematical expressions
+                return self.math_verify_verifier.latex_expression_match(prediction, ground_truth)
+            elif eval_type == 'multiple_choice':
+                return self.deterministic_verifier.multiple_choice_match(prediction, ground_truth, options)
             else:
-                # Fallback to similarity for partial credit
-                return self.non_deterministic_verifier.semantic_similarity_mock(prediction, ground_truth)
+                return self.deterministic_verifier.exact_match(prediction, ground_truth)
         
         elif eval_type == 'code_generation':
             return self.deterministic_verifier.code_execution_match(prediction, ground_truth)

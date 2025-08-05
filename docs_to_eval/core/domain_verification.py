@@ -31,64 +31,38 @@ class DomainSpecificVerifier:
     def verify_mathematical_reasoning(self, prediction: str, ground_truth: str, 
                                     question: str) -> DomainVerificationResult:
         """
-        Verify mathematical answers with focus on reasoning process, not just final numbers.
-        Enhanced for complex reasoning questions requiring synthesis and inference.
+        Verify mathematical answers with focus on reasoning process, not just final numbers
         """
         details = {
             "question_type": "mathematical_reasoning",
-            "extraction_method": "multi_stage_enhanced"
+            "extraction_method": "multi_stage"
         }
         
         # Extract all numbers from both answers
         pred_numbers = extract_numbers(prediction)
         truth_numbers = extract_numbers(ground_truth)
         
-        # Step 1: Check for mathematical accuracy (enhanced for complex questions)
+        # Step 1: Check for mathematical accuracy
         mathematical_accuracy = 0.0
-        final_pred = None
-        final_truth = None
-        
         if pred_numbers and truth_numbers:
             try:
                 # For multi-step problems, check if key intermediate and final values match
                 final_pred = float(pred_numbers[-1]) if pred_numbers else 0.0
                 final_truth = float(truth_numbers[-1]) if truth_numbers else 0.0
                 
-                # Enhanced tolerance system for sophisticated questions
+                # Use relative tolerance for mathematical accuracy
                 if final_truth != 0:
                     relative_error = abs(final_pred - final_truth) / abs(final_truth)
-                    if relative_error <= 0.02:  # 2% tolerance for exact calculations
+                    if relative_error <= 0.05:  # 5% tolerance
                         mathematical_accuracy = 1.0
-                    elif relative_error <= 0.05:  # 5% tolerance - high accuracy
-                        mathematical_accuracy = 0.95
-                    elif relative_error <= 0.10:  # 10% tolerance - good accuracy
-                        mathematical_accuracy = 0.85
-                    elif relative_error <= 0.20:  # 20% tolerance - partial credit
-                        mathematical_accuracy = 0.70
-                    elif relative_error <= 0.50:  # 50% tolerance - some understanding
-                        mathematical_accuracy = 0.40
+                    elif relative_error <= 0.10:  # 10% tolerance - partial credit
+                        mathematical_accuracy = 0.8
+                    elif relative_error <= 0.20:  # 20% tolerance - some credit
+                        mathematical_accuracy = 0.6
                     else:
                         mathematical_accuracy = 0.0
                 else:
                     mathematical_accuracy = 1.0 if abs(final_pred - final_truth) <= 0.1 else 0.0
-                    
-                # Check for intermediate calculations accuracy
-                if len(pred_numbers) > 1 and len(truth_numbers) > 1:
-                    intermediate_matches = 0
-                    for p_num in pred_numbers[:-1]:  # Exclude final answer
-                        for t_num in truth_numbers[:-1]:
-                            try:
-                                if abs(float(p_num) - float(t_num)) / max(abs(float(t_num)), 1) <= 0.10:
-                                    intermediate_matches += 1
-                                    break
-                            except (ValueError, TypeError):
-                                continue
-                    
-                    # Bonus for showing correct intermediate steps
-                    if intermediate_matches > 0:
-                        mathematical_accuracy = min(1.0, mathematical_accuracy + 0.05 * intermediate_matches)
-                        details["intermediate_steps_correct"] = intermediate_matches
-                        
             except (ValueError, TypeError):
                 # If we can't convert to numbers, fall back to text matching
                 mathematical_accuracy = 0.5 if pred_numbers and truth_numbers else 0.0
@@ -182,115 +156,9 @@ class DomainSpecificVerifier:
             details=details
         )
     
-    def verify_advanced_reasoning(self, prediction: str, ground_truth: str, 
-                                question: str, complexity_layer: str = "synthesis") -> DomainVerificationResult:
-        """
-        Verify advanced reasoning questions with sophisticated multi-layered analysis.
-        Designed for questions requiring synthesis, inference, ambiguity handling, and extrapolation.
-        """
-        details = {
-            "question_type": "advanced_reasoning",
-            "complexity_layer": complexity_layer,
-            "verification_approach": "multi_dimensional_enhanced"
-        }
-        
-        # Step 1: Enhanced reasoning quality assessment
-        reasoning_quality = self._assess_reasoning_quality(prediction, question)
-        
-        # Step 2: Complexity-specific assessment
-        complexity_score = self._assess_complexity_handling(prediction, complexity_layer)
-        
-        # Step 3: Synthesis and integration assessment
-        synthesis_score = self._assess_synthesis_quality(prediction, question)
-        
-        # Step 4: Content accuracy (more flexible for sophisticated questions)
-        content_accuracy = self._assess_advanced_content_accuracy(prediction, ground_truth, question)
-        
-        # Step 5: Mathematical components (if present)
-        mathematical_accuracy = 1.0  # Default to perfect if no math
-        pred_numbers = extract_numbers(prediction)
-        truth_numbers = extract_numbers(ground_truth)
-        
-        if pred_numbers and truth_numbers:
-            mathematical_accuracy = self._compare_numerical_values(pred_numbers, truth_numbers, tolerance=0.15)
-        
-        # Step 6: Contextual and domain integration
-        contextual_relevance = self._assess_contextual_relevance(prediction, question)
-        
-        # Adaptive scoring based on complexity layer
-        if complexity_layer == "synthesis":
-            # Emphasize integration and connection-making
-            score = (
-                reasoning_quality * 0.25 +      # Clear reasoning process
-                synthesis_score * 0.30 +       # Synthesis across sources/concepts
-                content_accuracy * 0.25 +      # Content accuracy
-                complexity_score * 0.10 +      # Complexity handling
-                contextual_relevance * 0.10    # Domain awareness
-            )
-        elif complexity_layer == "inference":
-            # Emphasize logical reasoning and evidence-based conclusions
-            score = (
-                reasoning_quality * 0.35 +      # Strong reasoning is critical
-                content_accuracy * 0.25 +      # Accurate inferences
-                complexity_score * 0.20 +      # Inference complexity
-                mathematical_accuracy * 0.10 + # Math if present
-                contextual_relevance * 0.10    # Domain grounding
-            )
-        elif complexity_layer == "ambiguity":
-            # Emphasize handling uncertainty and alternative interpretations
-            score = (
-                complexity_score * 0.30 +      # Ambiguity handling
-                reasoning_quality * 0.25 +     # Clear reasoning under uncertainty
-                content_accuracy * 0.20 +      # Reasonable interpretations
-                synthesis_score * 0.15 +       # Multiple perspectives
-                contextual_relevance * 0.10    # Domain awareness
-            )
-        elif complexity_layer == "extrapolation":
-            # Emphasize extending beyond given information
-            score = (
-                reasoning_quality * 0.30 +      # Logical extension
-                complexity_score * 0.25 +      # Extrapolation quality
-                content_accuracy * 0.20 +      # Grounded extrapolation
-                mathematical_accuracy * 0.15 + # Quantitative projections
-                contextual_relevance * 0.10    # Domain-appropriate extensions
-            )
-        else:
-            # Default balanced scoring
-            score = (
-                reasoning_quality * 0.30 +
-                content_accuracy * 0.25 +
-                complexity_score * 0.20 +
-                synthesis_score * 0.15 +
-                contextual_relevance * 0.10
-            )
-        
-        details.update({
-            "reasoning_quality": reasoning_quality,
-            "complexity_score": complexity_score,
-            "synthesis_score": synthesis_score,
-            "content_accuracy": content_accuracy,
-            "mathematical_accuracy": mathematical_accuracy,
-            "contextual_relevance": contextual_relevance,
-            "scoring_weights": {
-                "reasoning": 0.30, "content": 0.25, "complexity": 0.20, 
-                "synthesis": 0.15, "context": 0.10
-            }
-        })
-        
-        return DomainVerificationResult(
-            score=score,
-            reasoning_quality=reasoning_quality,
-            factual_accuracy=content_accuracy,
-            mathematical_accuracy=mathematical_accuracy,
-            contextual_relevance=contextual_relevance,
-            method_used=f"advanced_reasoning_{complexity_layer}",
-            details=details
-        )
-    
     def _assess_reasoning_quality(self, prediction: str, question: str) -> float:
         """
-        Enhanced assessment of reasoning quality for sophisticated questions requiring
-        synthesis, inference, ambiguity handling, and extrapolation
+        Assess the quality of reasoning demonstrated in the response
         """
         reasoning_indicators = [
             r"step[s]?\s*\d+",  # "Step 1:", "Steps:", etc.
@@ -301,85 +169,24 @@ class DomainSpecificVerifier:
             r"given information|from the (text|passage|corpus)",  # Source awareness
         ]
         
-        # Advanced reasoning indicators for sophisticated questions
-        advanced_reasoning = [
-            r"synthesis|synthesiz[e|ing]",  # Synthesis across sources
-            r"infer[ence]?|implied?|suggest[s]?",  # Inference beyond facts
-            r"assumption|assuming|if we assume",  # Handling assumptions
-            r"compare[d]?|contrast[ed]?|versus|vs\.",  # Comparative analysis
-            r"context[ual]?|considering|taking into account",  # Contextual awareness
-            r"methodology|approach|method",  # Methodological reasoning
-            r"alternative[ly]?|however|on the other hand",  # Considering alternatives
-            r"extrapolat[e|ing]|project[ing]?|trend",  # Extrapolation
-            r"interdisciplinary|cross-field|multiple perspectives",  # Integration
-            r"uncertainty|ambiguity|unclear|may be|could be"  # Handling ambiguity
-        ]
-        
-        # Complexity layer indicators
-        complexity_indicators = [
-            r"what-if|hypothetical|scenario",  # Scenario analysis
-            r"implications?|consequences?|significance",  # Broader implications
-            r"recalculate|re-evaluate|adjust[ed]?",  # Dynamic reasoning
-            r"factor[s]?\s+in|account\s+for|consider[ing]?",  # Multi-factor analysis
-            r"evidence suggests?|data indicates?|research shows?",  # Evidence-based reasoning
-        ]
-        
         reasoning_score = 0.0
         prediction_lower = prediction.lower()
         
-        # Base reasoning indicators (0.1 each, max 0.6)
+        # Check for reasoning indicators
         for pattern in reasoning_indicators:
             if re.search(pattern, prediction_lower):
-                reasoning_score += 0.1
-        
-        # Advanced reasoning indicators (0.15 each, max 0.45)
-        advanced_count = 0
-        for pattern in advanced_reasoning:
-            if re.search(pattern, prediction_lower):
                 reasoning_score += 0.15
-                advanced_count += 1
-                if advanced_count >= 3:  # Cap at 3 for balance
-                    break
         
-        # Complexity handling (0.1 each, max 0.3) 
-        complexity_count = 0
-        for pattern in complexity_indicators:
-            if re.search(pattern, prediction_lower):
-                reasoning_score += 0.1
-                complexity_count += 1
-                if complexity_count >= 3:
-                    break
-        
-        # Check for structured multi-step approach
+        # Check for structured approach (multiple steps visible)
         step_count = len(re.findall(r"step\s*\d+", prediction_lower))
         if step_count >= 2:
-            reasoning_score += 0.2
-        elif step_count >= 4:  # Extra credit for very detailed reasoning
             reasoning_score += 0.3
         
-        # Check for calculations and formulas shown
-        calculation_patterns = [r"\d+\s*[+\-*/÷×]\s*\d+", r"=\s*\d+", r"formula|equation"]
-        calculation_count = 0
+        # Check for calculations shown
+        calculation_patterns = [r"\d+\s*[+\-*/÷×]\s*\d+", r"=\s*\d+"]
         for pattern in calculation_patterns:
             if re.search(pattern, prediction):
-                calculation_count += 1
-                reasoning_score += 0.05
-        
-        # Bonus for connecting multiple concepts (synthesis)
-        connection_words = ["connects?", "relates?", "links?", "integrat[e|ing]", "combines?"]
-        for word in connection_words:
-            if re.search(word, prediction_lower):
                 reasoning_score += 0.1
-                break
-        
-        # Check for domain-specific sophisticated language
-        sophisticated_terms = [
-            "archaeological", "methodological", "interdisciplinary", "chronological",
-            "contextual", "comparative", "analytical", "interpretive", "theoretical"
-        ]
-        sophisticated_count = sum(1 for term in sophisticated_terms if term in prediction_lower)
-        if sophisticated_count >= 2:
-            reasoning_score += 0.1
         
         return min(1.0, reasoning_score)
     
@@ -463,151 +270,31 @@ class DomainSpecificVerifier:
         # Weight recall more heavily than precision
         return 0.7 * recall + 0.3 * precision
     
-    def _compare_numerical_values(self, pred_numbers: List[str], 
-                                truth_numbers: List[str], tolerance: float = 0.05) -> float:
+    def _compare_numerical_values(self, pred_numbers: List[float], 
+                                truth_numbers: List[float], tolerance: float = 0.05) -> float:
         """
         Compare numerical values with appropriate tolerance
         """
         if not pred_numbers or not truth_numbers:
             return 0.0
         
-        try:
-            # Compare the most significant numbers (usually the final answers)
-            key_pred = float(pred_numbers[-1])  # Last number is usually the final answer
-            key_truth = float(truth_numbers[-1])
-            
-            if key_truth == 0:
-                return 1.0 if abs(key_pred) <= 0.1 else 0.0
-            
-            relative_error = abs(key_pred - key_truth) / abs(key_truth)
-            
-            if relative_error <= tolerance:
-                return 1.0
-            elif relative_error <= tolerance * 2:
-                return 0.8
-            elif relative_error <= tolerance * 4:
-                return 0.6
-            else:
-                return 0.0
+        # Compare the most significant numbers (usually the final answers)
+        key_pred = pred_numbers[-1]  # Last number is usually the final answer
+        key_truth = truth_numbers[-1]
         
-        except (ValueError, TypeError, IndexError):
-            # If we can't convert to numbers, return 0 (no match)
-            return 0.0
-    
-    def _assess_complexity_handling(self, prediction: str, complexity_layer: str) -> float:
-        """
-        Assess how well the response handles the specific complexity layer
-        """
-        prediction_lower = prediction.lower()
-        score = 0.0
+        if key_truth == 0:
+            return 1.0 if abs(key_pred) <= 0.1 else 0.0
         
-        if complexity_layer == "synthesis":
-            # Look for evidence of synthesis across sources/concepts
-            synthesis_indicators = [
-                r"combin[e|ing]", r"integrat[e|ing]", r"connect[s|ing]", 
-                r"synthesis", r"together", r"across", r"multiple"
-            ]
-            for pattern in synthesis_indicators:
-                if re.search(pattern, prediction_lower):
-                    score += 0.2
-            
-        elif complexity_layer == "inference":
-            # Look for inferential reasoning
-            inference_indicators = [
-                r"infer[s]?", r"suggest[s]?", r"implies?", r"indicates?",
-                r"conclude[s]?", r"deduce[s]?", r"evidence points?"
-            ]
-            for pattern in inference_indicators:
-                if re.search(pattern, prediction_lower):
-                    score += 0.25
+        relative_error = abs(key_pred - key_truth) / abs(key_truth)
         
-        elif complexity_layer == "ambiguity":
-            # Look for acknowledgment of uncertainty or multiple interpretations
-            ambiguity_indicators = [
-                r"uncertain", r"unclear", r"ambiguous", r"multiple interpretations?",
-                r"could be", r"might be", r"possibly", r"alternative[ly]?",
-                r"however", r"on the other hand", r"but"
-            ]
-            for pattern in ambiguity_indicators:
-                if re.search(pattern, prediction_lower):
-                    score += 0.2
-        
-        elif complexity_layer == "extrapolation":
-            # Look for extension beyond given information
-            extrapolation_indicators = [
-                r"extrapolat[e|ing]", r"project[ing]?", r"extend[ing]?",
-                r"beyond", r"future", r"trend", r"pattern", r"likely"
-            ]
-            for pattern in extrapolation_indicators:
-                if re.search(pattern, prediction_lower):
-                    score += 0.25
-        
-        return min(1.0, score)
-    
-    def _assess_synthesis_quality(self, prediction: str, question: str) -> float:
-        """
-        Assess the quality of synthesis and integration in the response
-        """
-        prediction_lower = prediction.lower()
-        score = 0.0
-        
-        # Look for explicit synthesis language
-        synthesis_words = [
-            "synthesis", "integrate", "combine", "connect", "relate",
-            "together", "across", "between", "link", "merge"
-        ]
-        synthesis_count = sum(1 for word in synthesis_words if word in prediction_lower)
-        score += min(0.3, synthesis_count * 0.1)
-        
-        # Look for comparative analysis
-        comparison_words = ["compare", "contrast", "versus", "vs", "difference", "similar"]
-        if any(word in prediction_lower for word in comparison_words):
-            score += 0.2
-        
-        # Look for multiple perspective indicators
-        perspective_words = ["perspective", "viewpoint", "approach", "angle", "aspect"]
-        if any(word in prediction_lower for word in perspective_words):
-            score += 0.15
-        
-        # Look for temporal integration (across time periods)
-        temporal_words = ["period", "era", "century", "over time", "throughout", "during"]
-        temporal_count = sum(1 for word in temporal_words if word in prediction_lower)
-        if temporal_count >= 2:
-            score += 0.2
-        
-        # Look for causal connections
-        causal_words = ["because", "due to", "leads to", "results in", "causes", "influenced by"]
-        if any(word in prediction_lower for word in causal_words):
-            score += 0.15
-        
-        return min(1.0, score)
-    
-    def _assess_advanced_content_accuracy(self, prediction: str, ground_truth: str, question: str) -> float:
-        """
-        Assess content accuracy for advanced questions with more flexible matching
-        """
-        # For advanced questions, we're more interested in reasonable interpretations
-        # than exact matches, especially for synthesis and inference questions
-        
-        if not ground_truth or ground_truth.lower().startswith("multi-part response"):
-            # Ground truth is a description of expected reasoning approach
-            # Focus on whether the response addresses the key components
-            components_mentioned = 0
-            expected_components = [
-                "quantitative", "historical", "analysis", "comparison", 
-                "inference", "evidence", "calculation", "interpretation"
-            ]
-            
-            prediction_lower = prediction.lower()
-            for component in expected_components:
-                if component in prediction_lower:
-                    components_mentioned += 1
-            
-            return min(1.0, components_mentioned / 4.0)  # Need at least 4 components for full score
-        
+        if relative_error <= tolerance:
+            return 1.0
+        elif relative_error <= tolerance * 2:
+            return 0.8
+        elif relative_error <= tolerance * 4:
+            return 0.6
         else:
-            # Use the existing content overlap method
-            return self._calculate_content_overlap(prediction, ground_truth)
+            return 0.0
 
 
 def create_domain_verifier(corpus_text: str, domain_type: str = "historical") -> DomainSpecificVerifier:

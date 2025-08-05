@@ -152,7 +152,6 @@ class EnhancedBenchmarkItem(BaseModel):
     metadata: BenchmarkMetadata
     
     # Additional agentic fields
-    concept: str = Field(description="The core concept this item tests")
     expected_answer_type: AnswerType
     reasoning_chain: List[str] = Field(default_factory=list)
     variables: Dict[str, Any] = Field(default_factory=dict)

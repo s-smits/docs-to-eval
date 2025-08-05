@@ -10,6 +10,7 @@ logs
 
 
 # Virtual environments
+.env
 .venv
 uv.lock
 python_files.txt

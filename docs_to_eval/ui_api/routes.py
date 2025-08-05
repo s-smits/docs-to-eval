@@ -6,15 +6,18 @@ import asyncio
 import uuid
 import json
 import shutil
+<<<<<<< HEAD
 import httpx
 import re
+=======
+>>>>>>> parent of 6898d60 (increase concurrency and benchmark complexity and math)
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, WebSocket, Form, Depends
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, Field, ValidationError, ConfigDict
+from pydantic import BaseModel, Field, ValidationError
 
 from .websockets import websocket_manager, handle_websocket_connection, get_progress_tracker
 from ..core.evaluation import EvaluationFramework, BenchmarkConfig
@@ -22,7 +25,6 @@ from ..core.classification import EvaluationTypeClassifier
 from ..llm.mock_interface import MockLLMInterface, MockLLMEvaluator
 from ..utils.config import EvaluationConfig, EvaluationType, create_default_config
 from ..utils.logging import get_logger
-from ..utils.text_processing import predict_optimal_questions, create_smart_chunks
 
 # Create router
 router = APIRouter()
@@ -42,22 +44,10 @@ class EvaluationRequest(BaseModel):
     num_questions: int = Field(default=20, ge=1, le=200)
     use_agentic: bool = True
     temperature: float = Field(default=0.7, ge=0, le=2)
-    max_concurrent: int = Field(
-        default=5, 
-        ge=1, 
-        le=20, 
-        description="Max concurrent LLM requests (5=balanced, 1=conservative, 10+=aggressive)"
-    )
     run_name: Optional[str] = None
 
 
 class EvaluationStatus(BaseModel):
-    model_config = ConfigDict(
-        json_encoders={datetime: lambda v: v.isoformat()},
-        # For backwards compatibility, make dict() work like model_dump(mode='json')
-        use_enum_values=True
-    )
-    
     run_id: str
     status: str
     phase: Optional[str] = None
@@ -65,10 +55,6 @@ class EvaluationStatus(BaseModel):
     message: str = ""
     start_time: datetime
     estimated_completion: Optional[datetime] = None
-    
-    def dict(self, **kwargs):
-        """Override dict method to use proper JSON serialization"""
-        return self.model_dump(mode='json', **kwargs)
 
 
 class EvaluationResult(BaseModel):
@@ -79,86 +65,8 @@ class EvaluationResult(BaseModel):
     duration_seconds: Optional[float] = None
 
 
-class TextAnalysisRequest(BaseModel):
-    text: str
-    eval_type_hint: Optional[str] = None
-
-
-class TextAnalysisResponse(BaseModel):
-    text_stats: Dict[str, Any]
-    suggested_questions: int
-    min_questions: int  
-    max_questions: int
-    reasoning: str
-    chunk_info: Dict[str, Any]
-    eval_type_suggestions: List[str]
-
-
-# Persistent storage for evaluation runs
-EVALUATION_RUNS_FILE = Path("cache/evaluation_runs.json")
+# In-memory storage for evaluation runs (in production, use a database)
 evaluation_runs: Dict[str, Dict[str, Any]] = {}
-
-def load_evaluation_runs():
-    """Load evaluation runs from disk"""
-    global evaluation_runs
-    try:
-        if EVALUATION_RUNS_FILE.exists():
-            with open(EVALUATION_RUNS_FILE, 'r') as f:
-                data = json.load(f)
-                # Convert datetime strings back to datetime objects where needed
-                for run_id, run_data in data.items():
-                    if 'start_time' in run_data and isinstance(run_data['start_time'], str):
-                        run_data['start_time'] = datetime.fromisoformat(run_data['start_time'])
-                    if 'end_time' in run_data and isinstance(run_data['end_time'], str):
-                        run_data['end_time'] = datetime.fromisoformat(run_data['end_time'])
-                    if 'estimated_completion' in run_data and isinstance(run_data['estimated_completion'], str):
-                        run_data['estimated_completion'] = datetime.fromisoformat(run_data['estimated_completion'])
-                evaluation_runs = data
-                logger.info(f"Loaded {len(evaluation_runs)} evaluation runs from disk")
-    except Exception as e:
-        logger.error(f"Failed to load evaluation runs from disk: {e}")
-        evaluation_runs = {}
-
-def save_evaluation_runs():
-    """Save evaluation runs to disk"""
-    try:
-        # Ensure cache directory exists
-        EVALUATION_RUNS_FILE.parent.mkdir(exist_ok=True)
-        
-        # Convert datetime objects and other non-serializable objects for JSON
-        serializable_data = {}
-        for run_id, run_data in evaluation_runs.items():
-            serializable_run = {}
-            for key, value in run_data.items():
-                if key in ['start_time', 'end_time', 'estimated_completion'] and isinstance(value, datetime):
-                    serializable_run[key] = value.isoformat()
-                elif key == 'results' and value is not None:
-                    # Skip complex results objects to avoid serialization issues
-                    # Results are already saved to output files, so this is just status tracking
-                    serializable_run[key] = {"status": "completed", "saved_to_file": True}
-                elif isinstance(value, (str, int, float, bool, type(None))):
-                    serializable_run[key] = value
-                elif isinstance(value, (list, dict)):
-                    try:
-                        # Test if it's JSON serializable
-                        json.dumps(value)
-                        serializable_run[key] = value
-                    except (TypeError, ValueError):
-                        # Skip non-serializable complex objects
-                        serializable_run[key] = f"<{type(value).__name__} object>"
-                else:
-                    # Convert other objects to string representation
-                    serializable_run[key] = str(value)
-            
-            serializable_data[run_id] = serializable_run
-        
-        with open(EVALUATION_RUNS_FILE, 'w') as f:
-            json.dump(serializable_data, f, indent=2)
-    except Exception as e:
-        logger.error(f"Failed to save evaluation runs to disk: {e}")
-
-# Load existing evaluation runs at startup
-load_evaluation_runs()
 
 
 @router.websocket("/ws/{run_id}")
@@ -367,7 +275,6 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
         config.generation.num_questions = request.num_questions
         config.generation.use_agentic = request.use_agentic
         config.llm.temperature = request.temperature
-        config.llm.max_concurrent = request.max_concurrent
         
         # Load API key from environment variables if not set
         import os
@@ -398,7 +305,6 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
         }
         
         evaluation_runs[run_id] = run_info
-        save_evaluation_runs()  # Persist to disk
         
         # Start evaluation in background
         background_tasks.add_task(run_evaluation, run_id, request, config)
@@ -421,204 +327,154 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
 
 
 async def generate_agentic_questions(corpus_text: str, num_questions: int, eval_type: str, llm_config, tracker) -> List[Dict]:
-    """Generate advanced questions using sophisticated stress-testing approach"""
+    """Generate questions using real LLM (agentic approach)"""
     import httpx
     
     questions = []
     
-    # Import the advanced question generation system
-    try:
-        from ..core.advanced_question_generation import AdvancedQuestionGenerator, create_advanced_question_prompt
-        
-        # First try advanced question generation for sophisticated stress-testing
-        await tracker.send_log("info", "Using advanced question generation for stress-testing LLMs")
-        
-        generator = AdvancedQuestionGenerator(corpus_text, domain="historical")
-        # Generate at most half the questions using advanced method, but respect the total limit
-        max_advanced = min(num_questions // 2, 10, num_questions)
-        advanced_questions = generator.generate_advanced_question_set(max_advanced)
-        
-        # Convert to expected format
-        for q in advanced_questions:
-            if len(questions) >= num_questions:  # Respect the limit
-                break
-            questions.append({
-                "question": q["question"],
-                "answer": q["answer"],
-                "context": q.get("concept", ""),
-                "eval_type": eval_type,
-                "concept": q.get("concept", ""),
-                "difficulty": q.get("difficulty", "advanced"),
-                "complexity_layer": q.get("complexity_layer", "synthesis"),
-                "source": "advanced_generation"
-            })
-        
-        await tracker.send_log("info", f"Generated {len(questions)} sophisticated stress-testing questions")
-        
-    except Exception as e:
-        await tracker.send_log("warning", f"Advanced generation failed: {e}, falling back to LLM generation")
-        advanced_questions = []
+    # Prepare the prompt based on evaluation type
+    eval_prompts = {
+        "mathematical": "Generate challenging mathematical questions that test problem-solving and calculation skills",
+        "factual_qa": "Generate factual questions that test knowledge and understanding of key concepts",
+        "code_generation": "Generate coding problems that require implementing solutions based on the concepts",
+        "domain_knowledge": "Generate domain-specific questions that test deep understanding of the subject matter",
+        "multiple_choice": "Generate multiple choice questions with 4 options each",
+        "reading_comprehension": "Generate reading comprehension questions that test understanding of the text"
+    }
     
-    # Fill remaining questions with LLM-generated questions using advanced prompts
-    remaining_questions = max(0, num_questions - len(questions))
-    if remaining_questions > 0:
-        try:
-            # Use the advanced prompt system for sophisticated question generation
-            from ..core.advanced_question_generation import create_advanced_question_prompt
-            
-            system_prompt = create_advanced_question_prompt(corpus_text, remaining_questions, eval_type)
-            
-            user_prompt = f"""Based on this corpus, generate {remaining_questions} advanced evaluation questions that stress-test LLM capabilities:
-
----CORPUS START---
-{corpus_text[:120000]}  
----CORPUS END---
-
-Generate questions following the advanced complexity requirements specified in the instructions."""
-            
-        except Exception:
-            # Fallback to original prompt system
-            eval_prompts = {
-                "mathematical": "Generate challenging mathematical questions that require multi-step reasoning and domain expertise",
-                "factual_qa": "Generate questions requiring synthesis across sources and deep domain knowledge",
-                "code_generation": "Generate complex coding problems that require understanding of underlying principles",
-                "domain_knowledge": "Generate sophisticated questions that stress-test deep understanding and reasoning",
-                "multiple_choice": "Generate challenging multiple choice questions with plausible distractors",
-                "reading_comprehension": "Generate complex comprehension questions requiring inference and analysis"
-            }
-            
-            prompt_instruction = eval_prompts.get(eval_type, eval_prompts["domain_knowledge"])
-            
-            system_prompt = f"""You are an expert creating ADVANCED evaluation questions designed to stress-test LLMs beyond surface-level knowledge.
-
-OBJECTIVE: Generate questions that require synthesis, inference, reasoning under ambiguity, and domain expertise integration.
+    prompt_instruction = eval_prompts.get(eval_type, eval_prompts["domain_knowledge"])
+    
+    system_prompt = f"""You are an expert educational assessment creator. Your task is to generate high-quality evaluation questions based on the provided corpus.
 
 Instructions:
 1. {prompt_instruction}
-2. Generate exactly {remaining_questions} questions
-3. Force models to make connections between disparate information
-4. Include plausible assumptions or "what-if" scenarios  
-5. Require both calculation AND interpretation for mathematical questions
-6. Test reasoning about methodology, causation, or broader implications
-7. For mathematical questions, provide FINAL NUMERICAL ANSWER only
-8. Questions should be genuinely challenging for advanced AI systems
+2. Generate exactly {num_questions} questions
+3. Each question should be clear, specific, and directly based on the corpus content
+4. For mathematical questions, provide the FINAL NUMERICAL ANSWER only (e.g., "574.56 cubic cm" or "22.9%")
+5. For factual questions, provide concise direct answers (e.g., "54 years" or "Etruscan bronze artifact")
+6. Questions should vary in difficulty from basic to advanced
+7. Focus on the most important concepts from the corpus
 
 Format your response as a JSON array with this structure:
 [
   {{
-    "question": "Complex, multi-layered question requiring synthesis and inference",
-    "answer": "Expected reasoning approach and key conclusions",
-    "concept": "Primary concept being stress-tested", 
-    "difficulty": "advanced|expert|research",
-    "complexity_layer": "synthesis|inference|ambiguity|extrapolation"
+    "question": "Your question here",
+    "answer": "Final answer only - no calculations or explanations",
+    "concept": "Main concept being tested",
+    "difficulty": "basic|intermediate|advanced"
   }}
 ]
 
+IMPORTANT: Keep answers simple and focused. For math problems, only give the final number/result, not the calculation steps.
+
 Only return the JSON array, no other text."""
-            
-            user_prompt = f"""Based on this corpus, generate {remaining_questions} advanced stress-testing questions:
+
+    user_prompt = f"""Based on this corpus, generate {num_questions} evaluation questions:
 
 ---CORPUS START---
 {corpus_text[:120000]}  
 ---CORPUS END---
 
-Generate sophisticated questions that challenge advanced reasoning capabilities."""
+Generate the questions as specified in the instructions."""
 
-        try:
-            # Prepare API request
-            headers = {
-                "Authorization": f"Bearer {llm_config.api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            if llm_config.provider == "openrouter":
-                headers.update({
-                    "HTTP-Referer": llm_config.site_url or "https://docs-to-eval.ai",
-                    "X-Title": llm_config.app_name or "docs-to-eval"
-                })
-            
-            payload = {
-                "model": llm_config.model_name,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                "max_tokens": min(llm_config.max_tokens * 2, 32000),  # More tokens for JSON response
-                "temperature": llm_config.temperature
-            }
-            
-            await tracker.send_log("info", f"Generating sophisticated questions using {llm_config.model_name}")
-            
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(
-                    llm_config.base_url + "/chat/completions",
-                    headers=headers,
-                    json=payload
-                )
-                
-                if response.status_code != 200:
-                    raise Exception(f"LLM API error: {response.status_code} - {response.text}")
-                
-                result = response.json()
-                content = result["choices"][0]["message"]["content"]
-                
-                # Parse JSON response
-                import json
-                try:
-                    questions_data = json.loads(content.strip())
-                    
-                    for i, q_data in enumerate(questions_data[:remaining_questions]):
-                        if len(questions) >= num_questions:  # Respect the limit
-                            break
-                        questions.append({
-                            "question": q_data.get("question", f"Advanced Question {len(questions)+1}"),
-                            "answer": q_data.get("answer", "Answer not provided"),
-                            "context": q_data.get("concept", ""),
-                            "eval_type": eval_type,
-                            "concept": q_data.get("concept", f"concept_{len(questions)+1}"),
-                            "difficulty": q_data.get("difficulty", "advanced"),
-                            "complexity_layer": q_data.get("complexity_layer", "synthesis"),
-                            "source": "advanced_agentic_llm"
-                        })
-                        
-                        await tracker.increment_progress(message=f"Generated advanced question {len(questions)}: {q_data.get('question', '')[:50]}...")
-                        
-                except json.JSONDecodeError as e:
-                    await tracker.send_log("warning", f"Failed to parse LLM JSON response: {e}")
-                    # Fallback: try to extract questions from text
-                    lines = content.split('\n')
-                    question_lines = [line for line in lines if '?' in line and len(line.strip()) > 10]
-                    
-                    for i, line in enumerate(question_lines[:remaining_questions]):
-                        if len(questions) >= num_questions:  # Respect the limit
-                            break
-                        questions.append({
-                            "question": line.strip(),
-                            "answer": f"Based on the corpus content related to this question",
-                            "context": None,
-                            "eval_type": eval_type,
-                            "source": "advanced_llm_fallback"
-                        })
-                        
-                        await tracker.increment_progress(message=f"Extracted question {len(questions)}")
+    try:
+        # Prepare API request
+        headers = {
+            "Authorization": f"Bearer {llm_config.api_key}",
+            "Content-Type": "application/json"
+        }
         
-        except Exception as e:
-            await tracker.send_log("error", f"Advanced LLM generation failed: {str(e)}")
-            logger.error(f"Advanced LLM question generation failed: {e}")
+        if llm_config.provider == "openrouter":
+            headers.update({
+                "HTTP-Referer": llm_config.site_url or "https://docs-to-eval.ai",
+                "X-Title": llm_config.app_name or "docs-to-eval"
+            })
+        
+        payload = {
+            "model": llm_config.model_name,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "max_tokens": min(llm_config.max_tokens * 2, 32000),  # More tokens for JSON response
+            "temperature": llm_config.temperature
+        }
+        
+        await tracker.send_log("info", f"Generating questions using {llm_config.model_name}")
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                llm_config.base_url + "/chat/completions",
+                headers=headers,
+                json=payload
+            )
+            
+            if response.status_code != 200:
+                raise Exception(f"LLM API error: {response.status_code} - {response.text}")
+            
+            result = response.json()
+            content = result["choices"][0]["message"]["content"]
+            
+            # Parse JSON response
+            import json
+            try:
+                questions_data = json.loads(content.strip())
+                
+                for i, q_data in enumerate(questions_data[:num_questions]):
+                    questions.append({
+                        "question": q_data.get("question", f"Question {i+1}"),
+                        "answer": q_data.get("answer", "Answer not provided"),
+                        "context": q_data.get("concept", ""),
+                        "eval_type": eval_type,
+                        "concept": q_data.get("concept", f"concept_{i+1}"),
+                        "difficulty": q_data.get("difficulty", "intermediate"),
+                        "source": "agentic_llm"
+                    })
+                    
+                    await tracker.increment_progress(message=f"Generated agentic question {i+1}: {q_data.get('question', '')[:50]}...")
+                    
+            except json.JSONDecodeError as e:
+                await tracker.send_log("warning", f"Failed to parse LLM JSON response: {e}")
+                # Fallback: try to extract questions from text
+                lines = content.split('\n')
+                question_lines = [line for line in lines if '?' in line and len(line.strip()) > 10]
+                
+                for i, line in enumerate(question_lines[:num_questions]):
+                    questions.append({
+                        "question": line.strip(),
+                        "answer": f"Based on the corpus content related to this question",
+                        "context": None,
+                        "eval_type": eval_type,
+                        "source": "agentic_llm_fallback"
+                    })
+                    
+                    await tracker.increment_progress(message=f"Extracted question {i+1}")
     
-    # If we still don't have enough questions, use corpus-based generation
+    except Exception as e:
+        await tracker.send_log("error", f"Agentic generation failed: {str(e)}")
+        logger.error(f"Agentic question generation failed: {e}")
+        
+        # Fallback to corpus-based generation
+        await tracker.send_log("info", "Falling back to corpus-based generation")
+        return await generate_corpus_questions(corpus_text, num_questions, eval_type, tracker)
+    
+    # If we didn't get enough questions, fill with corpus-based ones
     if len(questions) < num_questions:
         remaining = num_questions - len(questions)
         await tracker.send_log("info", f"Generating {remaining} additional corpus-based questions")
         additional = await generate_corpus_questions(corpus_text, remaining, eval_type, tracker)
-        questions.extend(additional[:remaining])  # Only take what we need
+        questions.extend(additional)
     
     return questions[:num_questions]
 
 
-async def evaluate_single_question(question: Dict, question_index: int, llm_config, tracker, semaphore: asyncio.Semaphore, shared_client: httpx.AsyncClient) -> Dict:
-    """Evaluate a single question with rate limiting"""
-    async with semaphore:  # Limit concurrent requests
+async def evaluate_with_real_llm(questions: List[Dict], llm_config, tracker) -> List[Dict]:
+    """Evaluate questions using real LLM"""
+    import httpx
+    
+    llm_results = []
+    
+    for i, question in enumerate(questions):
         try:
             # Prepare evaluation prompt with context if available
             if question.get('context'):
@@ -656,309 +512,162 @@ Provide a clear, accurate answer. If the question is mathematical, show your wor
                 "temperature": llm_config.temperature
             }
             
-            response = await shared_client.post(
-                llm_config.base_url + "/chat/completions",
-                headers=headers,
-                json=payload
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                prediction = result["choices"][0]["message"]["content"].strip()
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    llm_config.base_url + "/chat/completions",
+                    headers=headers,
+                    json=payload
+                )
                 
-                result_dict = {
-                    "question": question["question"],
-                    "ground_truth": question["answer"],
-                    "prediction": prediction,
-                    "confidence": 0.9,  # High confidence for real LLM
-                    "source": "real_llm",
-                    "model": llm_config.model_name
-                }
-                
-                await tracker.increment_progress(message=f"✓ Completed question {question_index+1} with {llm_config.model_name}")
-                return result_dict
-            else:
-                # Fallback for failed requests
-                result_dict = {
-                    "question": question["question"],
-                    "ground_truth": question["answer"],
-                    "prediction": f"Error: API request failed ({response.status_code})",
-                    "confidence": 0.0,
-                    "source": "api_error"
-                }
-                await tracker.send_log("warning", f"API request failed for question {question_index+1}: {response.status_code}")
-                return result_dict
-                
+                if response.status_code == 200:
+                    result = response.json()
+                    prediction = result["choices"][0]["message"]["content"].strip()
+                    
+                    llm_results.append({
+                        "question": question["question"],
+                        "ground_truth": question["answer"],
+                        "prediction": prediction,
+                        "confidence": 0.9,  # High confidence for real LLM
+                        "source": "real_llm",
+                        "model": llm_config.model_name
+                    })
+                    
+                    await tracker.increment_progress(message=f"Evaluated question {i+1} with {llm_config.model_name}")
+                else:
+                    # Fallback for failed requests
+                    llm_results.append({
+                        "question": question["question"],
+                        "ground_truth": question["answer"],
+                        "prediction": f"Error: API request failed ({response.status_code})",
+                        "confidence": 0.0,
+                        "source": "api_error"
+                    })
+                    await tracker.send_log("warning", f"API request failed for question {i+1}: {response.status_code}")
+                    
         except Exception as e:
-            logger.warning(f"Error evaluating question {question_index+1}: {e}")
+            logger.warning(f"Error evaluating question {i+1}: {e}")
             # Fallback for exceptions
-            result_dict = {
+            llm_results.append({
                 "question": question["question"],
                 "ground_truth": question["answer"],
                 "prediction": f"Error: {str(e)[:100]}",
                 "confidence": 0.0,
                 "source": "evaluation_error"
-            }
-            await tracker.send_log("warning", f"Failed to evaluate question {question_index+1}: {str(e)}")
-            return result_dict
+            })
+            await tracker.send_log("warning", f"Failed to evaluate question {i+1}: {str(e)}")
+        
+        # Small delay to avoid rate limits
+        await asyncio.sleep(0.2)
+    
+    return llm_results
 
-
-async def evaluate_with_real_llm(questions: List[Dict], llm_config, tracker) -> List[Dict]:
-    """Evaluate questions using real LLM with optimized concurrent processing"""
-    
-    # Configure concurrency - balance speed with rate limits
-    max_concurrent_requests = getattr(llm_config, 'max_concurrent', 5)  # Use configured value, default 5
-    
-    await tracker.send_log("info", f"Starting concurrent evaluation with {max_concurrent_requests} parallel requests")
-    
-    # Create semaphore to limit concurrency
-    semaphore = asyncio.Semaphore(max_concurrent_requests)
-    
-    # Use optimized connection pooling - only what we need
-    timeout = httpx.Timeout(30.0, connect=10.0)
-    # Sensible connection limits: keepalive = concurrent, max = concurrent + 2 (buffer)
-    limits = httpx.Limits(
-        max_keepalive_connections=max_concurrent_requests, 
-        max_connections=max_concurrent_requests + 2
-    )
-    
-    async with httpx.AsyncClient(timeout=timeout, limits=limits) as client:
-        # Create tasks for all questions
-        tasks = [
-            evaluate_single_question(question, i, llm_config, tracker, semaphore, client)
-            for i, question in enumerate(questions)
-        ]
-        
-        # Execute all tasks concurrently
-        try:
-            llm_results = await asyncio.gather(*tasks, return_exceptions=True)
-            
-            # Handle any exceptions that occurred
-            final_results = []
-            for i, result in enumerate(llm_results):
-                if isinstance(result, Exception):
-                    # Convert exception to error result
-                    error_result = {
-                        "question": questions[i]["question"],
-                        "ground_truth": questions[i]["answer"],
-                        "prediction": f"Error: {str(result)[:100]}",
-                        "confidence": 0.0,
-                        "source": "concurrent_error"
-                    }
-                    final_results.append(error_result)
-                    await tracker.send_log("error", f"Concurrent evaluation error for question {i+1}: {str(result)}")
-                else:
-                    final_results.append(result)
-            
-            await tracker.send_log("info", f"Completed concurrent evaluation of {len(final_results)} questions")
-            return final_results
-            
-        except Exception as e:
-            await tracker.send_log("error", f"Critical error in concurrent evaluation: {str(e)}")
-            # Fallback to empty results
-            return []
-
-
-def _detect_content_type(corpus_text: str) -> str:
-    """Detect actual content type to prevent template-content mismatches"""
-    
-    # Mathematical content indicators
-    math_patterns = [
-        r'\b\d+\s*[+\-*/=]\s*\d+',  # Simple equations
-        r'\$[^$]+\$',  # LaTeX math
-        r'\\[a-zA-Z]+\{[^}]*\}',  # LaTeX commands
-        r'\b(equation|formula|calculate|solve|derivative|integral)\b',
-        r'\b\d+\.\d+\b.*\b\d+\.\d+\b'  # Multiple decimal numbers
-    ]
-    
-    # Code content indicators  
-    code_patterns = [
-        r'def\s+\w+\(',  # Python functions
-        r'function\s+\w+\(',  # JavaScript functions
-        r'\bclass\s+\w+\b',  # Class definitions
-        r'import\s+\w+',  # Import statements
-        r'#include\s*<',  # C/C++ includes
-    ]
-    
-    math_score = sum(1 for pattern in math_patterns if re.search(pattern, corpus_text, re.IGNORECASE))
-    code_score = sum(1 for pattern in code_patterns if re.search(pattern, corpus_text, re.IGNORECASE))
-    
-    if math_score >= 2:
-        return "mathematical"
-    elif code_score >= 2:
-        return "code_generation"
-    else:
-        return "factual_qa"  # Safe default
-
-def _extract_semantic_concepts(corpus_text: str, eval_type: str) -> List[str]:
-    """Extract concepts appropriate for the evaluation type"""
-    
-    if eval_type == "mathematical":
-        # Extract mathematical entities: variables, equations, numbers
-        concepts = []
-        # Mathematical variables (single letters, often in equations)
-        variables = re.findall(r'\b[a-zA-Z]\b(?=\s*[=+\-*/])', corpus_text)
-        concepts.extend(variables)
-        
-        # Mathematical expressions in text
-        expressions = re.findall(r'\b\w+\s*=\s*[^.,;]+', corpus_text)
-        concepts.extend([expr.strip() for expr in expressions[:5]])
-        
-        # Numbers with units or context
-        numbers_in_context = re.findall(r'\b\d+(?:\.\d+)?\s*(?:grams?|meters?|seconds?|degrees?|percent)', corpus_text, re.IGNORECASE)
-        concepts.extend(numbers_in_context[:3])
-        
-        return concepts[:10] if concepts else ["x", "the equation", "the value"]
-    
-    elif eval_type == "code_generation":
-        # Extract programming concepts
-        concepts = []
-        # Function names
-        functions = re.findall(r'(?:def|function)\s+(\w+)', corpus_text)
-        concepts.extend(functions)
-        
-        # Class names
-        classes = re.findall(r'class\s+(\w+)', corpus_text)
-        concepts.extend(classes)
-        
-        # Common programming terms
-        prog_terms = re.findall(r'\b(algorithm|function|method|class|variable|array|list|dictionary)\b', corpus_text, re.IGNORECASE)
-        concepts.extend(list(set(prog_terms)))
-        
-        return concepts[:10] if concepts else ["a function", "an algorithm", "a data structure"]
-    
-    else:  # factual_qa and domain_knowledge
-        # Extract proper nouns and key domain terms
-        concepts = []
-        
-        # Proper nouns (capitalized words, likely important entities)
-        proper_nouns = re.findall(r'\b[A-Z][a-z]{2,}\b', corpus_text)
-        # Filter out common English words
-        common_words = {'The', 'This', 'That', 'There', 'These', 'Those', 'When', 'Where', 'Why', 'How', 'What', 'Which', 'Who'}
-        proper_nouns = [word for word in proper_nouns if word not in common_words]
-        concepts.extend(list(set(proper_nouns))[:15])
-        
-        # Multi-word entities (capitalize phrases)
-        entities = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b', corpus_text)
-        concepts.extend(entities[:10])
-        
-        return concepts[:20] if concepts else ["the main topic", "the subject matter", "the concept"]
 
 async def generate_corpus_questions(corpus_text: str, num_questions: int, eval_type: str, tracker) -> List[Dict]:
+<<<<<<< HEAD
     """Generate questions using improved template approach with content-type detection"""
+=======
+    """Generate questions based on corpus content"""
+    import re
+>>>>>>> parent of 6898d60 (increase concurrency and benchmark complexity and math)
     import random
     
     questions = []
     
-    # CRITICAL FIX: Detect actual content type to prevent mismatches
-    detected_type = _detect_content_type(corpus_text)
-    if detected_type != eval_type:
-        await tracker.send_log("warning", f"Content type mismatch detected. Requested: {eval_type}, Detected: {detected_type}. Using detected type.")
-        eval_type = detected_type
-    
-    # Extract sentences for context
+    # Extract sentences and key phrases from corpus
     sentences = re.split(r'[.!?]+', corpus_text)
     sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
     
-    # Extract semantic concepts appropriate for the evaluation type
-    concepts = _extract_semantic_concepts(corpus_text, eval_type)
+    # Extract potential topics and concepts
+    words = re.findall(r'\b[A-Z][a-z]+\b', corpus_text)  # Capitalized words (likely topics)
+    numbers = re.findall(r'\b\d+\.?\d*\b', corpus_text)  # Numbers for mathematical content
     
-    # Define templates with better specificity
+    # Question templates based on evaluation type
     if eval_type == "mathematical":
         templates = [
-            "What is the value of {concept}?",
-            "Calculate {concept}.",
-            "If {concept}, what is the result?",
-            "Solve for the value in: {concept}",
-            "What does {concept} equal?"
+            "What is the result of {concept}?",
+            "Calculate the value when {concept}.",
+            "Solve for {concept}.",
+            "What does {concept} equal?",
+            "Find the solution to {concept}."
         ]
     elif eval_type == "factual_qa":
         templates = [
             "What is {concept}?",
             "Define {concept}.",
             "Explain {concept}.",
-            "What does {concept} refer to?",
-            "Describe the significance of {concept}."
+            "What does {concept} mean?",
+            "Describe {concept}."
         ]
     elif eval_type == "code_generation":
         templates = [
             "Write code to implement {concept}.",
-            "How would you implement {concept}?",
-            "Create {concept} in code.",
-            "Write a program for {concept}.",
-            "Implement {concept} using appropriate data structures."
+            "How would you code {concept}?",
+            "Create a function for {concept}.",
+            "Write a program that {concept}.",
+            "Implement {concept} in code."
         ]
     else:  # domain_knowledge and others
         templates = [
             "What is {concept}?",
             "Explain the concept of {concept}.",
-            "What is the significance of {concept}?",
-            "How does {concept} relate to the main topic?",
-            "Describe the role of {concept}."
+            "How does {concept} work?",
+            "What are the key aspects of {concept}?",
+            "Describe the importance of {concept}."
         ]
     
-    # Generate questions with improved logic
+    # Generate questions
     for i in range(num_questions):
-        if len(questions) >= num_questions:
-            break
-            
         try:
-            # Select appropriate concept
-            if concepts:
-                concept = random.choice(concepts)
-                # Remove used concept to avoid duplicates
-                if concept in concepts:
-                    concepts.remove(concept)
-                if not concepts:  # Refresh if we run out
-                    concepts = _extract_semantic_concepts(corpus_text, eval_type)
+            # Pick a random sentence or concept
+            if sentences and random.random() > 0.3:
+                # Use a sentence from the corpus
+                sentence = random.choice(sentences)
+                # Extract key concept from sentence
+                concept_words = re.findall(r'\b[a-zA-Z]{4,}\b', sentence)
+                if concept_words:
+                    concept = random.choice(concept_words)
+                else:
+                    concept = sentence[:50] + "..."
             else:
-                concept = f"topic {i+1}"
+                # Use a capitalized word as concept
+                concept = random.choice(words) if words else f"concept {i+1}"
             
-            # Generate question with validation
+            # Generate question
             template = random.choice(templates)
             question = template.format(concept=concept)
             
-            # Generate contextual answer
+            # Generate a basic answer (extract from context)
             answer_context = ""
             for sentence in sentences:
-                if any(word.lower() in sentence.lower() for word in concept.split()[:2]):
+                if concept.lower() in sentence.lower():
                     answer_context = sentence.strip()
                     break
             
-            if not answer_context:
-                if eval_type == "mathematical":
-                    answer_context = f"The mathematical relationship involving {concept}"
-                elif eval_type == "factual_qa":
-                    answer_context = f"Based on the corpus content related to {concept}"
-                else:
-                    answer_context = f"Information about {concept} from the provided text"
+            if not answer_context and numbers:
+                answer_context = f"The answer involves: {', '.join(numbers[:3])}"
+            elif not answer_context:
+                answer_context = f"Based on the corpus content about {concept}"
             
             questions.append({
                 "question": question,
                 "answer": answer_context,
-                "context": None,  # Will be added later if needed
+                "context": sentence if 'sentence' in locals() else None,
                 "eval_type": eval_type,
-                "concept": concept,
-                "generation_mode": "template_fallback",  # Flag this as fallback
-                "quality_warning": "Generated using emergency template fallback due to agentic pipeline failure"
+                "concept": concept
             })
             
-            await tracker.increment_progress(message=f"Generated question {len(questions)}: {question[:50]}...")
-            await asyncio.sleep(0.05)
+            await tracker.increment_progress(message=f"Generated question {i+1}: {question[:50]}...")
+            await asyncio.sleep(0.05)  # Brief pause
             
         except Exception as e:
             logger.warning(f"Error generating question {i+1}: {e}")
-            # Final fallback with clear labeling
-            if len(questions) < num_questions:
-                questions.append({
-                    "question": f"What information can you provide about the content in section {i+1}?",
-                    "answer": f"Relevant information from the corpus about section {i+1}",
-                    "context": None,
-                    "eval_type": "factual_qa",  # Safe default
-                    "concept": f"section_{i+1}",
-                    "generation_mode": "emergency_fallback",
-                    "quality_warning": "Emergency fallback question due to generation failure"
-                })
+            # Fallback question
+            questions.append({
+                "question": f"What can you tell me about the content in section {i+1}?",
+                "answer": f"Information from the provided corpus about topic {i+1}",
+                "context": None,
+                "eval_type": eval_type
+            })
     
     return questions
 
@@ -970,7 +679,6 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
     try:
         # Update status
         evaluation_runs[run_id]["status"] = "running"
-        save_evaluation_runs()  # Persist to disk
         await tracker.send_log("info", "Starting evaluation")
         
         # Phase 1: Classification
@@ -1079,8 +787,7 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
             # Generate comprehensive statistical report following lm-evaluation-harness principles
             statistical_report = EvaluationStatistics.generate_evaluation_report(
                 verification_results, 
-                corpus_text=request.corpus_text,
-                eval_type=classification.primary_type  # CRITICAL FIX: Use task-specific baseline
+                corpus_text=request.corpus_text
             )
             
             # Extract main statistics for backward compatibility
@@ -1095,34 +802,6 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
             statistical_report = {"error": f"Statistical analysis failed: {str(e)}"}
             main_stats = None
         
-        # CRITICAL FIX: Extract and surface quality warnings
-        quality_warnings = []
-        generation_modes = []
-        
-        # Check questions for quality warnings
-        for question in questions:
-            if isinstance(question, dict):
-                if warning := question.get("quality_warning"):
-                    quality_warnings.append(warning)
-                if mode := question.get("generation_mode"):
-                    generation_modes.append(mode)
-        
-        # Check metadata in verification results for agentic fallback warnings
-        for result in verification_results:
-            if "details" in result and isinstance(result["details"], dict):
-                metadata = result["details"].get("metadata", {})
-                if isinstance(metadata, dict):
-                    provenance = metadata.get("provenance", {})
-                    if isinstance(provenance, dict):
-                        if warning := provenance.get("quality_warning"):
-                            quality_warnings.append(warning)
-                        if mode := provenance.get("generation_mode"):
-                            generation_modes.append(mode)
-        
-        # Determine overall quality status
-        has_fallback = any(mode in ['template_fallback', 'emergency_fallback', 'agentic_fallback'] for mode in generation_modes)
-        quality_degraded = len(quality_warnings) > 0
-        
         final_results = {
             "run_id": run_id,
             "evaluation_config": config.dict(),
@@ -1135,14 +814,6 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
                 "confidence_interval_95": main_stats.confidence_interval_95 if main_stats else (0, 0),
                 "statistical_significance": main_stats.statistical_significance if main_stats else 1.0,
                 "statistically_significant": main_stats.statistical_significance < 0.05 if main_stats else False
-            },
-            "quality_status": {
-                "has_fallback_questions": has_fallback,
-                "quality_degraded": quality_degraded,
-                "warnings": list(set(quality_warnings)),  # Remove duplicates
-                "generation_modes": list(set(generation_modes)),
-                "total_warnings": len(quality_warnings),
-                "fallback_percentage": (sum(1 for mode in generation_modes if mode in ['template_fallback', 'emergency_fallback', 'agentic_fallback']) / max(1, len(questions))) * 100
             },
             "detailed_statistics": statistical_report,
             "individual_results": verification_results[:10],  # First 10 only
@@ -1160,19 +831,11 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
             "progress_percent": 100,
             "message": "Evaluation completed successfully"
         })
-        save_evaluation_runs()  # Persist to disk
         
-        # Send completion notification with quality warnings
+        # Send completion notification
         await tracker.notifier.send_evaluation_complete(final_results)
         
-        # Log completion with quality status
-        if quality_degraded:
-            logger.warning(f"Evaluation completed with quality degradation", 
-                         run_id=run_id, mean_score=mean_score, 
-                         fallback_percentage=final_results["quality_status"]["fallback_percentage"],
-                         total_warnings=len(quality_warnings))
-        else:
-            logger.info(f"Evaluation completed successfully", run_id=run_id, mean_score=mean_score)
+        logger.info(f"Evaluation completed", run_id=run_id, mean_score=mean_score)
         
     except Exception as e:
         # Handle errors
@@ -1185,29 +848,19 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
             "end_time": datetime.now(),
             "message": f"Evaluation failed: {error_msg}"
         })
-        save_evaluation_runs()  # Persist to disk
         
         await tracker.send_error(error_msg)
 
 
 @router.get("/evaluation/{run_id}/status")
 async def get_evaluation_status(run_id: str):
-    """Get evaluation status with optimized polling recommendations"""
+    """Get evaluation status"""
     if run_id not in evaluation_runs:
         raise HTTPException(status_code=404, detail="Run not found")
     
     run_info = evaluation_runs[run_id]
     
-    # Add polling recommendations based on status
-    polling_interval = 1.0  # Default 1 second
-    if run_info["status"] == "running":
-        # Reduce polling frequency during processing
-        polling_interval = 2.0 if run_info.get("progress_percent", 0) < 90 else 0.5
-    elif run_info["status"] in ["completed", "failed", "cancelled"]:
-        # No need for frequent polling when done
-        polling_interval = 10.0
-    
-    response = EvaluationStatus(
+    return EvaluationStatus(
         run_id=run_id,
         status=run_info["status"],
         phase=run_info.get("phase"),
@@ -1215,12 +868,6 @@ async def get_evaluation_status(run_id: str):
         message=run_info.get("message", ""),
         start_time=run_info["start_time"],
         estimated_completion=run_info.get("estimated_completion")
-    )
-    
-    # Add recommended polling interval as header
-    return JSONResponse(
-        content=response.dict(),
-        headers={"X-Recommended-Poll-Interval": str(polling_interval)}
     )
 
 
@@ -1238,8 +885,7 @@ async def get_evaluation_results(run_id: str):
         results=run_info.get("results"),
         error=run_info.get("error"),
         duration_seconds=(
-            ((run_info.get("end_time") if isinstance(run_info.get("end_time"), datetime) else datetime.fromisoformat(run_info.get("end_time"))) - 
-             (run_info["start_time"] if isinstance(run_info["start_time"], datetime) else datetime.fromisoformat(run_info["start_time"]))).total_seconds()
+            (run_info.get("end_time", datetime.now()) - run_info["start_time"]).total_seconds()
             if run_info.get("end_time") else None
         )
     )
@@ -1435,100 +1081,6 @@ async def test_api_key(api_test: dict):
     except Exception as e:
         logger.error(f"Error testing API key: {e}")
         return {"status": "error", "message": f"API test failed: {str(e)}"}
-
-
-@router.post("/analysis/text")
-async def analyze_text(request: TextAnalysisRequest):
-    """
-    Analyze text corpus and provide intelligent suggestions for evaluation setup.
-    
-    Returns question count suggestions, chunking information, and evaluation type recommendations.
-    """
-    try:
-        # Get question predictions
-        question_prediction = predict_optimal_questions(
-            request.text, 
-            eval_type=request.eval_type_hint
-        )
-        
-        # Get chunking information with adaptive sizing for 2k-4k range
-        optimal_chunk_size = 3000  # Default 3k
-        text_length = len(request.text)
-        
-        # Adaptive chunk sizing based on text length and complexity
-        if text_length > 20000:
-            optimal_chunk_size = 4000  # Larger chunks for very long texts
-        elif text_length < 5000:
-            optimal_chunk_size = 2000  # Smaller chunks for shorter texts
-        
-        chunks = create_smart_chunks(request.text, target_chunk_size=optimal_chunk_size, overlap_percent=5.0)
-        
-        # Collect chunking method statistics
-        chunk_methods = {}
-        for chunk in chunks:
-            method = chunk.get("method", "unknown")
-            chunk_methods[method] = chunk_methods.get(method, 0) + 1
-        
-        primary_method = max(chunk_methods.items(), key=lambda x: x[1])[0] if chunk_methods else "unknown"
-        
-        chunk_info = {
-            "total_chunks": len(chunks),
-            "avg_chunk_size": sum(len(chunk["text"]) for chunk in chunks) // max(1, len(chunks)),
-            "target_chunk_size": optimal_chunk_size,
-            "total_processed_chars": sum(len(chunk["text"]) for chunk in chunks),
-            "overlap_efficiency": round((question_prediction["text_stats"]["char_count"] / 
-                                      max(1, sum(len(chunk["text"]) for chunk in chunks))) * 100, 1),
-            "chunking_method": primary_method,
-            "method_distribution": chunk_methods,
-            "avg_semantic_score": round(sum(chunk.get("semantic_score", 1.0) for chunk in chunks) / max(1, len(chunks)), 3),
-            "size_range": f"{min(len(chunk['text']) for chunk in chunks) if chunks else 0}-{max(len(chunk['text']) for chunk in chunks) if chunks else 0} chars",
-            "chonkie_features": {
-                "uses_advanced_chunking": primary_method.startswith("chonkie_"),
-                "semantic_boundaries": primary_method in ["chonkie_semantic", "chonkie_late"],
-                "structure_aware": primary_method == "chonkie_recursive",
-                "global_context_preserved": primary_method == "chonkie_late",
-                "optimal_for_llm": optimal_chunk_size >= 2000 and optimal_chunk_size <= 4000
-            },
-            "quality_metrics": {
-                "coherence_score": round(sum(chunk.get("semantic_coherence", chunk.get("semantic_score", 1.0)) for chunk in chunks) / max(1, len(chunks)), 3),
-                "size_variance": round(
-                    (sum((len(chunk["text"]) - sum(len(c["text"]) for c in chunks) / len(chunks))**2 for chunk in chunks) / max(1, len(chunks)))**0.5, 1
-                ) if chunks else 0,
-                "overlap_quality": "good" if 3 <= overlap_percent <= 7 else "suboptimal"
-            }
-        }
-        
-        # Suggest evaluation types based on content analysis
-        eval_suggestions = []
-        text_stats = question_prediction["text_stats"]
-        
-        if text_stats["has_math"]:
-            eval_suggestions.append("mathematical")
-        if text_stats["has_code"]:  
-            eval_suggestions.append("code_generation")
-        if text_stats["entity_count"] > 10:
-            eval_suggestions.extend(["factual_qa", "domain_knowledge"])
-        if text_stats["vocabulary_richness"] < 0.4:
-            eval_suggestions.append("reading_comprehension")
-        if not eval_suggestions:
-            eval_suggestions.append("domain_knowledge")  # Safe default
-            
-        # Remove duplicates and limit to top 3
-        eval_suggestions = list(dict.fromkeys(eval_suggestions))[:3]
-        
-        return TextAnalysisResponse(
-            text_stats=text_stats,
-            suggested_questions=question_prediction["suggested"],
-            min_questions=question_prediction["min"],
-            max_questions=question_prediction["max"],
-            reasoning=question_prediction["reasoning"],
-            chunk_info=chunk_info,
-            eval_type_suggestions=eval_suggestions
-        )
-        
-    except Exception as e:
-        logger.error(f"Text analysis failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 
 @router.get("/types/evaluation")
