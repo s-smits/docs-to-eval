@@ -35,6 +35,8 @@ dependencies = [
     "numpy>=1.21.0",
     "chonkie>=1.1.1",
     "sentence-transformers>=5.0.0",
+    "python-dotenv>=1.1.1",
+    "openai>=1.98.0",
 ]
 
 [project.optional-dependencies]

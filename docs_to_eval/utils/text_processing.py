@@ -49,10 +49,20 @@ def extract_keywords(text: str, min_length: int = 3, max_keywords: int = 50) -> 
         'ourselves', 'yourselves', 'themselves'
     }
     
+    # Generic/vague words to filter out for better domain focus
+    generic_words = {
+        'such', 'find', 'sources', 'article', 'citations', 'information',
+        'content', 'text', 'data', 'example', 'case', 'way', 'time', 'place',
+        'thing', 'part', 'people', 'work', 'life', 'world', 'year', 'day',
+        'man', 'woman', 'child', 'person', 'group', 'number', 'part', 'way',
+        'back', 'see', 'get', 'make', 'come', 'give', 'take', 'use', 'look',
+        'know', 'want', 'say', 'tell', 'ask', 'feel', 'try', 'leave', 'put'
+    }
+    
     # Filter and count
     word_freq = {}
     for word in words:
-        if word not in stop_words:
+        if word not in stop_words and word not in generic_words:
             word_freq[word] = word_freq.get(word, 0) + 1
     
     # Get top keywords

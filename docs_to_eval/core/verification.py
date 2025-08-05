@@ -664,6 +664,32 @@ class VerificationOrchestrator:
         elif eval_type == 'code_generation':
             return self.deterministic_verifier.code_execution_match(prediction, ground_truth)
         
+        elif eval_type == 'numerical':
+            return self.deterministic_verifier.numerical_match(prediction, ground_truth)
+        
+        elif eval_type == 'mathematical':
+            return self.math_verify_verifier.math_verify_match(prediction, ground_truth)
+        
+        elif eval_type == 'math_expression':
+            return self.math_verify_verifier.expression_match(prediction, ground_truth)
+        
+        elif eval_type == 'latex_math':
+            return self.math_verify_verifier.latex_expression_match(prediction, ground_truth)
+        
+        elif eval_type == 'exact':
+            return self.deterministic_verifier.exact_match(prediction, ground_truth)
+        
+        elif eval_type == 'similarity':
+            return self.non_deterministic_verifier.semantic_similarity_mock(prediction, ground_truth)
+        
+        elif eval_type == 'domain_factual':
+            # Use similarity for domain factual knowledge with higher tolerance
+            result = self.non_deterministic_verifier.semantic_similarity_mock(prediction, ground_truth)
+            # Boost scores for domain factual to be more lenient
+            result.score = min(1.0, result.score * 1.5)  # 50% boost
+            result.method = 'domain_factual_similarity'
+            return result
+        
         elif eval_type in ['summarization', 'translation', 'reading_comprehension']:
             return self.non_deterministic_verifier.semantic_similarity_mock(prediction, ground_truth)
         

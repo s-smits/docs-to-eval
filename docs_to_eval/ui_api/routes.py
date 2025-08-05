@@ -7,6 +7,7 @@ import uuid
 import json
 import shutil
 import httpx
+import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -619,8 +620,17 @@ async def evaluate_single_question(question: Dict, question_index: int, llm_conf
     """Evaluate a single question with rate limiting"""
     async with semaphore:  # Limit concurrent requests
         try:
-            # Prepare evaluation prompt
-            evaluation_prompt = f"""Please answer the following question based on your knowledge:
+            # Prepare evaluation prompt with context if available
+            if question.get('context'):
+                evaluation_prompt = f"""Context: {question['context']}
+
+Based on the context above, please answer the following question:
+
+Question: {question['question']}
+
+Provide a clear, accurate answer. If the question is mathematical, show your work. If it's factual, provide specific details."""
+            else:
+                evaluation_prompt = f"""Please answer the following question based on your knowledge:
 
 Question: {question['question']}
 
@@ -836,7 +846,6 @@ def _extract_semantic_concepts(corpus_text: str, eval_type: str) -> List[str]:
 
 async def generate_corpus_questions(corpus_text: str, num_questions: int, eval_type: str, tracker) -> List[Dict]:
     """Generate questions using improved template approach with content-type detection"""
-    import re
     import random
     
     questions = []

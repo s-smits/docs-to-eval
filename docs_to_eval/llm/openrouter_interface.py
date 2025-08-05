@@ -174,6 +174,17 @@ class OpenRouterInterface(BaseLLMInterface):
         """Reset usage statistics"""
         self.call_count = 0
         self.total_tokens_used = 0
+    
+    def get_performance_stats(self) -> Dict[str, Any]:
+        """Get performance statistics for this interface"""
+        return {
+            'total_calls': self.call_count,
+            'total_tokens_used': self.total_tokens_used,
+            'model_name': self.model_name,
+            'provider': 'openrouter',
+            'base_url': self.config.base_url,
+            'available': OPENAI_AVAILABLE and bool(self.config.api_key)
+        }
 
 
 class QwenInterface(OpenRouterInterface):

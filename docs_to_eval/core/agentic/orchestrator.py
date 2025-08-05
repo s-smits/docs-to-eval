@@ -274,20 +274,27 @@ class AgenticBenchmarkOrchestrator:
                 context_snippet = concept_extraction.supporting_snippets.get(concept, corpus_text[:500])
                 
                 # CRITICAL FIX: Pass validation feedback to writer on retries
-                if retry_cycle > 0 and previous_validation_issues:
-                    # Create feedback-aware prompt for question writer
-                    feedback_prompt = f"Previous attempt failed with issues: {', '.join(previous_validation_issues)}. Please avoid these problems."
-                    draft = await self._tracked_agent_call(
-                        self.question_writer.produce,
-                        concept, corpus_text, eval_type, context_snippet, 
-                        feedback=feedback_prompt, temperature=current_temperature
-                    )
-                else:
-                    draft = await self._tracked_agent_call(
-                        self.question_writer.produce,
-                        concept, corpus_text, eval_type, context_snippet,
-                        temperature=current_temperature
-                    )
+                # Set temperature in agent config before calling
+                original_temp = self.question_writer.config.temperature
+                self.question_writer.config.temperature = current_temperature
+                
+                try:
+                    if retry_cycle > 0 and previous_validation_issues:
+                        # Create feedback-aware prompt for question writer
+                        feedback_prompt = f"Previous attempt failed with issues: {', '.join(previous_validation_issues)}. Please avoid these problems."
+                        draft = await self._tracked_agent_call(
+                            self.question_writer.produce,
+                            concept, corpus_text, eval_type, context_snippet, 
+                            feedback=feedback_prompt
+                        )
+                    else:
+                        draft = await self._tracked_agent_call(
+                            self.question_writer.produce,
+                            concept, corpus_text, eval_type, context_snippet
+                        )
+                finally:
+                    # Restore original temperature
+                    self.question_writer.config.temperature = original_temp
                 
                 # Step 2: Adversary (difficulty booster)
                 candidate = await self._tracked_agent_call(
