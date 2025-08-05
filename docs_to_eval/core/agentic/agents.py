@@ -184,7 +184,8 @@ Return format:
                 for item in data.get('concepts', []):
                     concepts[item['name']] = (item['importance'], item['snippet'])
                 return concepts, chunk_id
-            except:
+            except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as e:
+                # Failed to parse LLM response, use fallback
                 pass
         
         # Fallback: Simple keyword extraction
@@ -288,7 +289,8 @@ Think step by step, then return JSON only.
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
-        except:
+        except (json.JSONDecodeError, AttributeError) as e:
+            # Failed to parse JSON, use fallback
             pass
         
         # Fallback parsing - IMPROVED TEMPLATES based on lm-evaluation-harness standards
@@ -528,7 +530,7 @@ Return JSON: {{"distractors": ["wrong1", "wrong2", "wrong3"], "rationale": "why 
                 data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
                 options.extend(data.get('distractors', []))
                 rationale = data.get('rationale', 'Generated distractors')
-            except:
+            except (json.JSONDecodeError, AttributeError, TypeError) as e:
                 # Fallback distractors
                 options.extend([
                     f"Alternative interpretation of {concept}",
@@ -566,7 +568,8 @@ Create a question that requires 2-3 logical steps to answer. Return JSON:
                 response = await self._call_llm_with_retry(prompt)
                 data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
                 return data['enhanced_question'], data['enhanced_answer']
-            except:
+            except (json.JSONDecodeError, AttributeError, KeyError, TypeError) as e:
+                # Failed to parse response, use fallback
                 pass
         
         # Fallback: Add conditional reasoning
@@ -765,7 +768,8 @@ Return JSON: {{"options": ["wrong1", "wrong2", "wrong3"]}}
                 response = await self._call_llm_with_retry(prompt)
                 data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
                 options.extend(data.get('options', []))
-            except:
+            except (json.JSONDecodeError, AttributeError, TypeError) as e:
+                # Failed to generate options, use fallback
                 pass
         
         # Fallback: generate basic distractors
@@ -908,7 +912,8 @@ class Validator(BaseAgent):
             result = self.verifier.verify(mock_prediction, candidate.answer, eval_type, candidate.options)
             
             return result.score >= 0.95  # Should be nearly perfect for deterministic
-        except:
+        except (AttributeError, KeyError, TypeError, Exception) as e:
+            # Verification failed, assume not deterministic
             return False
     
     async def _assess_quality(self, candidate: BenchmarkCandidate) -> float:

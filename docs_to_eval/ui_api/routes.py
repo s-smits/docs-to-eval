@@ -14,7 +14,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, WebSocket, Form, Depends
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, validator
 
 from .websockets import websocket_manager, handle_websocket_connection, get_progress_tracker
 from ..core.evaluation import EvaluationFramework, BenchmarkConfig
@@ -30,23 +30,105 @@ logger = get_logger("api_routes")
 
 # Pydantic models for API
 class CorpusUploadRequest(BaseModel):
-    text: str
-    name: Optional[str] = "corpus"
-    description: Optional[str] = ""
+    text: str = Field(..., min_length=1, max_length=10*1024*1024, description="Corpus text content")
+    name: Optional[str] = Field("corpus", max_length=100, description="Corpus name")
+    description: Optional[str] = Field("", max_length=500, description="Corpus description")
+    
+    @validator('text')
+    def validate_text_content(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Text content cannot be empty")
+        
+        # Check for suspicious patterns
+        import re
+        suspicious_patterns = [
+            r'<script[^>]*>.*?</script>',
+            r'javascript:',
+            r'data:.*base64',
+            r'\\x[0-9a-fA-F]{2}',
+            r'eval\s*\(',
+            r'exec\s*\('
+        ]
+        
+        for pattern in suspicious_patterns:
+            if re.search(pattern, v, re.IGNORECASE | re.DOTALL):
+                raise ValueError(f"Text contains potentially malicious content")
+        
+        return v.strip()
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if v:
+            # Sanitize name by removing special characters and keeping only safe ones
+            import re
+            # Remove all special characters except spaces, hyphens, underscores, and parentheses
+            sanitized = re.sub(r'[^\w\s\-_\(\)]', '', v)
+            sanitized = re.sub(r'\s+', ' ', sanitized).strip()  # Normalize spaces
+            
+            if len(sanitized) < 3:
+                # Use a default name if sanitization results in too short name
+                sanitized = "Uploaded Corpus"
+            
+            return sanitized
+        return v.strip() if v else v
 
 
 class EvaluationRequest(BaseModel):
-    corpus_text: str
-    eval_type: Optional[str] = None  # Accept string, convert later
-    num_questions: int = Field(default=20, ge=1, le=200)
-    use_agentic: bool = True
-    temperature: float = Field(default=0.7, ge=0, le=2)
-    run_name: Optional[str] = None
+    corpus_text: str = Field(..., min_length=1, max_length=10*1024*1024, description="Corpus text content")
+    eval_type: Optional[str] = Field(None, max_length=50, description="Evaluation type")
+    num_questions: int = Field(default=20, ge=1, le=200, description="Number of questions to generate")
+    use_agentic: bool = Field(default=True, description="Use agentic generation")
+    temperature: float = Field(default=0.7, ge=0, le=2, description="Temperature for generation")
+    run_name: Optional[str] = Field(None, max_length=100, description="Name for this evaluation run")
     
     # Finetune test set configuration
     finetune_test_set_enabled: bool = Field(default=True, description="Enable creation of finetune test set")
     finetune_test_set_percentage: float = Field(default=0.2, ge=0.1, le=0.5, description="Percentage of questions for test set (e.g., 0.2 = 20%)")
-    finetune_random_seed: int = Field(default=42, ge=0, description="Random seed for reproducible splits")
+    finetune_random_seed: int = Field(default=42, ge=0, le=999999, description="Random seed for reproducible splits")
+    
+    @validator('corpus_text')
+    def validate_corpus_text(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Corpus text cannot be empty")
+        
+        # Check for suspicious patterns
+        import re
+        suspicious_patterns = [
+            r'<script[^>]*>.*?</script>',
+            r'javascript:',
+            r'data:.*base64',
+            r'\\x[0-9a-fA-F]{2}',
+            r'eval\s*\(',
+            r'exec\s*\('
+        ]
+        
+        for pattern in suspicious_patterns:
+            if re.search(pattern, v, re.IGNORECASE | re.DOTALL):
+                raise ValueError("Corpus text contains potentially malicious content")
+        
+        return v.strip()
+    
+    @validator('eval_type')
+    def validate_eval_type(cls, v):
+        if v:
+            # Only allow known evaluation types
+            valid_types = [
+                'mathematical', 'code_generation', 'factual_qa', 'multiple_choice',
+                'summarization', 'translation', 'creative_writing', 'commonsense_reasoning',
+                'reading_comprehension', 'domain_knowledge'
+            ]
+            if v not in valid_types:
+                raise ValueError(f"Invalid evaluation type. Must be one of: {', '.join(valid_types)}")
+        return v
+    
+    @validator('run_name')
+    def validate_run_name(cls, v):
+        if v:
+            # Only allow safe characters
+            import re
+            if not re.match(r'^[a-zA-Z0-9\s\-_\.]+$', v):
+                raise ValueError("Run name can only contain letters, numbers, spaces, hyphens, underscores, and periods")
+        return v.strip() if v else v
 
 
 class EvaluationStatus(BaseModel):
@@ -56,10 +138,41 @@ class EvaluationStatus(BaseModel):
 
 
 class QwenEvaluationRequest(BaseModel):
-    corpus_text: str
-    num_questions: int = Field(default=5, ge=1, le=20)
-    use_fictional: bool = True
-    run_name: Optional[str] = "Qwen Local Test"
+    corpus_text: str = Field(..., min_length=1, max_length=5*1024*1024, description="Corpus text content")
+    num_questions: int = Field(default=5, ge=1, le=20, description="Number of questions to generate")
+    use_fictional: bool = Field(default=True, description="Use fictional content enhancement")
+    run_name: Optional[str] = Field("Qwen Local Test", max_length=100, description="Name for this evaluation run")
+    
+    @validator('corpus_text')
+    def validate_corpus_text(cls, v):
+        if not v or not v.strip():
+            raise ValueError("Corpus text cannot be empty")
+        
+        # Check for suspicious patterns (same as EvaluationRequest)
+        import re
+        suspicious_patterns = [
+            r'<script[^>]*>.*?</script>',
+            r'javascript:',
+            r'data:.*base64',
+            r'\\x[0-9a-fA-F]{2}',
+            r'eval\s*\(',
+            r'exec\s*\('
+        ]
+        
+        for pattern in suspicious_patterns:
+            if re.search(pattern, v, re.IGNORECASE | re.DOTALL):
+                raise ValueError("Corpus text contains potentially malicious content")
+        
+        return v.strip()
+    
+    @validator('run_name')
+    def validate_run_name(cls, v):
+        if v:
+            # Only allow safe characters
+            import re
+            if not re.match(r'^[a-zA-Z0-9\s\-_\.]+$', v):
+                raise ValueError("Run name can only contain letters, numbers, spaces, hyphens, underscores, and periods")
+        return v.strip() if v else v
 
 
 class EvaluationResult(BaseModel):
@@ -271,15 +384,16 @@ async def upload_corpus_file(file: UploadFile = File(...), name: Optional[str] =
 
 @router.post("/corpus/upload-multiple")
 async def upload_multiple_files(files: List[UploadFile] = File(...), name: Optional[str] = Form(None)):
-    """Upload multiple files as a single corpus"""
+    """Upload multiple files as a single corpus with smart chunking"""
     try:
-        combined_text = ""
+        file_contents = []
         file_names = []
         total_size = 0
         
         # Supported text file extensions
         supported_extensions = {'.txt', '.md', '.py', '.js', '.json', '.csv', '.html', '.xml', '.yml', '.yaml', '.cfg', '.ini', '.log'}
         
+        # First pass: collect all files
         for file in files:
             if not file.filename:
                 continue
@@ -310,32 +424,70 @@ async def upload_multiple_files(files: List[UploadFile] = File(...), name: Optio
                         logger.warning(f"Could not decode file: {file.filename}")
                         continue
                 
-                # Add file separator and content
-                if combined_text:
-                    combined_text += f"\n\n{'='*60}\n"
-                combined_text += f"FILE: {file.filename}\n{'='*60}\n\n"
-                combined_text += text
+                # Store file content for smart chunking
+                file_contents.append({
+                    'filename': file.filename,
+                    'content': text.strip()
+                })
                 file_names.append(file.filename)
                 
             except Exception as e:
                 logger.warning(f"Error processing file {file.filename}: {e}")
                 continue
         
-        if not combined_text:
+        if not file_contents:
             raise HTTPException(status_code=400, detail="No valid text files found")
         
+        # Use smart chunking to concatenate files to optimal chunk sizes
+        from ..utils.text_processing import create_smart_chunks_from_files
+        from ..utils.config import ChunkingConfig
+        
+        # Create chunking config optimized for ~3k tokens per chunk
+        chunking_config = ChunkingConfig(
+            use_token_chunking=True,
+            target_token_size=3000,
+            max_token_size=4000,
+            enable_chonkie=True  # Use semantic chunking if available
+        )
+        
+        logger.info(f"Creating smart chunks from {len(file_contents)} files with target ~3k tokens per chunk")
+        chunks = create_smart_chunks_from_files(file_contents, chunking_config)
+        
+        # Combine all chunks into final text (for backward compatibility)
+        combined_text = ""
+        chunk_info = []
+        
+        for i, chunk in enumerate(chunks):
+            if combined_text:
+                combined_text += f"\n\n{'='*80}\nCHUNK {i+1} (from {len(chunk['file_sources'])} files: {', '.join(chunk['file_sources'][:3])}{'...' if len(chunk['file_sources']) > 3 else ''})\n{'='*80}\n\n"
+            combined_text += chunk['text']
+            
+            chunk_info.append({
+                'chunk_index': i,
+                'size_chars': chunk['size'],
+                'token_count': chunk.get('token_count', 'estimated'),
+                'file_count': len(chunk['file_sources']),
+                'files': chunk['file_sources'][:5],  # Limit to first 5 for API response
+                'method': chunk['method']
+            })
+        
         # Create request
-        corpus_name = name or f"Multiple files ({len(file_names)} files)"
+        corpus_name = name or f"Smart-chunked corpus ({len(file_names)} files → {len(chunks)} chunks)"
         request = CorpusUploadRequest(
             text=combined_text,
             name=corpus_name,
-            description=f"Combined corpus from {len(file_names)} files: {', '.join(file_names[:5])}" + 
+            description=f"Smart-chunked corpus from {len(file_names)} files into {len(chunks)} optimal chunks (~3k tokens each): {', '.join(file_names[:5])}" + 
                        (f" and {len(file_names)-5} more" if len(file_names) > 5 else "")
         )
         
         result = await upload_corpus_text(request)
         result["files_processed"] = len(file_names)
         result["file_names"] = file_names
+        result["chunks_created"] = len(chunks)
+        result["chunking_info"] = chunk_info
+        result["smart_chunking_enabled"] = True
+        
+        logger.info(f"Smart chunking complete: {len(file_names)} files → {len(chunks)} chunks")
         
         return result
         
@@ -382,8 +534,11 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
         # Generate run ID
         run_id = str(uuid.uuid4())
         
-        # Create evaluation configuration
-        config = create_default_config()
+        # Create evaluation configuration with environment variables
+        from ..utils.config import ConfigManager
+        config_manager = ConfigManager()
+        config_manager.update_from_env()
+        config = config_manager.get_config()
         
         # Convert string eval_type to enum
         if request.eval_type:
@@ -395,7 +550,8 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
                         eval_type = et
                         break
                 config.eval_type = eval_type or EvaluationType.DOMAIN_KNOWLEDGE
-            except:
+            except (AttributeError, ValueError) as e:
+                # Failed to parse eval_type, use default
                 config.eval_type = EvaluationType.DOMAIN_KNOWLEDGE
         else:
             config.eval_type = EvaluationType.DOMAIN_KNOWLEDGE
@@ -513,47 +669,36 @@ async def verify_ground_truth_against_corpus(question: str, proposed_answer: str
     import httpx
     import json
     
-    verification_prompt = f"""You are a fact-checker and complexity assessor. Your task is to:
+    verification_prompt = f"""You are a fact-checker and complexity assessor.
+
+CRITICAL: You must respond with ONLY a valid JSON object. Do not use markdown code blocks, explanations, or any other formatting.
+
+TASK:
 1. Verify if the proposed answer is factually correct according to the source text
 2. Assess the complexity/difficulty of the question for modern LLMs
 
-SOURCE TEXT:
-{corpus_text[:50000]}
+SOURCE TEXT: {corpus_text[:50000]}
 
 QUESTION: {question}
 PROPOSED ANSWER: {proposed_answer}
 
-Your task: Determine correctness AND assess complexity for LLM evaluation.
+QUESTION RULE: The question must NOT start with phrases like "Based on the corpus", "According to the text", or similar. You must act as if the next LLM answering this question will NOT have access to the corpus or source text. The question must stand alone and make sense without referencing the corpus.
 
-Respond with a JSON object in this exact format:
-{{
-  "is_correct": true/false,
-  "verified_answer": "corrected answer if needed, or original if correct",
-  "confidence": 0.0-1.0,
-  "complexity": 0.0-1.0,
-  "reasoning": "brief explanation of your decision",
-  "evidence": "specific quote from source text that supports the answer",
-  "complexity_analysis": "why this question is easy/medium/hard for modern LLMs"
-}}
+Use this EXACT JSON format:
+{{"is_correct":true,"verified_answer":"...","confidence":0.8,"complexity":0.7,"reasoning":"...","evidence":"...","complexity_analysis":"..."}}
 
 COMPLEXITY SCORING (0.0-1.0):
 - 0.0-0.3: TOO EASY - Simple facts, basic math, obvious answers (reject these)
 - 0.4-0.6: MODERATE - Requires some reasoning, domain knowledge, multi-step thinking
 - 0.7-1.0: CHALLENGING - Complex reasoning, obscure facts, multi-layered analysis
 
-Examples:
-- "What is 2+2?" → complexity: 0.1 (TOO EASY - reject)
-- "What year did X happen?" → complexity: 0.2 (TOO EASY - reject)  
-- "How do concepts A and B interact in context C?" → complexity: 0.7 (GOOD)
-- "What are the implications of X for Y given constraints Z?" → complexity: 0.9 (EXCELLENT)
-
-Rules:
+RULES:
 1. Answer correct ONLY if directly supported by source text
 2. REJECT questions with complexity < 0.4 (too easy for modern LLMs)
 3. Prefer questions requiring reasoning, synthesis, or domain expertise
 4. Consider: Would GPT-4/Claude-3.5 find this challenging?
 
-Return only the JSON object, no other text."""
+IMPORTANT: Return raw JSON only - no ```json blocks, no explanations, no other text."""
 
     try:
         headers = {
@@ -588,7 +733,19 @@ Return only the JSON object, no other text."""
                 verification_content = result["choices"][0]["message"]["content"].strip()
                 
                 try:
+                    # First try direct JSON parsing
                     verification_result = json.loads(verification_content)
+                except json.JSONDecodeError:
+                    # If direct parsing fails, try to extract JSON from markdown code blocks
+                    import re
+                    json_match = re.search(r'```(?:json)?\n?(\{.*?\})\n?```', verification_content, re.DOTALL)
+                    if json_match:
+                        verification_result = json.loads(json_match.group(1))
+                    else:
+                        # If no markdown blocks found, re-raise the original error
+                        raise
+                
+                try:
                     
                     # Ensure all required fields are present
                     complexity = verification_result.get("complexity", 0.0)
@@ -646,11 +803,200 @@ Return only the JSON object, no other text."""
         }
 
 
-async def generate_agentic_questions(corpus_text: str, num_questions: int, eval_type: str, llm_config, tracker) -> List[Dict]:
-    """Generate questions using real LLM (agentic approach)"""
+async def generate_agentic_questions_with_chunking(corpus_text: str, num_questions: int, eval_type: str, llm_config, tracker) -> List[Dict]:
+    """Generate questions using real LLM with smart chunking for optimal context"""
+    import httpx
+    from ..utils.text_processing import create_smart_chunks
+    from ..utils.config import ChunkingConfig
+    
+    # Create smart chunks optimized for ~3k tokens each
+    chunking_config = ChunkingConfig(
+        use_token_chunking=True,
+        target_token_size=3000,
+        max_token_size=4000,
+        enable_chonkie=True
+    )
+    
+    await tracker.send_log("info", f"Creating smart chunks from corpus ({len(corpus_text)} chars) with ~3k token targets...")
+    chunks = create_smart_chunks(corpus_text, chunking_config)
+    await tracker.send_log("info", f"Created {len(chunks)} smart chunks for question generation")
+    
+    # Smart chunk selection strategy
+    if len(chunks) > num_questions:
+        # If we have more chunks than questions, randomly sample chunks for variety
+        import random
+        selected_chunks = random.sample(chunks, min(num_questions, len(chunks)))
+        questions_per_chunk = 1  # One question per selected chunk
+        await tracker.send_log("info", f"Randomly selected {len(selected_chunks)} chunks from {len(chunks)} total for variety")
+    elif len(chunks) <= num_questions:
+        # If we have fewer chunks than questions, use all chunks
+        selected_chunks = chunks
+        questions_per_chunk = max(1, num_questions // len(chunks))
+        await tracker.send_log("info", f"Using all {len(chunks)} chunks with ~{questions_per_chunk} questions per chunk")
+    
+    all_questions = []
+    remaining_questions = num_questions
+    
+    for i, chunk in enumerate(selected_chunks):
+        if remaining_questions <= 0:
+            break
+            
+        # Calculate questions for this chunk
+        if len(selected_chunks) > num_questions:
+            # One question per chunk when we have more chunks than questions
+            chunk_questions = 1
+        else:
+            # Distribute questions evenly, with last chunk getting remainder
+            chunk_questions = min(questions_per_chunk, remaining_questions)
+            if i == len(selected_chunks) - 1:  # Last chunk gets any remaining questions
+                chunk_questions = remaining_questions
+            
+        await tracker.send_log("info", f"Generating {chunk_questions} questions from chunk {i+1}/{len(chunks)} ({chunk.get('token_count', 'N/A')} tokens)")
+        
+        # Use the existing agentic generation with this chunk
+        chunk_questions_data = await generate_agentic_questions_from_chunk(
+            chunk['text'], 
+            chunk_questions, 
+            eval_type, 
+            llm_config, 
+            tracker, 
+            chunk_index=i
+        )
+        
+        all_questions.extend(chunk_questions_data)
+        remaining_questions -= len(chunk_questions_data)
+    
+    await tracker.send_log("info", f"Generated {len(all_questions)} total questions from {len(chunks)} chunks")
+    return all_questions[:num_questions]  # Ensure we don't exceed the requested number
+
+
+async def generate_agentic_questions_from_chunk(chunk_text: str, num_questions: int, eval_type: str, llm_config, tracker, chunk_index: int = 0) -> List[Dict]:
+    """Generate questions from a single chunk using real LLM"""
     import httpx
     
     questions = []
+    
+    # Prepare the prompt based on evaluation type
+    eval_prompts = {
+        "mathematical": "Generate challenging mathematical questions that test problem-solving and calculation skills based on the corpus content",
+        "factual_qa": "Generate factual questions that test knowledge and understanding of key concepts from the corpus",
+        "code_generation": "Generate coding problems that require implementing solutions based on the concepts in the corpus",
+        "domain_knowledge": "Generate domain-specific questions that test deep understanding of the subject matter in the corpus",
+        "multiple_choice": "Generate multiple choice questions with 4 options each based on the corpus content",
+        "reading_comprehension": "Generate reading comprehension questions that test understanding of the specific corpus text"
+    }
+    
+    prompt_instruction = eval_prompts.get(eval_type, eval_prompts["domain_knowledge"])
+    
+    system_prompt = f"""You are an expert question generator specializing in creating evaluation questions from corpus text.
+
+CRITICAL: You must respond with ONLY a valid JSON array. Do not use markdown code blocks, explanations, or any other formatting.
+
+REQUIREMENTS:
+1. {prompt_instruction}
+2. Generate exactly {num_questions} questions based DIRECTLY on the provided corpus text
+3. Questions must be answerable from the corpus content with specific, accurate answers
+4. Create questions that test understanding of the actual content, not general knowledge
+5. Provide EXACT answers that can be found in or directly derived from the corpus
+
+QUESTION QUALITY:
+- Focus on key concepts, relationships, and important details from the corpus
+- Create questions that require understanding, not just memory
+- For mathematical content: use actual numbers/calculations from the corpus
+- For factual content: ask about specific information present in the text
+- For conceptual content: test understanding of relationships and implications
+- Avoid questions that could be answered without reading the corpus
+
+ANSWER QUALITY:
+- Mathematical: Use exact numbers and calculations from the corpus
+- Factual: Provide specific facts directly from the text
+- Conceptual: Give explanations based on the corpus content
+- Keep answers concise but complete
+
+Use this EXACT JSON format:
+[{{"question":"...","answer":"...","concept":"...","difficulty":"basic|intermediate|advanced","verification_type":"exact|numerical|factual|analytical"}}]
+
+IMPORTANT: Return raw JSON only - no ```json blocks, no explanations, no other text."""
+
+    user_prompt = f"""Text: {chunk_text}
+
+Generate {num_questions} questions as a JSON array. Return only the JSON:"""
+    
+    try:
+        headers = {
+            "Authorization": f"Bearer {llm_config.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        if llm_config.provider == "openrouter":
+            headers.update({
+                "HTTP-Referer": llm_config.site_url or "https://docs-to-eval.ai",
+                "X-Title": llm_config.app_name or "docs-to-eval"
+            })
+        
+        payload = {
+            "model": llm_config.model_name,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "max_tokens": min(llm_config.max_tokens, 8192),  # Limit for JSON response
+            "temperature": llm_config.temperature
+        }
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                llm_config.base_url + "/chat/completions",
+                headers=headers,
+                json=payload
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                response_content = result["choices"][0]["message"]["content"].strip()
+                
+                # Parse JSON response
+                import json
+                import re
+                
+                # First try direct JSON parsing
+                try:
+                    questions_data = json.loads(response_content)
+                except json.JSONDecodeError:
+                    # If direct parsing fails, try to extract JSON from markdown code blocks
+                    json_match = re.search(r'```(?:json)?\n?(\[.*?\])\n?```', response_content, re.DOTALL)
+                    if json_match:
+                        questions_data = json.loads(json_match.group(1))
+                    else:
+                        # If no markdown blocks found, re-raise the original error
+                        raise
+                
+                # Process each question
+                for q_data in questions_data[:num_questions]:
+                    question_item = {
+                        "question": q_data.get("question", ""),
+                        "answer": q_data.get("answer", ""),
+                        "concept": q_data.get("concept", ""),
+                        "difficulty": q_data.get("difficulty", "intermediate"),
+                        "verification_type": q_data.get("verification_type", "factual"),
+                        "chunk_index": chunk_index
+                    }
+                    questions.append(question_item)
+                
+                await tracker.send_log("info", f"Generated {len(questions)} questions from chunk {chunk_index}")
+                
+            else:
+                await tracker.send_log("error", f"API request failed for chunk {chunk_index}: HTTP {response.status_code}")
+                
+    except json.JSONDecodeError as e:
+        await tracker.send_log("error", f"Failed to parse JSON response from chunk {chunk_index}: {str(e)}")
+    except Exception as e:
+        await tracker.send_log("error", f"Error generating questions from chunk {chunk_index}: {str(e)}")
+    
+    return questions
+
+
+async def generate_agentic_questions(corpus_text: str, num_questions: int, eval_type: str, llm_config, tracker) -> List[Dict]:
     
     # Prepare the prompt based on evaluation type
     eval_prompts = {
@@ -664,9 +1010,11 @@ async def generate_agentic_questions(corpus_text: str, num_questions: int, eval_
     
     prompt_instruction = eval_prompts.get(eval_type, eval_prompts["domain_knowledge"])
     
-    system_prompt = f"""You are an expert educational assessment creator specializing in CHALLENGING evaluation questions for modern LLMs.
+    system_prompt = f"""You are an expert question generator specializing in CHALLENGING evaluation questions for modern LLMs.
 
-CRITICAL REQUIREMENTS:
+CRITICAL: You must respond with ONLY a valid JSON array. Do not use markdown code blocks, explanations, or any other formatting.
+
+REQUIREMENTS:
 1. {prompt_instruction}
 2. Generate exactly {num_questions} CHALLENGING questions (not basic facts!)
 3. Questions must be answerable WITHOUT corpus access but require deep reasoning
@@ -683,7 +1031,7 @@ DIFFICULTY FOCUS - Create questions that are:
 ✅ CREATE: "Why would approach A be preferred over B in situation C?"
 ✅ CREATE: Multi-step reasoning, synthesis, analysis questions
 
-Question Types to Emphasize:
+QUESTION TYPES:
 - Analytical reasoning requiring 2-3 logical steps
 - Synthesis questions combining multiple concepts
 - Comparative analysis between ideas/approaches
@@ -691,34 +1039,22 @@ Question Types to Emphasize:
 - Problem-solving scenarios
 - Multi-layered conceptual relationships
 
-Answer Guidelines:
+ANSWER QUALITY:
 - Mathematical: Complex calculations or multi-step problems
 - Factual: Nuanced facts requiring domain expertise  
 - Conceptual: Sophisticated explanations showing deep understanding
 - Avoid simple yes/no or single-word answers
 
-Format as JSON array:
-[
-  {{
-    "question": "Complex, thought-provoking question requiring reasoning",
-    "answer": "Comprehensive answer demonstrating deep understanding",
-    "concept": "Main concept tested",
-    "difficulty": "intermediate|advanced|expert",
-    "verification_type": "exact|numerical|factual|analytical"
-  }}
-]
+Use this EXACT JSON format:
+[{{"question":"...","answer":"...","concept":"...","difficulty":"intermediate|advanced|expert","verification_type":"exact|numerical|factual|analytical"}}]
 
 GOAL: Create a benchmark that will actually challenge state-of-the-art LLMs and reveal their limitations.
 
-Return only the JSON array, no other text."""
+IMPORTANT: Return raw JSON only - no ```json blocks, no explanations, no other text."""
 
-    user_prompt = f"""Based on this corpus, generate {num_questions} evaluation questions:
+    user_prompt = f"""Corpus: {corpus_text[:120000]}
 
----CORPUS START---
-{corpus_text[:120000]}  
----CORPUS END---
-
-Generate the questions as specified in the instructions."""
+Generate {num_questions} challenging questions as a JSON array. Return only the JSON:"""
 
     try:
         # Prepare API request
@@ -761,7 +1097,19 @@ Generate the questions as specified in the instructions."""
             # Parse JSON response and verify ground truth
             import json
             try:
+                # First try direct JSON parsing
                 questions_data = json.loads(content.strip())
+            except json.JSONDecodeError:
+                # If direct parsing fails, try to extract JSON from markdown code blocks
+                import re
+                json_match = re.search(r'```(?:json)?\n?(\[.*?\])\n?```', content, re.DOTALL)
+                if json_match:
+                    questions_data = json.loads(json_match.group(1))
+                else:
+                    # If no markdown blocks found, re-raise the original error
+                    raise
+            
+            try:
                 verified_questions = []
                 
                 await tracker.send_log("info", f"Verifying {len(questions_data)} generated questions against corpus...")
@@ -1102,14 +1450,19 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
         # Phase 2: Benchmark Generation
         await tracker.start_phase("generation", "Generating benchmark questions", request.num_questions)
         
-        # Check if we should use agentic generation
-        if request.use_agentic and config.llm.api_key:
-            # Use real LLM for agentic question generation
-            await tracker.send_log("info", f"Using model \"{config.llm.model_name}\" for agentic question generation")
-            questions = await generate_agentic_questions(
+        # Convert enum to string for all generation functions
+        eval_type_str = classification.primary_type.value if hasattr(classification.primary_type, 'value') else str(classification.primary_type)
+        
+        # Check if we should use agentic generation (force True if API key available)
+        should_use_agentic = config.llm.api_key and (request.use_agentic or True)  # Force agentic when API key available
+        
+        if should_use_agentic:
+            # Use real LLM for agentic question generation with smart chunking
+            await tracker.send_log("info", f"Using model \"{config.llm.model_name}\" for agentic question generation with smart chunking")
+            questions = await generate_agentic_questions_with_chunking(
                 request.corpus_text,
                 request.num_questions,
-                classification.primary_type,
+                eval_type_str,  # Use string instead of enum
                 config.llm,
                 tracker
             )
@@ -1119,7 +1472,7 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
             questions = await generate_corpus_questions(
                 request.corpus_text, 
                 request.num_questions, 
-                classification.primary_type,
+                eval_type_str,  # Use string instead of enum
                 tracker
             )
         
@@ -1182,10 +1535,12 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
         verification_results = []
         for i, result in enumerate(llm_results):
             # Use real verification based on the classification type
+            # Convert enum to string for verification system
+            eval_type_str = classification.primary_type.value if hasattr(classification.primary_type, 'value') else str(classification.primary_type)
             verification_result = orchestrator.verify(
                 prediction=result["prediction"],
                 ground_truth=result["ground_truth"],
-                eval_type=classification.primary_type,  # Use the classified type
+                eval_type=eval_type_str,  # Convert enum to string
                 options=result.get("options"),
                 question=result["question"]  # Pass question for context
             )
@@ -1265,7 +1620,7 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
                 "statistically_significant": main_stats.statistical_significance < 0.05 if main_stats else False
             },
             "detailed_statistics": statistical_report,
-            "individual_results": verification_results[:10],  # First 10 only
+            "individual_results": verification_results,  # Show all results
             "performance_stats": llm.get_performance_stats() if llm else {},
             "finetune_test_set": finetune_summary,
             "completed_at": datetime.now().isoformat()
@@ -1690,7 +2045,8 @@ async def test_api_key(api_test: dict):
                         error_data = response.json()
                         error_msg = error_data.get('error', {}).get('message', f'HTTP {response.status_code}')
                         return {"status": "error", "message": f"API error: {error_msg}"}
-                    except:
+                    except (json.JSONDecodeError, AttributeError) as e:
+                        # Failed to parse error response
                         return {"status": "error", "message": f"API test failed with status {response.status_code}"}
         
         else:

@@ -146,7 +146,11 @@ class EvaluationPipeline:
                 num_questions=self.config.generation.num_questions
             )
         
-        logger.log_benchmark_generation(len(questions), self.config.dict())
+        # Create sanitized config for logging (mask sensitive information)
+        safe_config = self.config.dict()
+        if 'llm' in safe_config and 'api_key' in safe_config['llm']:
+            safe_config['llm']['api_key'] = '***masked***'
+        logger.log_benchmark_generation(len(questions), safe_config)
         return questions
     
     async def _evaluate_with_llm(self, questions: List[Dict[str, Any]], logger) -> List[Dict[str, Any]]:

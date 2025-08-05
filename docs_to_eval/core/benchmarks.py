@@ -197,7 +197,8 @@ class MathematicalBenchmarkGenerator(BenchmarkGenerator):
                     result = eval(f"{num1} {operation} {num2}")
                     question = f"Calculate: {num1} {operation} {num2}"
                     answer = str(result)
-                except:
+                except (SyntaxError, NameError, ZeroDivisionError, ArithmeticError) as e:
+                    # Handle evaluation errors gracefully
                     question = f"What is the mathematical relationship in the corpus?"
                     answer = "Mathematical concepts are discussed in the context"
             else:
@@ -434,7 +435,8 @@ def generate_domain_benchmark(corpus_text: str, eval_type: EvaluationType, num_q
         try:
             agentic_report = generator.get_generation_report()
             metadata['agentic_report'] = agentic_report
-        except:
+        except (AttributeError, Exception) as e:
+            # Generator might not have report method or it might fail
             pass
     
     return {

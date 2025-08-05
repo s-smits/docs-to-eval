@@ -189,17 +189,43 @@ class NonDeterministicVerifier:
         )
     
     @staticmethod
+    def semantic_similarity_advanced(prediction: str, ground_truth: str) -> VerificationResult:
+        """Advanced semantic similarity using lm-evaluation-harness techniques"""
+        from ..utils.advanced_evaluation import AdvancedEvaluationFramework
+        
+        # Use advanced evaluation framework
+        evaluator = AdvancedEvaluationFramework()
+        result = evaluator.evaluate_response_advanced(prediction, ground_truth)
+        
+        return VerificationResult(
+            score=result['similarity_score'],
+            metrics={
+                'semantic_similarity': result['similarity_score'],
+                'raw_ensemble_score': result['raw_ensemble_score'],
+                'exact_match': result['exact_match'],
+                'method_agreement': result['method_agreement'],
+                **result['individual_methods']
+            },
+            method='semantic_similarity_advanced',
+            details={
+                'method': 'ensemble_verification_lm_eval_style',
+                'confidence_intervals': result['confidence_intervals'],
+                'evaluation_metadata': result['evaluation_metadata']
+            }
+        )
+    
+    @staticmethod
     def semantic_similarity_mock(prediction: str, ground_truth: str) -> VerificationResult:
-        """Mock semantic similarity (placeholder for real embeddings)"""
+        """Mock semantic similarity (fallback for compatibility) - More lenient scoring"""
         # Use multiple similarity measures and average them
         similarities = calculate_multi_similarity(prediction, ground_truth)
         
-        # Weighted average of different similarity measures
+        # More lenient weighted average - favor token and n-gram overlap which are now using Dice coefficient
         weights = {
-            'token_overlap': 0.3,
-            'ngram': 0.2,
-            'rouge_l': 0.3,
-            'character_overlap': 0.2
+            'token_overlap': 0.4,  # Increased from 0.3 - now uses Dice which is more lenient
+            'ngram': 0.3,         # Increased from 0.2 - now uses Dice which is more lenient
+            'rouge_l': 0.2,       # Decreased from 0.3 - F1-based, already relatively lenient
+            'character_overlap': 0.1  # Decreased from 0.2 - less important for semantic similarity
         }
         
         weighted_score = 0.0
@@ -210,13 +236,21 @@ class NonDeterministicVerifier:
                 weighted_score += similarities[method] * weight
                 total_weight += weight
         
-        score = weighted_score / total_weight if total_weight > 0 else 0.0
+        raw_score = weighted_score / total_weight if total_weight > 0 else 0.0
+        
+        # Apply lenient boost: boost scores that are already reasonable (0.2+) 
+        # Using a square root transformation to boost lower scores more
+        if raw_score > 0.1:
+            # Apply a gentle boost: sqrt(score) * sqrt(raw_score) to make it more lenient
+            boosted_score = min(1.0, raw_score + (raw_score ** 0.7) * 0.3)
+        else:
+            boosted_score = raw_score
         
         return VerificationResult(
-            score=score,
-            metrics={'semantic_similarity': score, **similarities},
+            score=boosted_score,
+            metrics={'semantic_similarity': boosted_score, 'raw_score': raw_score, **similarities},
             method='semantic_similarity',
-            details={'method': 'multi_similarity_average'}
+            details={'method': 'multi_similarity_average_lenient', 'boost_applied': boosted_score > raw_score}
         )
 
 

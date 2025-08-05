@@ -1,29 +1,86 @@
 # Lead Plaque of Magliano
 
-Disk with Etruscan inscription
-Lead plaque of Magliano, sides A and B
-The
-Lead Plaque of Magliano
-(or Lead Plate of Magliano or Lead Disk;
-CIE
-5237), which contains 73 words in the
-Etruscan language
-, seems to be a dedicatory text, including as it does many names of mostly underworld
-deities
-.
-[
-1
-]
-It was found in 1882, and dates to the mid 5th century BC.
-[
-2
-]
-It is now housed in the National Archaeological Museum in Florence.
-[
-3
-]
+TheLead Plaque of Magliano(or Lead Plate of Magliano or Lead Disk;CIE5237), which contains 73 words in theEtruscan language, seems to be a dedicatory text, including as it does many names of mostly underworlddeities.It was found in 1882, and dates to the mid 5th century BC.It is now housed in the National Archaeological Museum in Florence.
+
 Description
-[
-edit
-]
-The plaque weighs 191 grams and is curved in the shape of a lens. Its diameter is 7 cm at its narrowest point and 8 cm at its widest point. Only a few written monuments of Etruscan have survived on metal plates. The arrangement of the text is just as unusual as the shape and texture of the disk. The slab is inscribed with spiral Etruscan
+
+
+## Description
+
+
+The plaque weighs 191 grams and is curved in the shape of a lens. Its diameter is 7 cm at its narrowest point and 8 cm at its widest point. Only a few written monuments of Etruscan have survived on metal plates. The arrangement of the text is just as unusual as the shape and texture of the disk. The slab is inscribed with spiral Etruscan letters on both sides, reminiscent of thePhaistos Disc. The creation of the artifact is dated to around 450 BC. The lead plate was found in February 1882 in a field 2 km southeast ofMaglianoin theAlbegnariver valley, near the former monastery of Santa Maria in Borraccia.
+
+The text seems to be a series of dedications to various gods and ancestors (in bold below): Cautha, "the gods of this place,"Maris Menita("Maris the Maker"), and "the ancestors" (af-r-or "forefathers" <ap"father") on side A;ThanrandCalus,Śuri,Tininthe area ofLur, and (?) in the area of Lur, on side B. Other information includes where the dedications (sacrifices? offerings?) are to take place (casthia, lac, fal-za, chim"the place of offering (or of slaughter),"leśca; all in locative-th(-i)), how often (avil-s"annually" on side A, "every four years"? on side B), with what (musl= "honey wine"? andthu-n"firstling"? also on side B), who is to perform them ("priest"cepen"of the village of the year"tuthiu avils--so "annually appointed village priest"), and on whose behalf ("for the deceased of the Murina [family]," "for/on behalf of the beloved ancestors"afrs . naces—on side A; "on behalf oftnuca"?, "for [honoring] the deceased" (nesl)--on side B). Much of the rest is obscure, with the main verb "dedicate" apparently regularly elided.
+
+With over 70 individual words, the text differs significantly from the thousands of short Etruscan grave inscriptions. It is among the longest in the Etruscan language. The text is written on both sides (referred to here as side A and side B), from right to left, as is usual in Etruscan texts. The text is also unusual in that it spirals inward, to be read clockwise from the outside to the inside. Most words are separated by a period.
+
+cauthas. tuthiu . avils /LXXX/ ez . chimthm . casthialth . lacth . hevn . avil . neśl . man . murinaśie . falzathi ⁝aiseras. in . ecs . mene . mlacthe marni . tuthi . tiu .  chimthm . casthialth . lacth ⁝mariśl menitla . afrs. cialath . chimth . avilsch . eca . cepen . tuthiu . thuch . ichutevr . heśni . mulveni . eth . zuci . am . ar
+
+mlach thanra calusc. ecnia . iv avil . mi menicac . marca lurcac . eth . tuthiu . nesl .man . rivach . leścem . tnucasi .śuris. eis teis . evi tiuras . mulsle mlach ilachetins . lursth. tev huvi thunlursthsas afrs . naces
+
+Partial translation
+
+
+## Partial translation
+
+
+From van der Meer, except where noted.
+
+For Cautha, the annually [appointed] village [priest will dedicate] 80ez.In addition, [dedications must be made] in the place of offering (chim-th-according to Rix;van der Meer translates "slaughtering place"; or "at the altar"?),  at [the stream]Casthia, [where it empties] into the lake, [during]Hev-[period] annually. [And a dedication must be made] in the sacred alcove (?literally "in a/the small holy place"fal-za-thi) [that is] the memorial (man) for the deceased (neśl) of the Murina [family]."
+
+For the gods which [are the protective spirits?] of this place, the magistrature (marni) [and] the village [priest(-s?)] must make (mene) [a dedication?] and take care of [it] (?mlach-theliterally "make (it) beautiful"), monthly (tiu); in addition [dedications must be made?] in the place of offering, at [the stream]Casthia, [where it empties] into the lake.
+
+For Maris Menita (="the Maker"), for the ancestors, also this [previously mentioned] annually [appointed] village-priest (avil-s-ch eca cepen tuthiu, literally "and of the year this priest of the village") [must make a dedication] in theciala, [and] in addition in the place of offering, ["and in"?, or "namely"?] theichuhouse (thuch);
+You who are overseers of these rituals,heś-(="attend to"?) [and] consecrate [them]! This [is the] announcement: 'Be [present], [and] carry out the dedications (ar)!'
+
+O beautiful [deities] of Thanr and of Calus,ecnimust be done (?) [every] 4 years; I [am the lead plaque] of [the god]Maristhe Maker and ofLur. This [is the set of instructions] for the village [priest], for [honoring] the deceased (nesl).
+
+The monument [of the deceased]rivax(="must be commemorated"?), in addition, in theleścaon behalf of (or "by" or "during [the period of]")Tnuca.
+
+For Suri the god, [perform] these [rituals] on the ides (?ev-) of every month (?tiuras, literally "of months")  [with] honey wine [?muls-le], [as is] proper (?mlach, literally "beautiful"), during the feast.
+
+For Tin in the area of Lur, you who oversee the rituals must offer (huvi?) a firstling (thu-n, literally "a first thing").
+
+In the area of Lur, [make a dedication] for the beloved ancestors themselves (sa-s afr-s nace-s, literally "self for the ancestors beloved").
+
+Commentary
+
+
+## Commentary
+
+
+Most of the gods mentioned are associated with the underworld, includingCautha(often mentioned with Suri), Calus (a god of wolves, sometimes used as an epithet of Tin(ia)), Suri, and Lur (though Pittau considers this last to be connected to Latinlaurus"laurel" and hence toApollo).According to van der Meer, Lur's name may be related to Latinluridus"pale," possibly in contrast withSuri"black." The name also occurs in theLiber Linteus(5.22) paired with a less well known deityZer:cisum θesane uslanec mlaχeLuri Zeric-- "Also [make] a three-fold (cisum') [libation?] in the morning (θesan-e) and during the noon [hour] (uslan-e-c) to the beautiful (mlaχe)Lurand toZer.In line 6.18 of the same text, the name takes the formLurni.
+
+The wordtinon side B is assumed here to be a form of the theonymTinia, the Jupiter-like head of theEtruscanpantheon, but it could also mean "day." Also on side B, the deityThanris usually associated with divine births and with the goddess of desireTuran.But here she appears amongst mostly underworld deities, suggesting she is both a goddess of birth and of death.
+
+The formlachth(twice on side A) also occurs in theTabula Capuanaalong with a variantlachuth, both in line 26. There, it also seems to be a place for an offering (nuthe-ri) that must be made, and where gifts (turxais) are brought (eschathce). The meaning van der Meer gives forlach-there is "basin." The form with a -u- stem strongly suggests connection with Italic *laku- "basin; lake," so it may be the latter meaning that applies here, as van der Meer suggests, especially if he is also right in suggesting thatcasth-which immediately precedes it is also a body of water, perhaps a river or stream.
+
+The nameSurioccurs also in the third line of theTabula Capuana. The wordteisgenerally means "these" as, for example in line 10.16 of the Liber Linteus, other forms oftei- occurring in 2.11, 2.13 and at 9.17. The termev-may be connected to the termesv-in the Liber Linteus (4.15, 4.20) (and, asiśv-, at the beginning of the second and third sections of theTabula Capuana), which van der Meer tentatively translates as "the ides."
+
+The sequencemi menicac marca lurcacapparently includes abbreviations of the termsmarisandmenitafrom side A.The termMarison side A refers to a set of deities represented on mirrors as babies, but little else is known of their function.Note thatmarappears to be used as an abbreviation for or alternate form ofmarison theLiver of Piacenza(numbers 30 and 39), just as it appears (with abbreviate meni-ta) on side B. Pittau, on the other hand, considers it a name forCupid/Eros.
+
+The wordarat the end of side A can mean simply 'make,' but also 'dedicate/carry out a dedication' as it probably is here, as seen in line 6 of theCippus Perusinus:ipa ama hen naper XII Velθina-θur-aśaraś-- "that 12hen(arable?) acres of Velthinasshall be dedicated".The family nameMurinaon side A is well known, since inscriptions indicate that members lived in Tarquinia, Volsinii, the Siena region, Chiusi, and Perugia.
+
+References
+
+
+## References
+
+
+Bonfante, G.&L. Bonfante.The Etruscan Language: An Introduction. 2nd Edition. Manchester University Press, Manchester/New York 2002,ISBN0719055407, pp. 214–220.Bonfante, L.Reading the Past: Etruscan.University of California Press, 1990, pp. 25, 28, 50.Clackson, J. (Review of Massarelli)The Journal of Roman Studies, Volume 106 , November 2016 , pp. 264-265. DOI:https://doi.org/10.1017/S0075435816000046Corsten, S. P. "Der Inhalt der Bleiplatte von Magliano"Glottavolume 27, 1939. Göttingen; Vandenhoeck & Ruprecht. pp. 271-275.Cristofani, M.Dizionario della civiltà etrusca. Giunti Gruppo Editoriale, Florenz 1999,ISBN88-09-21728-4, p. 154.Deecke, W. "Die Bleitafel von Magliano." in:Rheinisches Museum für Philologie. Neue Folge.Volume 39, 1884, pp. 141–150.Goldmann, E.Beiträge zur Lehre vom indogermanischen Charakter der etruskischen Sprache.Gerold & Co., Vienna 1936, pp. 219–252.de Grummond, N. & E. Simon.The Religion of the Etruscans. University of Texas Press, Austin 2006,ISBN9780292721463, pp. 57–61.Grünwedel, A. (1922)Tusca. 1. Die Agramer mumienbinden. 2. Die inschrift des cippus von Perugia. 3. Die Pulena-rolle. 4. Das bleitäfelchen von Magliano. 5. Die leber von Piacenza. 6. Golini-grab I. 7. Die inschrift von Capua.Leipzig : K. W. Hiersemann.https://catalog.hathitrust.org/Record/001724165Hooker, T. J. (ed.)Reading the Past: Ancient Writing from Cuneiform to the Alphabet. University of California Press, Berkeley 1990,ISBN0520074319, pp. 346, 376–377.Jannot, J.-R. (2005)Religion in Ancient Etruriatrans. J. K. Whitehead. University of Wisconsin Press. pp 36 ff.Massarelli, R.I testi etruschi su piombo(Biblioteca di studi etruschi 53). Pisa/Rome: Fabrizio Serra editore, 2014. ISBN 9788862275712. (in Italian)Pallottino, M.The Etruscans. Penguin, 1975, pp. 117, 142-143, 199, 221-222.Pallottino, M.Etruscology: History and Culture of the Etruscans. 7th edition, Springer, Basel 1988,ISBN303486048X, pp. 421, 480–482.Pittau, M.Studi sulla lingua etrusca.Ipazia Books, Sassari 2016,ISBN978-1-980914-70-9, pp. 155–163.Rendini, P and M. Firmati.Archeologia a Magliano in Toscana. Siena 2003.Strong, D.The Early Etruscans. London, Rainbird. 1968, p. 102.Teza, E. "Di una iscrizione etrusca trovata in Magliano." in:Rivista di filologia e di istruzione classica. Volume X, 1882, pp. 530–534.Torp, A.Etruskische Beiträge.Volume 3, 1902–1906.van der Meer, L. B."The Lead Plaque of Magliano."in: C. Chiaramonte, G. Bagnasco, F. Chiesa (Eds):Interpretando l’antico. Scritti di archeologia offerti a Maria Bonghi Jovino.Monduzzi Editoriale, Mailand 2013, pp. 257–275.
+
+Etruscan religionEtruscan language
+
+External links
+
+
+## External links
+
+
+Wikimedia Commons has media related toDisco_di_Magliano.
+
+Wikimedia Commons has media related toDisco_di_Magliano.
+
+Wikimedia Commons has media related toDisco_di_Magliano.
+
+The Etruscans in Tuscany: Magliano in Tuscany

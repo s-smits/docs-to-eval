@@ -45,7 +45,7 @@ class SimilarityMethod(str, Enum):
 
 class LLMConfig(BaseModel):
     """Configuration for LLM interface"""
-    model_name: str = "anthropic/claude-sonnet-4"
+    model_name: str = "google/gemini-2.5-flash"
     temperature: float = Field(ge=0, le=2, default=0.7)
     max_tokens: int = Field(gt=0, le=131072, default=32768)
     timeout: int = Field(gt=0, default=30)
@@ -101,10 +101,30 @@ class VerificationConfig(BaseModel):
     llm_judge_criteria: List[str] = Field(default=["relevance", "accuracy", "completeness"])
 
 
+class ChunkingConfig(BaseModel):
+    """Configuration for text chunking with chonkie integration"""
+    enable_chonkie: bool = Field(default=True, description="Enable chonkie library for smart chunking")
+    chunking_strategy: str = Field(default="semantic", description="Chunking strategy: semantic, recursive, sentence")
+    force_chunker: Optional[str] = Field(default=None, description="Force specific chunker: semantic, recursive, sentence")
+    
+    # Token-aware chunking (recommended for LLM contexts)
+    use_token_chunking: bool = Field(default=True, description="Use token-aware chunking for LLM contexts")
+    target_token_size: int = Field(default=3000, description="Target chunk size in tokens (~3k for good context)")
+    min_token_size: int = Field(default=2000, description="Minimum chunk size in tokens")
+    max_token_size: int = Field(default=4000, description="Maximum chunk size in tokens")
+    overlap_tokens: int = Field(default=300, description="Overlap between chunks in tokens")
+    
+    # Character-based fallback settings
+    target_chunk_size: int = Field(default=12000, description="Target chunk size in characters (fallback)")
+    min_chunk_size: int = Field(default=8000, description="Minimum chunk size in characters")
+    max_chunk_size: int = Field(default=16000, description="Maximum chunk size in characters")
+    overlap_size: int = Field(default=1200, description="Overlap between chunks in characters")
+
+
 class ReportingConfig(BaseModel):
     """Configuration for report generation"""
     include_individual_results: bool = True
-    max_individual_results: int = Field(gt=0, default=100)
+    max_individual_results: int = Field(gt=0, default=200)
     include_visualizations: bool = True
     export_formats: List[str] = Field(default=["json", "html"])
     save_intermediate_results: bool = True
@@ -133,6 +153,7 @@ class EvaluationConfig(BaseModel):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     generation: GenerationConfig = Field(default_factory=GenerationConfig)
     verification: VerificationConfig = Field(default_factory=VerificationConfig)
+    chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     reporting: ReportingConfig = Field(default_factory=ReportingConfig)
     system: SystemConfig = Field(default_factory=SystemConfig)
     
@@ -299,6 +320,9 @@ class ConfigManager:
             'DOCS_TO_EVAL_PROVIDER': ['llm', 'provider'],
             'DOCS_TO_EVAL_BASE_URL': ['llm', 'base_url'],
         }
+        
+        # Set PyTorch device fallback for Apple Silicon MPS compatibility
+        os.environ.setdefault('PYTORCH_ENABLE_MPS_FALLBACK', '1')
         
         config_dict = self.config.dict()
         

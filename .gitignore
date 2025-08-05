@@ -15,3 +15,6 @@ logs
 uv.lock
 python_files.txt
 .DS_Store
+output/
+docs_to_eval/output/
+domain_spcfc_general_corpus/etruscan_texts/

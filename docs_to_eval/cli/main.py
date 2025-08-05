@@ -231,26 +231,27 @@ def show_classification_results(classification):
 
 def show_results_summary(results: dict):
     """Display evaluation results summary"""
-    metrics = results["aggregate_metrics"]
+    metrics = results.get("aggregate_metrics", {})
     
     # Create results table
     table = Table(title="📊 Evaluation Results")
     table.add_column("Metric", style="cyan")
     table.add_column("Value", style="magenta")
     
-    table.add_row("Mean Score", f"{metrics['mean_score']:.3f}")
-    table.add_row("Min Score", f"{metrics['min_score']:.3f}")
-    table.add_row("Max Score", f"{metrics['max_score']:.3f}")
-    table.add_row("Questions Evaluated", str(metrics['num_samples']))
+    table.add_row("Mean Score", f"{metrics.get('mean_score', 0.0):.3f}")
+    table.add_row("Min Score", f"{metrics.get('min_score', 0.0):.3f}")
+    table.add_row("Max Score", f"{metrics.get('max_score', 0.0):.3f}")
+    table.add_row("Questions Evaluated", str(metrics.get('num_samples', 0)))
     
     console.print(table)
     
     # Performance level
-    if metrics['mean_score'] >= 0.8:
+    mean_score = metrics.get('mean_score', 0.0)
+    if mean_score >= 0.8:
         level = "[green]Excellent[/green]"
-    elif metrics['mean_score'] >= 0.6:
+    elif mean_score >= 0.6:
         level = "[yellow]Good[/yellow]"
-    elif metrics['mean_score'] >= 0.4:
+    elif mean_score >= 0.4:
         level = "[orange3]Fair[/orange3]"
     else:
         level = "[red]Poor[/red]"
@@ -279,11 +280,14 @@ def classify(
     
     if verbose:
         # Show sample questions
-        if 'sample_questions' in classification:
+        sample_questions = classification.get('sample_questions', [])
+        if sample_questions:
             console.print("\n[cyan]Sample Questions:[/cyan]")
-            for i, example in enumerate(classification['sample_questions'], 1):
-                console.print(f"  {i}. {example['question']}")
-                console.print(f"     Answer: {example['answer']}")
+            for i, example in enumerate(sample_questions, 1):
+                question = example.get('question', 'N/A')
+                answer = example.get('answer', 'N/A')
+                console.print(f"  {i}. {question}")
+                console.print(f"     Answer: {answer}")
 
 
 @app.command()

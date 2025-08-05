@@ -1,7 +1,0 @@
-INFO:     Started server process [74278]
-INFO:     Waiting for application startup.
-{"timestamp": "2025-08-04T22:30:43.769005", "level": "INFO", "logger": "app", "message": "Starting docs-to-eval API server"}
-2025-08-04 22:30:43,769 - INFO - Starting docs-to-eval API server
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://localhost:8080 (Press CTRL+C to quit)
-INFO:     ::1:52130 - "GET /api/v1/config/current HTTP/1.1" 200 OK

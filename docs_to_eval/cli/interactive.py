@@ -396,7 +396,7 @@ leading to significant improvements in training efficiency and performance on la
                     "max_score": max(r["score"] for r in results),
                     "num_samples": len(results)
                 },
-                "individual_results": results[:5],  # First 5 only
+                "individual_results": results,  # Show all results
                 "completed_at": datetime.now().isoformat()
             }
     

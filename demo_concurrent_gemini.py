@@ -85,7 +85,7 @@ async def demo_async_interface():
         # Create interface with dummy API key for demo
         from docs_to_eval.llm.openrouter_interface import OpenRouterConfig
         config = OpenRouterConfig(
-            model="google/gemini-flash-2.5",
+            model="google/gemini-2.5-flash",
             api_key="demo_key_for_testing"  # Dummy key for demo
         )
         interface = ConcurrentGeminiInterface(config=config, max_workers=3)
@@ -145,7 +145,7 @@ def demo_futures_interface():
         print(f"   results = concurrent_gemini_evaluation_futures(")
         print(f"       questions=['Q1', 'Q2', 'Q3'],")
         print(f"       max_workers=5,")
-        print(f"       model='google/gemini-flash-2.5'")
+        print(f"       model='google/gemini-2.5-flash'")
         print(f"   )")
         
     except Exception as e:

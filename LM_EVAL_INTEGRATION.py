@@ -48,6 +48,22 @@ class LMEvalHarnessIntegrator:
         self.temp_dir = Path(tempfile.mkdtemp(prefix="lm_eval_"))
         self.created_tasks = []
         
+    def __enter__(self):
+        """Context manager entry"""
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - ensure cleanup"""
+        self.cleanup()
+        
+    def __del__(self):
+        """Destructor - ensure cleanup"""
+        try:
+            self.cleanup()
+        except Exception:
+            # Ignore cleanup errors in destructor
+            pass
+        
     async def create_dynamic_lm_eval_task(
         self, 
         corpus_text: str, 
@@ -227,7 +243,7 @@ class LMEvalHarnessIntegrator:
     
     async def run_lm_eval_evaluation(
         self, 
-        model_name: str = "openrouter/google/gemini-flash-1.5",
+        model_name: str = "openrouter/google/gemini-2.5-flash",
         task_names: Optional[List[str]] = None,
         batch_size: str = "auto"
     ) -> Dict[str, Any]:
@@ -427,9 +443,13 @@ Provide a clear, accurate answer. If the question is mathematical, show your wor
     def cleanup(self):
         """Clean up temporary files"""
         import shutil
-        if self.temp_dir.exists():
-            shutil.rmtree(self.temp_dir)
-            print(f"🧹 Cleaned up temporary directory: {self.temp_dir}")
+        if hasattr(self, 'temp_dir') and self.temp_dir and self.temp_dir.exists():
+            try:
+                shutil.rmtree(self.temp_dir)
+                print(f"🧹 Cleaned up temporary directory: {self.temp_dir}")
+                self.temp_dir = None  # Mark as cleaned up
+            except Exception as e:
+                print(f"⚠️ Warning: Failed to cleanup temporary directory {self.temp_dir}: {e}")
 
 
 async def demonstrate_lm_eval_integration():
@@ -483,7 +503,7 @@ async def demonstrate_lm_eval_integration():
         print("\n🚀 STEP 3: Running Evaluation")
         
         results = await integrator.run_lm_eval_evaluation(
-            model_name="openrouter/google/gemini-flash-1.5",
+            model_name="openrouter/google/gemini-2.5-flash",
             task_names=["etruscan_mythology_eval"]
         )
         

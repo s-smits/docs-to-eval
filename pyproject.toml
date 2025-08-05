@@ -37,6 +37,9 @@ dependencies = [
     "sentence-transformers>=5.0.0",
     "python-dotenv>=1.1.1",
     "openai>=1.98.0",
+    "mlx>=0.27.1",
+    "tiktoken>=0.8.0",
+    "pytest>=8.4.1",
 ]
 
 [project.optional-dependencies]

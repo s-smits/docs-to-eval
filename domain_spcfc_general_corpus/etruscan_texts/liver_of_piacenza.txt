@@ -1,40 +1,63 @@
 # Liver of Piacenza
 
-Etruscan artifact
-The Liver of Piacenza, with a diagram and
-Etruscan
-inscriptions.
-The
-Liver of Piacenza
-is an
-Etruscan
-artifact found in a field on September 26, 1877, near
-Gossolengo
-, in the
-province of Piacenza
-, Italy, now kept  in the Municipal Museum of Piacenza, in the
-Palazzo Farnese
-.
-[
-1
-]
-It is a life-sized
-bronze
-model of a sheep's liver covered in
-Etruscan
-inscriptions (
-TLE
-719), measuring 126 × 76 × 60 mm (5 × 3 × 2.4 inches)  and dated to the late 2nd century BC, i.e. a time when the Piacenza region would already have been
-Latin-dominated
-(Piacenza was founded in 218 BC as a Roman garrison town in
-Cisalpine Gaul
-).
+TheLiver of Piacenzais anEtruscanartifact found in a field on September 26, 1877, nearGossolengo, in theprovince of Piacenza, Italy, now kept  in the Municipal Museum of Piacenza, in thePalazzo Farnese.
+
+It is a life-sizedbronzemodel of a sheep's liver covered inEtruscaninscriptions (TLE719), measuring 126 × 76 × 60 mm (5 × 3 × 2.4 inches)  and dated to the late 2nd century BC, i.e. a time when the Piacenza region would already have beenLatin-dominated(Piacenza was founded in 218 BC as a Roman garrison town inCisalpine Gaul).
+
 Description and interpretation
-[
-edit
-]
-The liver is subdivided into sections for the purposes of performing
-haruspicy
-(
-hepatoscopy
-); the sections are inscrib
+
+
+## Description and interpretation
+
+
+The liver is subdivided into sections for the purposes of performingharuspicy(hepatoscopy); the sections are inscribed with names of individualEtruscan deities.
+
+Middle Eastern parallels; anatomical model
+
+
+### Middle Eastern parallels; anatomical model
+
+
+The Piacenza liver is a striking conceptual parallel to clay models of sheep's livers known from theAncient Near East, reinforcing the evidence of a  connection (be it bymigrationor merely by cultural contact) between theEtruscansand theAnatoliancultural sphere. A Babylonian clay model of a sheep's liver dated to theMiddle Bronze Ageis preserved in the British Museum.The Piacenza liver parallels theBabylonianartifact by representing the major anatomical features of the liver (thegall bladder,caudate lobeandposterior vena cava) as sculpted protrusions.
+
+Cosmos model; divination method
+
+
+### Cosmos model; divination method
+
+
+Inscribed deity names
+
+
+### Inscribed deity names
+
+
+Thetheonymsare abbreviated and in many cases, the reading even of the abbreviation is disputed. As a result, there is a consensus for the interpretation of individual names only in a small number of cases. The reading given below is that of Morandi (1991) unless otherwise indicated:
+
+circumference:
+
+tin[ia]/cil/entin[ia]/θvf[vlθas]tins/θneθ[uns]uni/mae uni/ea (Juno?Maia?)tec/vm  (Cel?Tellus?)lvsl (Usil)neθ[uns](Neptunus)caθ[a]This name also appears on theLead Plaque of Magliano, in theSarcophagus of Laris Pulenas, and perhaps (ascaθnis) in theTabula Capuana(line 9).fuflu/ns(Bacchus)selva(#Silvanus)76961 tn turce ram0e ufta . tavi selvan.2403 1 eca turce lar0e2 le0anei alpnu selvansl canzate.<ref> Materials for ethe study of the Etruscan #Language</ref)leθnstluscvcelsc (Cels)cvl alp (Alpanu)vetisl (Veiovis?)cilensl
+
+tur[an](Venus)leθn (as no. 11)la/sl (Lares?)tins/θvf[vlθas] (as no. 2)θufl/θastins/neθ  (as no. 3?)caθa (as no. 8)fuf/lus (as no. 9)θvnθ(?)marisl/latrleta (Leda)neθ (as no. 7)herc[le](Hercules)mar[is](This name also appears on theLead Plaque of Magliano.)selva   (as no. 10)leθa[m] (probably an underworld deity. Seen also in theTabula Capuana, lines 3, 6-7, 8, and 12. Perhaps same asleθn(s)in #s 11 and 18.)tlusc  (as no. 12)lvsl/velchsatr/es(Saturnus)cilen   (as no. 16)leθam(as n. 32)meθlvmθmar[is] (as no. 30)tlusc  (as no. 12)
+
+tur[an](Venus)leθn (as no. 11)la/sl (Lares?)tins/θvf[vlθas] (as no. 2)θufl/θastins/neθ  (as no. 3?)caθa (as no. 8)fuf/lus (as no. 9)θvnθ(?)marisl/latrleta (Leda)neθ (as no. 7)herc[le](Hercules)mar[is](This name also appears on theLead Plaque of Magliano.)selva   (as no. 10)leθa[m] (probably an underworld deity. Seen also in theTabula Capuana, lines 3, 6-7, 8, and 12. Perhaps same asleθn(s)in #s 11 and 18.)tlusc  (as no. 12)lvsl/velchsatr/es(Saturnus)cilen   (as no. 16)leθam(as n. 32)meθlvmθmar[is] (as no. 30)tlusc  (as no. 12)
+
+Two words are on the bottom side of the artefact:
+
+tivs  (ortivr"Moon" or "Month"?)[1])usils ("of the sun" or "of the day")
+
+Etruscan religion
+
+References
+
+
+## References
+
+
+Further reading
+
+
+## Further reading
+
+
+C. Thulin (1906)Die Götter des martianus capella und die Bronzeleber fon Piacenza, Giessen, Töpelmann.L.B. Van der Meer(1987)The bronze liver of Piacenza: Analysis of a Polytheistic Structure,Amsterdam: J.C. Gieben.Alessandro Morandi (1991)Nuovi lineamenti di lingua etrusca, Massari.[2]Natalie L. C. Stevens (April 2009)A New Reconstruction of the Etruscan HeavenAmerican Journal of Archaeology 113.22,  153-164.Antonio Gottarelli (2017)Cosmogonica. Il fegato di Tiāmat e la soglia misterica del Tempo. Dai miti cosmologici del Vicino Oriente antico ad una nuova interpretazione del fegato etrusco di Piacenza, collana di "Archeologia del Rito", n.2, Te.m.p.l.a., Bologna.[3]Antonio Gottarelli (2018)Padānu. Un’ombra tra le mani del tempo. La decifrazione funzionale del fegato etrusco di Piacenza, collana di "Archeologia del Rito", n.3, Te.m.p.l.a., Bologna.[4]

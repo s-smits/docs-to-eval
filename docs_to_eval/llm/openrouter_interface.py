@@ -26,7 +26,7 @@ class OpenRouterConfig:
     """Configuration for OpenRouter API"""
     api_key: Optional[str] = None
     base_url: str = "https://openrouter.ai/api/v1"
-    model: str = "qwen/qwen3-30b-a3b-instruct-2507"
+    model: str = "anthropic/claude-sonnet-4"
     site_url: Optional[str] = None
     site_name: Optional[str] = None
     max_retries: int = 3
@@ -138,9 +138,9 @@ class OpenRouterInterface(BaseLLMInterface):
             # Create response object
             return LLMResponse(
                 text=response_text,
-                model_name=self.model_name,
-                tokens_used=completion.usage.total_tokens if hasattr(completion, 'usage') and completion.usage else 0,
                 metadata={
+                    'model_name': self.model_name,
+                    'tokens_used': completion.usage.total_tokens if hasattr(completion, 'usage') and completion.usage else 0,
                     'temperature': temperature,
                     'max_tokens': max_tokens,
                     'finish_reason': completion.choices[0].finish_reason,
@@ -154,9 +154,11 @@ class OpenRouterInterface(BaseLLMInterface):
             # Return empty response on failure
             return LLMResponse(
                 text="",
-                model_name=self.model_name,
-                tokens_used=0,
-                metadata={'error': str(e)}
+                metadata={
+                    'model_name': self.model_name,
+                    'tokens_used': 0,
+                    'error': str(e)
+                }
             )
     
     def get_model_info(self) -> Dict[str, Any]:
@@ -201,7 +203,7 @@ class QwenInterface(OpenRouterInterface):
         """
         config = OpenRouterConfig(
             api_key=api_key,
-            model="qwen/qwen3-30b-a3b-instruct-2507",
+            model="anthropic/claude-sonnet-4",
             site_url=site_url,
             site_name=site_name
         )
@@ -336,14 +338,9 @@ def get_available_models(api_key: Optional[str] = None) -> List[str]:
     
     # Common OpenRouter models that support chat completion
     return [
-        "qwen/qwen3-30b-a3b-instruct-2507",
-        "anthropic/claude-3-sonnet",
-        "anthropic/claude-3-haiku",
-        "openai/gpt-4o",
-        "openai/gpt-4o-mini",
-        "google/gemini-pro",
-        "mistralai/mixtral-8x7b-instruct",
-        "meta-llama/llama-3-70b-instruct"
+        "anthropic/claude-sonnet-4",
+        "google/gemini-2.5-flash",
+        "openai/gpt-4.1",
     ]
 
 
