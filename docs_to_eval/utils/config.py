@@ -4,8 +4,10 @@ Configuration management with Pydantic models
 
 import json
 import yaml
+import re
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
+from collections import defaultdict
 from pydantic import BaseModel, Field, validator
 from enum import Enum
 
@@ -55,6 +57,14 @@ class LLMConfig(BaseModel):
     provider: str = "openrouter"  # openrouter, openai, anthropic
     site_url: Optional[str] = "https://docs-to-eval.ai"  # For OpenRouter
     app_name: Optional[str] = "docs-to-eval"  # For OpenRouter
+    mock_mode: bool = False  # Use mock LLMs when no API key is available
+    
+    def __init__(self, **kwargs):
+        # Auto-load API key from environment if not provided
+        import os
+        if not kwargs.get('api_key'):
+            kwargs['api_key'] = os.getenv('OPENROUTER_API_KEY')
+        super().__init__(**kwargs)
     
     @validator('temperature')
     def validate_temperature(cls, v):
@@ -99,6 +109,11 @@ class VerificationConfig(BaseModel):
     exact_match_normalize: bool = True
     code_execution_timeout: int = Field(gt=0, default=10)
     llm_judge_criteria: List[str] = Field(default=["relevance", "accuracy", "completeness"])
+    
+    # Mixed verification settings
+    use_mixed_verification: bool = Field(default=True, description="Enable intelligent mixed verification methods")
+    mixed_verification_weights: bool = Field(default=True, description="Use weighted scoring for multiple verification methods")
+    fuzzy_match_threshold: float = Field(ge=0, le=1, default=0.7, description="Threshold for fuzzy string matching")
 
 
 class ChunkingConfig(BaseModel):
@@ -375,3 +390,167 @@ if __name__ == "__main__":
     manager.update_from_env()
     print("\nConfig after environment update:")
     print(manager.get_config().json(indent=2))
+
+
+# Define a basic EvaluationConfig class for EVAL_TYPES
+class BasicEvaluationConfig:
+    def __init__(self, deterministic: bool, verification: VerificationMethod, metrics: List[str]):
+        self.deterministic = deterministic
+        self.verification = verification
+        self.metrics = metrics
+    
+    def dict(self):
+        return {
+            'deterministic': self.deterministic,
+            'verification': self.verification,
+            'metrics': self.metrics
+        }
+
+
+# Evaluation Types Configuration
+EVAL_TYPES = {
+    EvaluationType.MATHEMATICAL: BasicEvaluationConfig(
+        deterministic=True,
+        verification=VerificationMethod.EXACT_MATCH,
+        metrics=['accuracy', 'pass_rate']
+    ),
+    EvaluationType.CODE_GENERATION: BasicEvaluationConfig(
+        deterministic=True,
+        verification=VerificationMethod.EXECUTION,
+        metrics=['pass_rate', 'syntax_correctness']
+    ),
+    EvaluationType.FACTUAL_QA: BasicEvaluationConfig(
+        deterministic=True,
+        verification=VerificationMethod.EXACT_MATCH,
+        metrics=['accuracy', 'f1_score']
+    ),
+    EvaluationType.MULTIPLE_CHOICE: BasicEvaluationConfig(
+        deterministic=True,
+        verification=VerificationMethod.EXACT_MATCH,
+        metrics=['accuracy', 'normalized_accuracy']
+    ),
+    EvaluationType.SUMMARIZATION: BasicEvaluationConfig(
+        deterministic=False,
+        verification=VerificationMethod.SIMILARITY,
+        metrics=['rouge_l', 'bleu', 'semantic_similarity']
+    ),
+    EvaluationType.TRANSLATION: BasicEvaluationConfig(
+        deterministic=False,
+        verification=VerificationMethod.SIMILARITY,
+        metrics=['bleu', 'chrf', 'semantic_similarity']
+    ),
+    EvaluationType.CREATIVE_WRITING: BasicEvaluationConfig(
+        deterministic=False,
+        verification=VerificationMethod.LLM_JUDGE,
+        metrics=['coherence', 'creativity', 'fluency']
+    ),
+    EvaluationType.COMMONSENSE_REASONING: BasicEvaluationConfig(
+        deterministic=True,
+        verification=VerificationMethod.EXACT_MATCH,
+        metrics=['accuracy']
+    ),
+    EvaluationType.READING_COMPREHENSION: BasicEvaluationConfig(
+        deterministic=False,
+        verification=VerificationMethod.SIMILARITY,
+        metrics=['f1_score', 'exact_match', 'semantic_similarity']
+    ),
+    EvaluationType.DOMAIN_KNOWLEDGE: BasicEvaluationConfig(
+        deterministic=True,
+        verification=VerificationMethod.EXACT_MATCH,
+        metrics=['accuracy', 'precision', 'recall']
+    )
+}
+
+
+def analyze_corpus_content(corpus_text: str) -> Dict[str, float]:
+    """Analyze corpus content to determine evaluation types"""
+    patterns = {
+        EvaluationType.MATHEMATICAL: [
+            # Basic arithmetic operations
+            r'\d+\s*[\+\-\*\/\^]\s*\d+',
+            r'\d+\s*[\+\-\*\/\^]\s*\(\d+\)',
+            r'\(\d+\s*[\+\-\*\/\^]\s*\d+\)',
+            
+            # Mathematical terms and keywords
+            r'\b(equation|formula|calculate|solve|compute)\b',
+            r'\b(equals?|equal to|=)\b',
+            r'\b(sum|product|difference|quotient|fraction)\b',
+            r'\b(root|square root|cube root|sqrt)\b',
+            r'\b(exponent|power|logarithm|log|ln)\b',
+            r'\b(integral|derivative|differentiate|integrate)\b',
+            r'\b(trigonometric|sin|cos|tan|sine|cosine|tangent)\b',
+            r'\b(matrix|vector|determinant|eigenvalue|eigenvector)\b',
+            r'\b(probability|statistics|variance|standard deviation|mean|median)\b',
+            r'\b(theorem|proof|lemma|corollary|axiom)\b',
+            r'\b(geometry|algebra|calculus|arithmetic)\b',
+            
+            # Mathematical symbols and expressions
+            r'\b\d+%|\$\d+',
+            r'[<>=≤≥≠≈∞]',
+            r'±|∓|×|÷|∑|∏|∫|∂|∇|Δ|π|θ|φ|α|β|γ',
+            
+            # LaTeX mathematical expressions
+            r'\\frac\{.*?\}\{.*?\}',
+            r'\\sqrt\{.*?\}',
+            r'\\sum_\{.*?\}\^\{.*?\}',
+            r'\\int_\{.*?\}\^\{.*?\}',
+            r'\\lim_\{.*?\}',
+            r'\$.*?\$',
+            r'\\\(.*?\\\)',
+            r'\\\[.*?\\\]',
+            r'\\begin\{(equation|align|matrix|pmatrix|bmatrix)\}',
+            
+            # Fractions and ratios
+            r'\d+/\d+',
+            r'\d+:\d+',
+            r'\b(ratio|proportion|percentage)\b',
+            
+            # Mathematical sets and logic
+            r'\{.*?\}',  # Set notation
+            r'\\cup|\\cap|\\subset|\\superset|\\in|\\notin',
+            r'\\forall|\\exists|\\neg|\\land|\\lor|\\implies',
+            
+            # Advanced mathematics
+            r'\b(polynomial|exponential|factorial|binomial)\b',
+            r'\b(limit|continuity|convergence|divergence)\b',
+            r'\b(linear|quadratic|cubic|quartic)\b',
+            r'n!|\d+!',
+            r'x\^\d+|x\^n|x\^[a-z]',
+        ],
+        EvaluationType.CODE_GENERATION: [
+            r'def\s+\w+\(|function\s+\w+\(',
+            r'import\s+\w+|from\s+\w+\s+import',
+            r'class\s+\w+:|public\s+class',
+            r'if\s*\(|while\s*\(|for\s*\(',
+        ],
+        EvaluationType.FACTUAL_QA: [
+            r'\b(who|what|when|where|why|how)\b',
+            r'\b(president|capital|founded|invented)\b',
+            r'\b\d{4}\b',  # years
+            r'\b(company|organization|person)\b',
+        ],
+        EvaluationType.DOMAIN_KNOWLEDGE: [
+            r'\b(definition|concept|theory|principle)\b',
+            r'\b(according to|research shows|studies indicate)\b',
+            r'\b(methodology|approach|framework)\b',
+        ],
+        EvaluationType.SUMMARIZATION: [
+            r'\b(summary|abstract|overview|conclusion)\b',
+            r'\b(in summary|to summarize|in conclusion)\b',
+            r'key points|main ideas|highlights',
+        ]
+    }
+    
+    scores = {}
+    word_count = len(corpus_text.split())
+    
+    for eval_type, pattern_list in patterns.items():
+        score = 0
+        for pattern in pattern_list:
+            matches = len(re.findall(pattern, corpus_text, re.IGNORECASE))
+            score += matches
+        
+        # Normalize by text length
+        scores[eval_type] = score / max(word_count / 100, 1)
+    
+    return scores

@@ -112,16 +112,25 @@ class AgenticBenchmarkOrchestrator:
         try:
             # Step 0: Mine concepts once (shared across all questions)
             logger.info("Step 0: Mining key concepts from corpus")
-            concept_extraction = await self.concept_miner.produce(
-                corpus_text, 
-                k=int(num_questions * self.config.oversample_factor)
-            )
+            try:
+                concept_extraction = await self.concept_miner.produce(
+                    corpus_text, 
+                    k=int(num_questions * self.config.oversample_factor)
+                )
+                logger.info("ConceptMiner completed successfully")
+            except Exception as e:
+                logger.error(f"ConceptMiner failed: {str(e)}", exc_info=True)
+                raise
             
             if not concept_extraction.key_concepts:
                 logger.warning("No concepts extracted, falling back to simple generation")
                 return await self._fallback_generation(corpus_text, eval_type, num_questions, difficulty)
             
-            logger.info(f"Extracted {len(concept_extraction.key_concepts)} concepts")
+            # Check if we got fallback concepts (indicating ConceptMiner failure)
+            if any(concept.startswith("fallback_concept_") for concept in concept_extraction.key_concepts):
+                logger.warning("ConceptMiner returned fallback concepts - continuing but quality may be reduced")
+            
+            logger.info(f"Successfully extracted {len(concept_extraction.key_concepts)} concepts: {concept_extraction.key_concepts[:5]}...")
             
             # Step 1: Parallel pipeline generation with oversampling
             target_concepts = concept_extraction.key_concepts[:int(num_questions * self.config.oversample_factor)]
@@ -187,7 +196,7 @@ class AgenticBenchmarkOrchestrator:
         for retry_cycle in range(self.config.max_retry_cycles + 1):
             try:
                 # Step 1: Question Writer with adaptive temperature
-                context_snippet = concept_extraction.supporting_snippets.get(concept, corpus_text[:500])
+                context_snippet = concept_extraction.supporting_snippets.get(concept, corpus_text)
                 
                 # Adaptive temperature: start conservative, increase for retries
                 current_temperature = min(0.9, 0.3 + (retry_cycle * 0.15))
@@ -436,7 +445,7 @@ class AgenticBenchmarkOrchestrator:
             item = EnhancedBenchmarkItem(
                 question=f"What is the significance of {concept} in the given context?",
                 answer=f"The {concept} is significant because...",
-                context=corpus_text[:200] if corpus_text else None,
+                context=corpus_text if corpus_text else None,
                 eval_type=eval_type,
                 metadata=metadata,
                 expected_answer_type='free_text',

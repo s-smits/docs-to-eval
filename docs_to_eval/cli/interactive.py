@@ -16,7 +16,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.text import Text
 
-from ..core.evaluation import EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 from ..core.classification import EvaluationTypeClassifier
 from ..llm.mock_interface import MockLLMInterface
 from ..utils.config import EvaluationConfig, create_default_config

@@ -17,7 +17,7 @@ from rich.panel import Panel
 from rich.tree import Tree
 from rich.text import Text
 
-from ..core.evaluation import EvaluationFramework, EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 from ..core.classification import EvaluationTypeClassifier
 from ..core.pipeline import EvaluationPipeline, PipelineFactory
 from ..llm.mock_interface import MockLLMInterface, MockLLMEvaluator

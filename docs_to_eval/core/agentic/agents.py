@@ -11,6 +11,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from abc import ABC, abstractmethod
 from functools import lru_cache
 import time
+import logging
 
 from .models import (
     BenchmarkDraft,
@@ -28,6 +29,9 @@ from .models import (
 from ..evaluation import EvaluationType, is_deterministic
 from ..verification import VerificationOrchestrator
 from ...llm.base import BaseLLMInterface
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAgent(ABC):
@@ -144,11 +148,13 @@ class ConceptMiner(BaseAgent):
             )
             
         except Exception as e:
+            logger.error(f"ConceptMiner failed with error: {str(e)}", exc_info=True)
+            logger.warning("Returning fallback concepts - workflow quality may be degraded")
             return ConceptExtractionResult(
-                key_concepts=[f"concept_{i}" for i in range(min(k, 10))],  # Fallback
-                supporting_snippets={},
-                concept_importance_scores={},
-                chunk_ids=[]
+                key_concepts=[f"fallback_concept_{i}" for i in range(min(k, 10))],  # Fallback with clear naming
+                supporting_snippets={f"fallback_concept_{i}": corpus_text for i in range(min(k, 10))},
+                concept_importance_scores={f"fallback_concept_{i}": 0.1 for i in range(min(k, 10))},
+                chunk_ids=[f"fallback_chunk_{i}" for i in range(min(5, k))]
             )
     
     def _create_windowed_chunks(self, text: str, chunk_size: int = 800, overlap: int = 100) -> List[str]:
@@ -171,7 +177,7 @@ class ConceptMiner(BaseAgent):
             prompt = f"""
 Extract key concepts from this text. Return JSON only.
 
-Text: {chunk[:600]}...
+Text: {chunk}
 
 Return format:
 {{"concepts": [{{"name": "concept", "importance": 0.8, "snippet": "supporting text"}}]}}
@@ -186,6 +192,7 @@ Return format:
                 return concepts, chunk_id
             except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as e:
                 # Failed to parse LLM response, use fallback
+                logger.warning(f"Failed to parse LLM response in ConceptMiner: {str(e)}")
                 pass
         
         # Fallback: Simple keyword extraction
@@ -206,7 +213,7 @@ Return format:
             score = min(freq / total_words * 10, 1.0)  # Normalize
             # Find a good snippet containing this word
             sentences = text.split('.')
-            snippet = next((s.strip() for s in sentences if word in s.lower()), text[:100])
+            snippet = next((s.strip() for s in sentences if word in s.lower()), text)
             concepts[word] = (score, snippet[:100])
         
         return concepts
@@ -245,10 +252,10 @@ class QuestionWriter(BaseAgent):
             self.total_processing_time += processing_time
             
             return BenchmarkDraft(
-                question=question_data['question'][:200],  # Enforce max length
+                question=question_data['question'],
                 answer=question_data['answer'],
                 concept=concept,
-                context_snippet=context_snippet[:800],
+                context_snippet=context_snippet,
                 expected_answer_type=answer_type,
                 reasoning_chain=question_data.get('reasoning_chain', []),
                 difficulty_estimate=DifficultyLevel.INTERMEDIATE
@@ -256,12 +263,37 @@ class QuestionWriter(BaseAgent):
             
         except Exception as e:
             # Fallback question generation
-            return self._create_fallback_draft(concept, context_snippet or corpus_text[:500], eval_type)
+            return self._create_fallback_draft(concept, context_snippet or corpus_text, eval_type)
+    
+    async def produce_with_feedback(self, concept: str, corpus_text: str, eval_type: EvaluationType, 
+                                   context_snippet: Optional[str] = None, validation_context: Optional[Dict] = None) -> BenchmarkDraft:
+        """Generate question draft with validation feedback for improvement"""
+        
+        # Use feedback to improve generation if provided
+        if validation_context and validation_context.get('previous_issues'):
+            # Incorporate feedback into prompt
+            feedback_prompt = f"""
+Previous attempt had issues: {'; '.join(validation_context['previous_issues'][:2])}
+
+Suggestions for improvement:
+{'; '.join(validation_context.get('suggestions', [])[:3])}
+
+Retry #{validation_context.get('retry_count', 1)} - please address these issues.
+"""
+            # Add feedback to context
+            enhanced_snippet = f"{context_snippet}\n\nFeedback: {feedback_prompt}"
+            return await self.produce(concept, corpus_text, eval_type, enhanced_snippet)
+        
+        # If no feedback, use normal generation
+        return await self.produce(concept, corpus_text, eval_type, context_snippet)
     
     async def _generate_question_with_llm(self, concept: str, snippet: str, eval_type: EvaluationType) -> Dict[str, Any]:
         """Generate question using LLM with chain-of-thought"""
         
         system_prompt = """You are an expert question writer. Create challenging, well-grounded questions.
+
+You must act as if the next LLM answering this question will NOT have access to the corpus or source text. The question must stand alone and make sense without referencing the corpus. Tailor your questions and answers as if you are writing a question for a test.
+
 Always return JSON only with this exact format:
 {"question": "...", "answer": "...", "reasoning_chain": ["step1", "step2", "step3"]}"""
         
@@ -296,9 +328,9 @@ Think step by step, then return JSON only.
         # Fallback parsing - IMPROVED TEMPLATES based on lm-evaluation-harness standards
         domain_templates = {
             'factual': f"What is {concept}?",
-            'definition': f"Define {concept} in the context of the given information.",
+            'definition': f"Define {concept}.",
             'significance': f"Explain the role and significance of {concept}.",
-            'relationship': f"How does {concept} relate to the main topic discussed?",
+            'relationship': f"How does {concept} relate to other concepts in this domain?",
             'characteristics': f"What are the key characteristics of {concept}?"
         }
         
@@ -307,7 +339,7 @@ Think step by step, then return JSON only.
         question = domain_templates[template_key]
         
         # Generate proper answer based on context
-        answer = f"Based on the provided context, {concept} is a key element that..."
+        answer = f"{concept} is a key element that..."
         
         return {
             'question': question,
@@ -338,7 +370,7 @@ Think step by step, then return JSON only.
         
         template = random.choice(templates.get(eval_type, templates[EvaluationType.DOMAIN_KNOWLEDGE]))
         question = template.format(concept=concept)
-        answer = f"Based on the provided context, {concept} can be understood as..."
+        answer = f"{concept} can be understood as..."
         
         return {
             'question': question,
@@ -470,9 +502,9 @@ class Adversary(BaseAgent):
             self.total_processing_time += processing_time
             
             return BenchmarkCandidate(
-                question=enhanced_question[:150],  # Enforce limit
+                question=enhanced_question,
                 answer=enhanced_answer,
-                context=draft.context_snippet[:500],
+                context=draft.context_snippet,
                 options=options,
                 concept=draft.concept,
                 expected_answer_type=draft.expected_answer_type,
@@ -560,7 +592,7 @@ Return JSON: {{"distractors": ["wrong1", "wrong2", "wrong3"], "rationale": "why 
 Transform this question to require multi-step reasoning while staying grounded in the context.
 
 Original Question: {question}
-Context: {context[:300]}
+Context: {context}
 
 Create a question that requires 2-3 logical steps to answer. Return JSON:
 {{"enhanced_question": "...", "enhanced_answer": "...", "reasoning_steps": ["step1", "step2", "step3"]}}
@@ -602,7 +634,7 @@ Create a question that requires 2-3 logical steps to answer. Return JSON:
         code_question = f"Write a function that would {question.lower().replace('?', '')} based on the given data structure."
         
         code_answer = f"""def analyze_{draft.concept.replace(' ', '_')}(data):
-    # Based on the context: {answer[:50]}...
+    # Based on the context: {answer}
     result = process_data(data)
     return result"""
         
@@ -683,7 +715,7 @@ class Refiner(BaseAgent):
             # Return original candidate if refinement fails
             return candidate
     
-    def _enforce_question_length(self, question: str, max_length: int = 150) -> str:
+    def _enforce_question_length(self, question: str, max_length: int = 500) -> str:
         """Enforce maximum question length"""
         if len(question) <= max_length:
             return question
@@ -845,8 +877,8 @@ class Validator(BaseAgent):
             quality_score = await self._assess_quality(candidate)
             
             # Length and format checks
-            if len(candidate.question) > 150:
-                issues.append("Question exceeds 150 character limit")
+            if len(candidate.question) > 500:
+                issues.append("Question exceeds 500 character limit")
                 quality_score *= 0.9
             
             if not candidate.question.strip():
@@ -1056,3 +1088,113 @@ class Validator(BaseAgent):
             AnswerType.FREE_TEXT: 'semantic_similarity'
         }
         return method_map.get(answer_type, 'exact_match')
+    
+    async def verify_corpus_accuracy(self, question: str, proposed_answer: str, corpus_text: str, 
+                                   min_complexity: float = 0.4) -> ValidationResult:
+        """
+        Verify that the proposed answer is factually correct according to the corpus
+        and assess question complexity for modern LLMs
+        """
+        if not self.llm:
+            return ValidationResult(
+                accepted=False,
+                score=0.0,
+                issues=["No LLM interface available for corpus verification"],
+                recommendations=["Configure LLM interface for validation"],
+                deterministic_check_passed=False,
+                verification_method_used="no_llm"
+            )
+        
+        verification_prompt = f"""You are a fact-checker and complexity assessor.
+
+CRITICAL: You must respond with ONLY a valid JSON object. No markdown blocks or formatting.
+
+TASK:
+1. Verify if the proposed answer is factually correct according to the source text
+2. Assess the complexity/difficulty of the question for modern LLMs
+
+SOURCE TEXT: {corpus_text}
+
+QUESTION: {question}
+PROPOSED ANSWER: {proposed_answer}
+
+Use this EXACT JSON format:
+{{"is_correct":true,"verified_answer":"...","confidence":0.8,"complexity":0.7,"reasoning":"...","evidence":"...","complexity_analysis":"..."}}
+
+COMPLEXITY SCORING (0.0-1.0):
+- 0.0-0.3: TOO EASY - Simple facts, basic math, obvious answers
+- 0.4-0.6: MODERATE - Requires reasoning, domain knowledge, multi-step thinking  
+- 0.7-1.0: CHALLENGING - Complex reasoning, obscure facts, multi-layered analysis
+
+RULES:
+1. Answer correct ONLY if directly supported by source text
+2. REJECT questions with complexity < {min_complexity} (too easy for modern LLMs)
+3. Prefer questions requiring reasoning, synthesis, or domain expertise
+4. Consider: Would GPT-4/Claude-3.5 find this challenging?
+
+Return raw JSON only."""
+
+        try:
+            response = await self._call_llm_with_retry(verification_prompt, temperature=0.1)
+            
+            # Parse JSON response
+            import json
+            try:
+                verification_result = json.loads(response)
+            except json.JSONDecodeError:
+                # Try to extract JSON from markdown blocks
+                import re
+                json_match = re.search(r'\{.*\}', response, re.DOTALL)
+                if json_match:
+                    verification_result = json.loads(json_match.group())
+                else:
+                    raise json.JSONDecodeError("No valid JSON found", response, 0)
+            
+            # Extract results
+            is_correct = verification_result.get("is_correct", False)
+            complexity = verification_result.get("complexity", 0.0)
+            confidence = verification_result.get("confidence", 0.0)
+            reasoning = verification_result.get("reasoning", "No reasoning provided")
+            evidence = verification_result.get("evidence", "No evidence provided")
+            complexity_analysis = verification_result.get("complexity_analysis", "No analysis provided")
+            
+            # Determine acceptance
+            issues = []
+            recommendations = []
+            
+            if not is_correct:
+                issues.append("Answer is factually incorrect according to corpus")
+                recommendations.append("Revise answer to match corpus information")
+            
+            if complexity < min_complexity:
+                issues.append(f"Question complexity ({complexity:.2f}) below threshold ({min_complexity})")
+                recommendations.append("Increase question difficulty to challenge modern LLMs")
+                is_correct = False  # Override - reject easy questions regardless of correctness
+            
+            # Calculate overall score
+            accuracy_score = 1.0 if is_correct else 0.0
+            complexity_score = max(0.0, min(1.0, complexity))
+            overall_score = (accuracy_score * 0.7 + complexity_score * 0.3) * confidence
+            
+            accepted = is_correct and complexity >= min_complexity and len(issues) == 0
+            
+            return ValidationResult(
+                accepted=accepted,
+                score=overall_score,
+                issues=issues,
+                recommendations=recommendations,
+                deterministic_check_passed=is_correct,
+                verification_method_used="llm_corpus_verification",
+                # Store additional verification data in metadata if ValidationResult supports it
+                # Otherwise these will be available through the agent's response
+            )
+            
+        except Exception as e:
+            return ValidationResult(
+                accepted=False,
+                score=0.0,
+                issues=[f"Corpus verification failed: {str(e)}"],
+                recommendations=["Check LLM connectivity and try again"],
+                deterministic_check_passed=False,
+                verification_method_used="verification_error"
+            )

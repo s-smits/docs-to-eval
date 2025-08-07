@@ -13,27 +13,8 @@ from dataclasses import dataclass
 from pydantic import BaseModel, Field, validator
 from enum import Enum
 
-
-class EvaluationType(str, Enum):
-    """Supported evaluation types"""
-    MATHEMATICAL = "mathematical"
-    CODE_GENERATION = "code_generation"
-    FACTUAL_QA = "factual_qa"
-    MULTIPLE_CHOICE = "multiple_choice"
-    SUMMARIZATION = "summarization"
-    TRANSLATION = "translation"
-    CREATIVE_WRITING = "creative_writing"
-    COMMONSENSE_REASONING = "commonsense_reasoning"
-    READING_COMPREHENSION = "reading_comprehension"
-    DOMAIN_KNOWLEDGE = "domain_knowledge"
-
-
-class VerificationMethod(str, Enum):
-    """Supported verification methods"""
-    EXACT_MATCH = "exact_match"
-    EXECUTION = "execution"
-    SIMILARITY = "similarity"
-    LLM_JUDGE = "llm_judge"
+# Import enums from central config location
+from ..utils.config import EvaluationType, VerificationMethod
 
 
 class EvaluationConfig(BaseModel):

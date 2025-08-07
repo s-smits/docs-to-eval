@@ -36,7 +36,7 @@ os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
 # Import EVERYTHING - FIXED PATHS
 from docs_to_eval.core.agentic.generator import AgenticBenchmarkGenerator
 from docs_to_eval.core.agentic.models import PipelineConfig, DifficultyLevel
-from docs_to_eval.core.evaluation import EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 from docs_to_eval.core.classification import EvaluationTypeClassifier
 from docs_to_eval.core.verification import VerificationOrchestrator
 from docs_to_eval.core.pipeline import EvaluationPipeline

@@ -405,22 +405,54 @@ def create_smart_chunks(text: str, chunking_config: Optional[ChunkingConfig] = N
     if chunking_config is None:
         chunking_config = ChunkingConfig()
     
+    # Check for testing mode to disable caching and force full chunking
+    import os
+    testing_mode = os.getenv("DOCS_TO_EVAL_TESTING_MODE", "false").lower() in ["true", "1", "yes"]
+    if testing_mode:
+        print("🧪 TESTING MODE: Forcing fresh chunking, no caching")
+        # Add timestamp to ensure chunks are always fresh in testing mode
+        import time
+        chunking_config.testing_timestamp = time.time()
+    
     # Try chonkie integration first if enabled
     if chunking_config.enable_chonkie:
         try:
-            return _create_chonkie_chunks(text, chunking_config)
-        except ImportError:
+            chunks = _create_chonkie_chunks(text, chunking_config, testing_mode=testing_mode)
+            
+            # Validate chunks before returning
+            if chunks and len(chunks) > 0:
+                # Check if chunks meet minimum requirements
+                valid_chunks = [c for c in chunks if c.get('token_count', 0) >= chunking_config.min_token_size / 2]
+                
+                if len(valid_chunks) > 0:
+                    print(f"✅ Chonkie produced {len(chunks)} chunks successfully")
+                    return chunks
+                else:
+                    print(f"⚠️ Chonkie chunks too small, falling back to simple chunking")
+            else:
+                print(f"⚠️ Chonkie produced no chunks, falling back to simple chunking")
+                
+        except ImportError as e:
             print("⚠️ Chonkie not available, falling back to simple chunking")
-            print("💡 Install chonkie for advanced semantic chunking: pip install chonkie")
+            print("💡 Install chonkie with embeddings: pip install 'chonkie[embeddings]'")
+            print(f"💡 Error details: {e}")
         except Exception as e:
             error_msg = str(e)
             if "aten::_embedding_bag" in error_msg and "MPS device" in error_msg:
-                print(f"⚠️ MPS device compatibility issue detected: {error_msg}")
+                print(f"⚠️ MPS device compatibility issue detected")
                 print("💡 This is an Apple Silicon compatibility issue with PyTorch embeddings")
-                print("✅ The system has automatically set PYTORCH_ENABLE_MPS_FALLBACK=1 to fix this")
+                print("✅ The system has automatically set PYTORCH_ENABLE_MPS_FALLBACK=1")
                 print("🔧 Falling back to simple chunking for now")
+            elif "model2vec" in error_msg.lower() or "embedding" in error_msg.lower():
+                print(f"⚠️ Chonkie embeddings issue: {e}")
+                print("💡 Try: pip install 'chonkie[model2vec]' or pip install 'chonkie[sentence-transformers]'")
+                print("🔧 Falling back to simple chunking")
+            elif "too small" in error_msg.lower():
+                print(f"⚠️ Chonkie chunks inadequate: {e}")
+                print("🔧 Falling back to simple chunking with proper sizing")
             else:
-                print(f"⚠️ Chonkie chunking failed: {e}, falling back to simple chunking")
+                print(f"⚠️ Chonkie chunking failed: {e}")
+                print("🔧 Falling back to simple chunking")
     
     # Fallback to simple chunking
     return _create_simple_chunks(text, chunking_config)
@@ -545,7 +577,7 @@ def _detect_device_compatibility() -> Dict[str, Any]:
     return info
 
 
-def _create_chonkie_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, Any]]:
+def _create_chonkie_chunks(text: str, config: ChunkingConfig, testing_mode: bool = False) -> List[Dict[str, Any]]:
     """Create chunks using chonkie library for semantic chunking"""
     try:
         # Set PyTorch MPS fallback to CPU for embedding operations on Apple Silicon
@@ -557,7 +589,12 @@ def _create_chonkie_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, 
         if device_info["is_apple_silicon"]:
             print(f"🍎 Apple Silicon detected - MPS fallback enabled for PyTorch embeddings")
         
-        from chonkie import SemanticChunker, SentenceChunker, RecursiveChunker, TokenChunker
+        # Try to import chonkie chunkers
+        try:
+            from chonkie import SemanticChunker, SentenceChunker, RecursiveChunker, TokenChunker
+        except ImportError as e:
+            print(f"⚠️ Chonkie import failed: {e}")
+            raise ImportError(f"Chonkie not available: {e}")
         
         # Use token-aware SEMANTIC chunking (smart chunking within 2k-4k token range)
         if config.use_token_chunking:
@@ -646,7 +683,17 @@ def _create_chonkie_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, 
                 method = "chonkie_semantic"
         
         # Perform chunking
-        raw_chunks = chunker.chunk(text)
+        try:
+            raw_chunks = chunker.chunk(text)
+        except Exception as e:
+            print(f"⚠️ Chonkie chunking failed: {e}")
+            print(f"💡 Falling back to simple chunking due to chonkie error")
+            raise Exception(f"Chonkie chunking operation failed: {e}")
+        
+        # Validate we got reasonable chunks
+        if not raw_chunks:
+            print(f"⚠️ Chonkie returned no chunks")
+            raise Exception("Chonkie returned no chunks")
         
         # Convert to our format with metadata and token validation
         chunks = []
@@ -660,7 +707,15 @@ def _create_chonkie_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, 
             except ImportError:
                 print("⚠️ tiktoken not available for token validation")
         
-        for i, chunk_text in enumerate(raw_chunks):
+        for i, chunk_obj in enumerate(raw_chunks):
+            # Extract text content from SemanticChunk object
+            chunk_text = chunk_obj.text if hasattr(chunk_obj, 'text') else str(chunk_obj)
+            
+            # Skip empty or tiny chunks
+            if len(chunk_text.strip()) < 100:  # Less than ~25 tokens
+                print(f"⚠️ Skipping tiny chunk {i}: only {len(chunk_text)} chars")
+                continue
+            
             # Calculate actual token count if available
             actual_tokens = None
             token_status = "estimated"
@@ -708,10 +763,31 @@ def _create_chonkie_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, 
                     'chonkie_enabled': True,
                     'chunk_method': method,
                     'target_token_size': config.target_token_size if config.use_token_chunking else None,
-                    'overlap_tokens': config.overlap_tokens if config.use_token_chunking else config.overlap_size
+                    'overlap_tokens': config.overlap_tokens if config.use_token_chunking else config.overlap_size,
+                    'testing_mode': testing_mode,
+                    'testing_timestamp': getattr(config, 'testing_timestamp', None) if testing_mode else None
                 }
             }
             chunks.append(chunk_dict)
+        
+        # CRITICAL: Check if chonkie produced adequate chunks
+        if chunks:
+            # Calculate average chunk size
+            avg_tokens = sum(c.get('token_count', 0) for c in chunks) / len(chunks)
+            
+            # If chonkie produced chunks that are way too small, fail fast
+            if config.use_token_chunking and avg_tokens < config.min_token_size / 4:
+                print(f"⚠️ Chonkie chunks too small: avg {avg_tokens:.0f} tokens (need {config.min_token_size}+)")
+                print(f"💡 Chonkie semantic chunking produced inadequate results")
+                print(f"💡 This may be due to missing model2vec dependencies")
+                raise Exception(f"Chonkie chunks too small: average {avg_tokens:.0f} tokens")
+            
+            # Post-process: concatenate chunks that are below minimum token size
+            if config.use_token_chunking and token_counter:
+                chunks = _concatenate_small_chunks(chunks, config, token_counter)
+        else:
+            print(f"⚠️ No valid chunks produced by chonkie")
+            raise Exception("No valid chunks produced")
         
         return chunks
         
@@ -721,8 +797,116 @@ def _create_chonkie_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, 
         raise Exception(f"Chonkie chunking failed: {e}")
 
 
+def _concatenate_small_chunks(chunks: List[Dict[str, Any]], config: ChunkingConfig, token_counter) -> List[Dict[str, Any]]:
+    """
+    Concatenate chunks that are below the minimum token size to meet the target range (2k-4k tokens)
+    
+    Args:
+        chunks: List of chunk dictionaries
+        config: Chunking configuration with min/max token sizes
+        token_counter: Tiktoken encoder for accurate token counting
+        
+    Returns:
+        List of chunk dictionaries with small chunks concatenated
+    """
+    if not chunks:
+        return chunks
+    
+    concatenated_chunks = []
+    current_chunk = None
+    
+    print(f"🔧 Post-processing {len(chunks)} chunks to meet min token size ({config.min_token_size})...")
+    
+    for i, chunk in enumerate(chunks):
+        chunk_tokens = chunk.get('token_count', 0)
+        
+        # If this chunk is large enough, finalize current and start fresh
+        if chunk_tokens >= config.min_token_size:
+            # Finalize current concatenated chunk if it exists
+            if current_chunk:
+                concatenated_chunks.append(current_chunk)
+                current_chunk = None
+            
+            # Add this chunk as-is since it meets minimum
+            concatenated_chunks.append(chunk)
+            print(f"✅ Chunk {len(concatenated_chunks)-1}: {chunk_tokens} tokens (meets minimum)")
+            
+        else:
+            # This chunk is too small, concatenate it
+            if current_chunk is None:
+                # Start new concatenated chunk
+                current_chunk = chunk.copy()
+                current_chunk['concatenated_from'] = [chunk['index']]
+                current_chunk['method'] = f"{chunk['method']}_concatenated"
+            else:
+                # Add to existing concatenated chunk
+                current_chunk['text'] += "\n\n" + chunk['text']
+                current_chunk['size'] = len(current_chunk['text'])
+                current_chunk['word_count'] = len(current_chunk['text'].split())
+                current_chunk['concatenated_from'].append(chunk['index'])
+                
+                # Recalculate token count for concatenated chunk
+                try:
+                    current_chunk['token_count'] = len(token_counter.encode(current_chunk['text']))
+                    current_chunk['token_status'] = "exact"
+                except Exception:
+                    current_chunk['token_count'] = len(current_chunk['text']) // 4
+                    current_chunk['token_status'] = "estimated"
+            
+            # Check if concatenated chunk now meets minimum size
+            current_tokens = current_chunk['token_count']
+            if current_tokens >= config.min_token_size:
+                # Finalize this concatenated chunk
+                concatenated_chunks.append(current_chunk)
+                print(f"✅ Concatenated chunk {len(concatenated_chunks)-1}: {current_tokens} tokens "
+                      f"(from {len(current_chunk['concatenated_from'])} small chunks)")
+                current_chunk = None
+            
+            # Check if we would exceed max size with next chunk
+            elif current_tokens > config.max_token_size * 0.8:  # 80% of max as safety margin
+                # Finalize current chunk even though it's small
+                concatenated_chunks.append(current_chunk)
+                print(f"⚠️ Concatenated chunk {len(concatenated_chunks)-1}: {current_tokens} tokens "
+                      f"(below minimum but approaching max size)")
+                current_chunk = None
+    
+    # Don't forget the final chunk
+    if current_chunk:
+        concatenated_chunks.append(current_chunk)
+        final_tokens = current_chunk['token_count']
+        print(f"⚠️ Final concatenated chunk: {final_tokens} tokens "
+              f"(from {len(current_chunk['concatenated_from'])} chunks)")
+    
+    print(f"📊 Concatenation complete: {len(chunks)} → {len(concatenated_chunks)} chunks")
+    
+    # Update indices for final chunks
+    for i, chunk in enumerate(concatenated_chunks):
+        chunk['index'] = i
+        chunk['token_range_valid'] = (
+            config.min_token_size <= chunk['token_count'] <= config.max_token_size
+        )
+    
+    return concatenated_chunks
+
+
 def _create_simple_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, Any]]:
     """Create chunks using simple text splitting strategies"""
+    
+    # Determine target sizes based on whether we're using token-aware chunking
+    if config.use_token_chunking:
+        # Convert token sizes to approximate character sizes
+        # Average: 1 token ≈ 3.5-4 characters
+        target_size = config.target_token_size * 4
+        min_size = config.min_token_size * 4  
+        max_size = config.max_token_size * 4
+        overlap = config.overlap_tokens * 4
+        print(f"📏 Simple chunking with token targets: {config.min_token_size}-{config.max_token_size} tokens")
+    else:
+        target_size = config.target_chunk_size
+        min_size = config.min_chunk_size
+        max_size = config.max_chunk_size
+        overlap = config.overlap_size
+        print(f"📏 Simple chunking with character targets: {min_size}-{max_size} chars")
     
     # Split by paragraphs first for better boundaries
     paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
@@ -733,9 +917,9 @@ def _create_simple_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, A
     
     for paragraph in paragraphs:
         # Check if adding this paragraph would exceed max size
-        if current_chunk and len(current_chunk) + len(paragraph) > config.max_chunk_size:
+        if current_chunk and len(current_chunk) + len(paragraph) > max_size:
             # Finalize current chunk if it meets minimum size
-            if len(current_chunk) >= config.min_chunk_size:
+            if len(current_chunk) >= min_size:
                 chunk_dict = {
                     'text': current_chunk.strip(),
                     'index': chunk_index,
@@ -752,8 +936,8 @@ def _create_simple_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, A
                 chunk_index += 1
                 
                 # Start new chunk with overlap if configured
-                if config.overlap_size > 0:
-                    overlap_text = current_chunk[-config.overlap_size:]
+                if overlap > 0:
+                    overlap_text = current_chunk[-overlap:] if len(current_chunk) > overlap else current_chunk
                     current_chunk = overlap_text + "\n\n" + paragraph
                 else:
                     current_chunk = paragraph
@@ -768,7 +952,7 @@ def _create_simple_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, A
                 current_chunk = paragraph
     
     # Add final chunk if it exists and meets minimum size
-    if current_chunk and len(current_chunk) >= config.min_chunk_size:
+    if current_chunk and len(current_chunk) >= min_size:
         chunk_dict = {
             'text': current_chunk.strip(),
             'index': chunk_index,
@@ -798,6 +982,37 @@ def _create_simple_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, A
             }
         }
         chunks.append(chunk_dict)
+    
+    # Add token counts to chunks if using token-aware chunking
+    if config.use_token_chunking:
+        try:
+            from tiktoken import get_encoding
+            token_counter = get_encoding("cl100k_base")
+            
+            for chunk in chunks:
+                try:
+                    chunk['token_count'] = len(token_counter.encode(chunk['text']))
+                    chunk['token_status'] = 'exact'
+                    chunk['token_range_valid'] = (
+                        config.min_token_size <= chunk['token_count'] <= config.max_token_size
+                    )
+                except Exception:
+                    chunk['token_count'] = len(chunk['text']) // 4
+                    chunk['token_status'] = 'estimated'
+                    chunk['token_range_valid'] = None
+                    
+        except ImportError:
+            # Estimate token counts
+            for chunk in chunks:
+                chunk['token_count'] = len(chunk['text']) // 4
+                chunk['token_status'] = 'estimated'
+                chunk['token_range_valid'] = None
+        
+        print(f"✅ Simple chunking produced {len(chunks)} chunks")
+        for i, chunk in enumerate(chunks[:3]):  # Show first 3 chunks
+            print(f"  Chunk {i}: {chunk.get('token_count', 'N/A')} tokens ({chunk['size']} chars)")
+        if len(chunks) > 3:
+            print(f"  ... and {len(chunks) - 3} more chunks")
     
     return chunks
 

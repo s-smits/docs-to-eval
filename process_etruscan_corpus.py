@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 # Import existing abstractions - NO NEW ABSTRACTIONS!
 from docs_to_eval.core.agentic import AgenticBenchmarkGenerator
-from docs_to_eval.core.evaluation import EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 from docs_to_eval.utils.text_processing import create_smart_chunks
 from docs_to_eval.utils.config import ChunkingConfig
 

@@ -16,7 +16,7 @@ from docs_to_eval.core.agentic.models import (
     ConceptExtractionResult, ValidationResult, AgentResponse, AgentConfig,
     DifficultyLevel, AnswerType
 )
-from docs_to_eval.core.evaluation import EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 from docs_to_eval.llm.base import BaseLLMInterface
 from docs_to_eval.llm.mock_interface import MockLLMInterface
 
@@ -524,7 +524,7 @@ class TestAgenticPipelineIntegration:
         # Step 2: Generate questions for each concept
         drafts = []
         for concept in concepts.key_concepts[:2]:  # Limit to 2 for testing
-            snippet = concepts.supporting_snippets.get(concept, self.test_corpus[:200])
+            snippet = concepts.supporting_snippets.get(concept, self.test_corpus)
             draft = await self.question_writer.produce(
                 concept, 
                 self.test_corpus, 

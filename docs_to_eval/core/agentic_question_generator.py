@@ -11,8 +11,8 @@ from collections import defaultdict, Counter
 from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass
 
-from .evaluation import extract_key_concepts, sample_corpus_segments, EvaluationType
-from .benchmarks import BenchmarkGeneratorFactory
+from docs_to_eval.core.evaluation import extract_key_concepts, sample_corpus_segments, EvaluationType
+from docs_to_eval.core.benchmarks import BenchmarkGeneratorFactory
 
 
 @dataclass
@@ -89,16 +89,16 @@ class AdvancedMockLLM:
         else:
             question = template + " " + concept
         
-        # Generate mock answer
+        # Generate mock answer without placeholders
         answer_templates = {
-            'conceptual': f"{concept} is a fundamental concept that involves...",
-            'application': f"When applying {concept}, one would typically...",
-            'comparison': f"Comparing {concept} with other approaches shows...",
-            'analytical': f"The analysis of {concept} reveals that...",
-            'synthesis': f"Combining {concept} with other elements creates..."
+            'conceptual': f"{concept} is a fundamental concept that involves structured processes and systematic approaches",
+            'application': f"When applying {concept}, one would typically use data-driven methods and established frameworks",
+            'comparison': f"Comparing {concept} with other approaches shows distinct advantages in efficiency and scalability", 
+            'analytical': f"The analysis of {concept} reveals complex relationships between components and underlying mechanisms",
+            'synthesis': f"Combining {concept} with other elements creates enhanced capabilities and improved performance"
         }
         
-        answer = answer_templates.get(category, f"The answer involves understanding {concept} in depth.")
+        answer = answer_templates.get(category, f"The answer involves understanding {concept} through systematic analysis and practical application")
         
         return {
             'question': question,
@@ -124,33 +124,20 @@ class AgenticQuestionGenerator:
     
     def generate_comprehensive_benchmark(self, corpus_text: str, num_questions: int = 50, 
                                        eval_type: EvaluationType = EvaluationType.DOMAIN_KNOWLEDGE) -> Dict[str, Any]:
-        """Generate a comprehensive benchmark using multiple question generation strategies"""
+        """Generate a comprehensive benchmark using multiple question generation strategies with quality filtering"""
         
         # Analyze corpus structure
         corpus_analysis = self._analyze_corpus_structure(corpus_text)
         
-        # Distribute questions across strategies
-        questions_per_strategy = max(1, num_questions // len(self.question_strategies))
-        remaining_questions = num_questions % len(self.question_strategies)
+        # Use oversampling to ensure we have enough quality questions after filtering
+        oversample_factor = 2.0  # Generate 2.5x more questions than needed
+        target_generation = int(num_questions * oversample_factor)
         
-        all_questions = []
-        strategy_distribution = []
+        # Generate questions with oversampling
+        all_questions, strategy_distribution = self._generate_with_oversampling(corpus_text, corpus_analysis, target_generation, eval_type)
         
-        for i, strategy in enumerate(self.question_strategies):
-            strategy_questions = questions_per_strategy
-            if i < remaining_questions:
-                strategy_questions += 1
-            
-            questions = strategy(corpus_text, corpus_analysis, strategy_questions, str(eval_type))
-            all_questions.extend(questions)
-            strategy_distribution.append({
-                'strategy': strategy.__name__,
-                'questions_generated': len(questions),
-                'avg_quality': sum(q.quality_score for q in questions) / len(questions) if questions else 0
-            })
-        
-        # Apply quality filtering and improvement
-        filtered_questions = self._filter_and_improve_questions(all_questions, corpus_analysis)
+        # Apply quality filtering and improvement to get exactly num_questions
+        filtered_questions = self._filter_and_ensure_count(all_questions, corpus_analysis, num_questions, corpus_text, eval_type)
         
         # Generate quality statistics
         quality_stats = self._compute_quality_statistics(filtered_questions)
@@ -243,7 +230,7 @@ class AgenticQuestionGenerator:
         
         for i in range(min(num_questions, len(concepts))):
             concept = concepts[i]
-            generated = self.llm.generate_question(concept, 'conceptual', corpus_text[:200])
+            generated = self.llm.generate_question(concept, 'conceptual', corpus_text)
             
             quality_score = self._assess_question_quality(generated['question'], analysis)
             difficulty = self._determine_difficulty(generated['question'], analysis)
@@ -251,7 +238,7 @@ class AgenticQuestionGenerator:
             questions.append(QuestionItem(
                 question=generated['question'],
                 answer=generated['answer'],
-                context=corpus_text[:300] if len(corpus_text) > 300 else corpus_text,
+                context=corpus_text,
                 category='conceptual',
                 difficulty=difficulty,
                 quality_score=quality_score,
@@ -268,7 +255,7 @@ class AgenticQuestionGenerator:
         
         for i in range(num_questions):
             concept = concepts[i % len(concepts)] if concepts else f"concept_{i}"
-            generated = self.llm.generate_question(concept, 'application', corpus_text[:200])
+            generated = self.llm.generate_question(concept, 'application', corpus_text)
             
             quality_score = self._assess_question_quality(generated['question'], analysis) + 0.1  # Slight boost for application
             difficulty = 'advanced'  # Application questions are typically more difficult
@@ -276,7 +263,7 @@ class AgenticQuestionGenerator:
             questions.append(QuestionItem(
                 question=generated['question'],
                 answer=generated['answer'],
-                context=random.choice(analysis['segments']) if analysis['segments'] else corpus_text[:300],
+                context=random.choice(analysis['segments']) if analysis['segments'] else corpus_text,
                 category='application',
                 difficulty=difficulty,
                 quality_score=min(quality_score, 1.0),
@@ -294,17 +281,17 @@ class AgenticQuestionGenerator:
         for i in range(num_questions):
             if len(concepts) >= 2:
                 concept = random.choice(concepts)
-                generated = self.llm.generate_question(concept, 'comparison', corpus_text[:200])
+                generated = self.llm.generate_question(concept, 'comparison', corpus_text)
             else:
                 concept = f"topic_{i}"
-                generated = self.llm.generate_question(concept, 'comparison', corpus_text[:200])
+                generated = self.llm.generate_question(concept, 'comparison', corpus_text)
             
             quality_score = self._assess_question_quality(generated['question'], analysis)
             
             questions.append(QuestionItem(
                 question=generated['question'],
                 answer=generated['answer'],
-                context=corpus_text[:400],
+                context=corpus_text,
                 category='comparison',
                 difficulty='intermediate',
                 quality_score=quality_score,
@@ -321,14 +308,14 @@ class AgenticQuestionGenerator:
         
         for i in range(num_questions):
             concept = concepts[i % len(concepts)] if concepts else f"element_{i}"
-            generated = self.llm.generate_question(concept, 'analytical', corpus_text[:200])
+            generated = self.llm.generate_question(concept, 'analytical', corpus_text)
             
             quality_score = self._assess_question_quality(generated['question'], analysis) + 0.15  # Boost for analytical
             
             questions.append(QuestionItem(
                 question=generated['question'],
                 answer=generated['answer'],
-                context=random.choice(analysis['segments']) if analysis['segments'] else corpus_text[:300],
+                context=random.choice(analysis['segments']) if analysis['segments'] else corpus_text,
                 category='analytical',
                 difficulty='advanced',
                 quality_score=min(quality_score, 1.0),
@@ -346,17 +333,17 @@ class AgenticQuestionGenerator:
         for i in range(num_questions):
             if len(concepts) >= 3:
                 concept = random.choice(concepts[:10])  # Use top concepts
-                generated = self.llm.generate_question(concept, 'synthesis', corpus_text[:200])
+                generated = self.llm.generate_question(concept, 'synthesis', corpus_text)
             else:
                 concept = f"system_{i}"
-                generated = self.llm.generate_question(concept, 'synthesis', corpus_text[:200])
+                generated = self.llm.generate_question(concept, 'synthesis', corpus_text)
             
             quality_score = self._assess_question_quality(generated['question'], analysis) + 0.2  # Highest boost for synthesis
             
             questions.append(QuestionItem(
                 question=generated['question'],
                 answer=generated['answer'],
-                context=corpus_text[:500],
+                context=corpus_text,
                 category='synthesis',
                 difficulty='expert',
                 quality_score=min(quality_score, 1.0),
@@ -428,13 +415,93 @@ class AgenticQuestionGenerator:
         else:
             return 'basic'
     
-    def _filter_and_improve_questions(self, questions: List[QuestionItem], analysis: Dict[str, Any]) -> List[QuestionItem]:
-        """Filter and improve questions based on quality metrics"""
+    def _generate_with_oversampling(self, corpus_text: str, corpus_analysis: Dict[str, Any], 
+                                  target_count: int, eval_type: EvaluationType):
+        """Generate questions with oversampling across strategies"""
         
-        # Sort by quality score
-        questions.sort(key=lambda q: q.quality_score, reverse=True)
+        # Distribute questions across strategies
+        questions_per_strategy = max(1, target_count // len(self.question_strategies))
+        remaining_questions = target_count % len(self.question_strategies)
         
-        # Remove duplicates or very similar questions
+        all_questions = []
+        strategy_distribution = []
+        
+        for i, strategy in enumerate(self.question_strategies):
+            strategy_questions = questions_per_strategy
+            if i < remaining_questions:
+                strategy_questions += 1
+            
+            try:
+                questions = strategy(corpus_text, corpus_analysis, strategy_questions, str(eval_type))
+                all_questions.extend(questions)
+                
+                strategy_distribution.append({
+                    'strategy': strategy.__name__,
+                    'questions_generated': len(questions),
+                    'avg_quality': sum(q.quality_score for q in questions) / len(questions) if questions else 0
+                })
+            except Exception as e:
+                print(f"Warning: Strategy {strategy.__name__} failed: {e}")
+                strategy_distribution.append({
+                    'strategy': strategy.__name__,
+                    'questions_generated': 0,
+                    'avg_quality': 0,
+                    'error': str(e)
+                })
+        
+        return all_questions, strategy_distribution
+    
+    def _filter_and_ensure_count(self, questions: List[QuestionItem], analysis: Dict[str, Any], 
+                               target_count: int, corpus_text: str, eval_type: EvaluationType) -> List[QuestionItem]:
+        """Filter questions with quality control and ensure exact count through regeneration"""
+        
+        min_quality_threshold = 0.4  # Minimum acceptable quality
+        max_attempts = 3  # Maximum regeneration attempts
+        
+        for attempt in range(max_attempts):
+            # Apply quality filtering
+            quality_filtered = self._apply_quality_filter(questions, min_quality_threshold)
+            
+            # Remove duplicates
+            unique_filtered = self._remove_duplicates(quality_filtered)
+            
+            # Sort by quality score
+            unique_filtered.sort(key=lambda q: q.quality_score, reverse=True)
+            
+            if len(unique_filtered) >= target_count:
+                # We have enough high-quality questions
+                return unique_filtered[:target_count]
+            
+            # Need to regenerate more questions
+            shortage = target_count - len(unique_filtered)
+            print(f"Regenerating {shortage} questions (attempt {attempt + 1}/{max_attempts})")
+            
+            # Generate additional questions to fill the gap
+            additional_questions = self._generate_additional_questions(
+                corpus_text, analysis, shortage * 2, eval_type  # Generate 2x shortage for safety
+            )
+            questions.extend(additional_questions)
+        
+        # If we still don't have enough after max attempts, return what we have
+        # and lower quality threshold progressively
+        for lower_threshold in [0.3, 0.2, 0.1]:
+            quality_filtered = self._apply_quality_filter(questions, lower_threshold)
+            unique_filtered = self._remove_duplicates(quality_filtered)
+            unique_filtered.sort(key=lambda q: q.quality_score, reverse=True)
+            
+            if len(unique_filtered) >= target_count:
+                return unique_filtered[:target_count]
+        
+        # Final fallback: return best available questions, even if below target count
+        print(f"Warning: Could only generate {len(unique_filtered)} questions out of {target_count} requested")
+        return unique_filtered
+    
+    def _apply_quality_filter(self, questions: List[QuestionItem], min_threshold: float) -> List[QuestionItem]:
+        """Filter out questions below quality threshold"""
+        return [q for q in questions if q.quality_score >= min_threshold]
+    
+    def _remove_duplicates(self, questions: List[QuestionItem]) -> List[QuestionItem]:
+        """Remove duplicate or very similar questions"""
         filtered_questions = []
         seen_questions = set()
         
@@ -449,11 +516,52 @@ class AgenticQuestionGenerator:
                     is_duplicate = True
                     break
             
-            if not is_duplicate:
+            # Additional checks for too simple questions
+            if not is_duplicate and not self._is_too_simple(question):
                 filtered_questions.append(question)
                 seen_questions.add(question.question)
         
         return filtered_questions
+    
+    def _is_too_simple(self, question: QuestionItem) -> bool:
+        """Check if a question is too simple or low-quality"""
+        q_text = question.question.lower()
+        a_text = question.answer.lower()
+        
+        # Check for extremely short content (very restrictive)
+        if len(question.question.split()) < 3:
+            return True
+        
+        if len(question.answer.split()) < 1:
+            return True
+        
+        # Check for placeholder content
+        placeholders = ['...', 'todo', 'placeholder', 'insert here', 'fill in']
+        if any(placeholder in q_text or placeholder in a_text for placeholder in placeholders):
+            return True
+        
+        # Check for extremely vague questions (very restrictive)
+        extremely_simple_patterns = [
+            'what?', 'how?', 'why?', 'yes.', 'no.', 'maybe.'
+        ]
+        
+        # Only flag questions that are extremely simple
+        if q_text.strip() in extremely_simple_patterns or a_text.strip() in extremely_simple_patterns:
+            return True
+        
+        # Check for very short questions with very generic patterns (more restrictive)
+        if len(question.question.split()) <= 4:
+            very_generic = ['what is it', 'how does it work', 'why does it']
+            if any(pattern in q_text for pattern in very_generic):
+                return True
+        
+        return False
+    
+    def _generate_additional_questions(self, corpus_text: str, analysis: Dict[str, Any], 
+                                     count: int, eval_type: EvaluationType) -> List[QuestionItem]:
+        """Generate additional questions when we need more to reach target count"""
+        # Use conceptual strategy for additional questions as it tends to be most reliable
+        return self._generate_conceptual_questions(corpus_text, analysis, count, str(eval_type))
     
     def _compute_quality_statistics(self, questions: List[QuestionItem]) -> Dict[str, Any]:
         """Compute quality statistics for generated questions"""

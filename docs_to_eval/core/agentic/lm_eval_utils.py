@@ -382,7 +382,7 @@ from docs_to_eval.core.agentic.lm_eval_utils import (
     generate_and_export_benchmark,
     export_agentic_benchmark_to_lm_eval
 )
-from docs_to_eval.core.evaluation import EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 from docs_to_eval.core.agentic import AgenticBenchmarkGenerator
 
 # 1. Generate agentic benchmark from corpus

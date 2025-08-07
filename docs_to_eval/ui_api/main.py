@@ -18,16 +18,34 @@ from ..utils.logging import setup_logging, get_logger
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan management"""
+    import os
+    
     # Startup
     setup_logging("INFO", "logs")
     logger = get_logger("app")
     logger.info("Starting docs-to-eval API server")
     
+    # Verify environment variables
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if api_key:
+        logger.info(f"OPENROUTER_API_KEY configured (length: {len(api_key)})")
+    else:
+        logger.warning("OPENROUTER_API_KEY not configured - agentic evaluation will not work")
+    
     # Create necessary directories
-    Path("output").mkdir(exist_ok=True)
-    Path("logs").mkdir(exist_ok=True)
-    Path("cache").mkdir(exist_ok=True)
-    Path("uploads").mkdir(exist_ok=True)
+    directories = ["output", "logs", "cache", "uploads"]
+    for directory in directories:
+        path = Path(directory)
+        path.mkdir(exist_ok=True)
+        logger.info(f"Ensured directory exists: {path.absolute()}")
+    
+    # Verify critical components
+    try:
+        from ..core.pipeline import EvaluationPipeline
+        from ..llm.openrouter_interface import OpenRouterInterface
+        logger.info("✅ Core components loaded successfully")
+    except ImportError as e:
+        logger.error(f"❌ Failed to load core components: {e}")
     
     yield
     

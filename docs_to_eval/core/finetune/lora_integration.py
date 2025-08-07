@@ -15,7 +15,7 @@ from typing import Dict, List, Any, Optional, Tuple, Union
 from dataclasses import dataclass
 from pydantic import BaseModel, Field
 
-from .evaluation import FinetuneTestSet, BenchmarkItem
+from ..evaluation import FinetuneTestSet, BenchmarkItem
 
 
 @dataclass
@@ -115,13 +115,25 @@ class LoRAFinetuningOrchestrator:
             Tuple of (train_file, valid_file, test_file) paths
         """
         data_dir = work_dir / "data"
+        # Ensure data directory exists
+        data_dir.mkdir(parents=True, exist_ok=True)
         
         # Prepare training data (80% of train set for training, 20% for validation)
         train_questions = finetune_test_set.train_questions
-        train_size = int(len(train_questions) * 0.8)
         
-        train_data = train_questions[:train_size]
-        valid_data = train_questions[train_size:]
+        if len(train_questions) == 0:
+            raise ValueError("No training questions available in finetune_test_set")
+            
+        # Ensure we have at least some data for validation
+        if len(train_questions) < 2:
+            # If only 1 question, use it for both train and validation
+            train_data = train_questions
+            valid_data = train_questions
+        else:
+            train_size = max(1, int(len(train_questions) * 0.8))
+            train_data = train_questions[:train_size]
+            valid_data = train_questions[train_size:] if train_size < len(train_questions) else train_questions[-1:]
+        
         test_data = finetune_test_set.test_questions
         
         # Convert to LoRA training format
@@ -129,11 +141,18 @@ class LoRAFinetuningOrchestrator:
             """Format a benchmark item for LoRA training"""
             # Handle both BenchmarkItem objects and dictionaries
             if isinstance(item, dict):
-                question = item["question"]
-                answer = item["answer"]
+                question = item.get("question", "")
+                answer = item.get("answer", "")
             else:
-                question = item.question
-                answer = item.answer
+                question = getattr(item, 'question', "")
+                answer = getattr(item, 'answer', "")
+            
+            # Clean and validate data
+            question = str(question).strip()
+            answer = str(answer).strip()
+            
+            if not question or not answer:
+                raise ValueError(f"Empty question or answer found: question='{question}', answer='{answer}'")
             
             # Create instruction-following format
             prompt = f"Question: {question}\nAnswer:"
@@ -145,17 +164,39 @@ class LoRAFinetuningOrchestrator:
         valid_file = data_dir / "valid.jsonl"
         test_file = data_dir / "test.jsonl"
         
-        with open(train_file, 'w') as f:
-            for item in train_data:
-                f.write(json.dumps(format_question_for_training(item)) + "\n")
-        
-        with open(valid_file, 'w') as f:
-            for item in valid_data:
-                f.write(json.dumps(format_question_for_training(item)) + "\n")
-        
-        with open(test_file, 'w') as f:
-            for item in test_data:
-                f.write(json.dumps(format_question_for_training(item)) + "\n")
+        # Write training data
+        try:
+            with open(train_file, 'w', encoding='utf-8') as f:
+                for i, item in enumerate(train_data):
+                    try:
+                        formatted_item = format_question_for_training(item)
+                        f.write(json.dumps(formatted_item, ensure_ascii=False) + "\n")
+                    except Exception as e:
+                        raise ValueError(f"Error formatting training item {i}: {str(e)}")
+            
+            with open(valid_file, 'w', encoding='utf-8') as f:
+                for i, item in enumerate(valid_data):
+                    try:
+                        formatted_item = format_question_for_training(item)
+                        f.write(json.dumps(formatted_item, ensure_ascii=False) + "\n")
+                    except Exception as e:
+                        raise ValueError(f"Error formatting validation item {i}: {str(e)}")
+            
+            with open(test_file, 'w', encoding='utf-8') as f:
+                for i, item in enumerate(test_data):
+                    try:
+                        formatted_item = format_question_for_training(item)
+                        f.write(json.dumps(formatted_item, ensure_ascii=False) + "\n")
+                    except Exception as e:
+                        raise ValueError(f"Error formatting test item {i}: {str(e)}")
+            
+            print(f"✅ Prepared training data:")
+            print(f"   📝 Training samples: {len(train_data)} → {train_file}")
+            print(f"   🔍 Validation samples: {len(valid_data)} → {valid_file}")
+            print(f"   🧪 Test samples: {len(test_data)} → {test_file}")
+            
+        except Exception as e:
+            raise ValueError(f"Failed to write training data files: {str(e)}")
         
         return train_file, valid_file, test_file
     
@@ -190,6 +231,7 @@ class LoRAFinetuningOrchestrator:
             
             if progress_callback:
                 await progress_callback("info", f"Training data prepared: {len(finetune_test_set.train_questions)} training examples")
+                await progress_callback("info", f"Test questions available: {len(finetune_test_set.test_questions)} test examples")
             
             # Prepare LoRA training command
             adapter_file = work_dir / config.adapter_file

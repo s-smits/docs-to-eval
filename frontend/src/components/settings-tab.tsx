@@ -18,8 +18,8 @@ const settingsSchema = z.object({
   provider: z.string().min(1, "Provider is required"),
   modelName: z.string().min(1, "Model name is required"),
   apiKey: z.string().optional(),
-  maxTokens: z.number().min(1).max(131072).default(32768),
-  defaultTemperature: z.number().min(0).max(2).default(0.7),
+  maxTokens: z.number().min(1).max(131072),
+  defaultTemperature: z.number().min(0).max(2),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -29,6 +29,7 @@ interface Config {
     provider: string;
     model_name: string;
     api_key?: string;
+    api_key_configured?: boolean;
     max_tokens: number;
     temperature: number;
   };
@@ -55,6 +56,7 @@ export function SettingsTab() {
     defaultValues: {
       provider: "openrouter",
       modelName: "anthropic/claude-sonnet-4",
+      apiKey: "",
       maxTokens: 32768,
       defaultTemperature: 0.7,
     },
@@ -82,7 +84,25 @@ export function SettingsTab() {
       const response = await fetch('/api/v1/config/current');
       
       if (!response.ok) {
-        throw new Error(`Failed to load config: ${response.status}`);
+        // Try to get error details from response
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorMessage = errorData.detail;
+          }
+        } catch {
+          // If we can't parse JSON, try to get text
+          try {
+            const errorText = await response.text();
+            if (errorText && !errorText.includes('<!DOCTYPE html>')) {
+              errorMessage = errorText;
+            }
+          } catch {
+            // Keep the original error message
+          }
+        }
+        throw new Error(`Failed to load config: ${errorMessage}`);
       }
       
       const config = await response.json();
@@ -91,8 +111,8 @@ export function SettingsTab() {
       // Update form fields
       form.setValue("provider", config.llm.provider || "openrouter");
       form.setValue("modelName", config.llm.model_name || "anthropic/claude-sonnet-4");
-      form.setValue("maxTokens", config.llm.max_tokens || 32768);
-      form.setValue("defaultTemperature", config.llm.temperature || 0.7);
+      form.setValue("maxTokens", Number(config.llm.max_tokens) || 32768);
+      form.setValue("defaultTemperature", Number(config.llm.temperature) || 0.7);
 
       // Load API key from sessionStorage if available
       const storedApiKey = sessionStorage.getItem('docs_to_eval_api_key');
@@ -100,11 +120,11 @@ export function SettingsTab() {
         form.setValue("apiKey", storedApiKey);
       }
 
-      // Update API key status
-      const hasApiKey = config.llm.api_key && config.llm.api_key !== '***masked***';
+      // Update API key status - check backend configuration status
+      const isConfiguredInBackend = config.llm.api_key_configured || false;
       const hasStoredKey = storedApiKey || form.getValues("apiKey");
 
-      if (hasApiKey || hasStoredKey) {
+      if (isConfiguredInBackend || hasStoredKey) {
         setApiKeyStatus({
           configured: true,
           message: "API key configured ✓"
@@ -206,7 +226,29 @@ export function SettingsTab() {
         body: JSON.stringify(configUpdate)
       });
 
-      const result = await response.json();
+      let result;
+      try {
+        const responseText = await response.text();
+        
+        // Check if response is HTML (server error page)
+        if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html>')) {
+          throw new Error(`Server returned HTML error page (HTTP ${response.status})`);
+        }
+        
+        // Try to parse as JSON
+        result = JSON.parse(responseText);
+      } catch (jsonError: any) {
+        if (jsonError?.message?.includes('HTML error page')) {
+          throw jsonError;
+        }
+        throw new Error(`Invalid server response (HTTP ${response.status}): ${jsonError?.message || 'Invalid JSON'}`);
+      }
+
+      if (!response.ok) {
+        // Handle HTTP errors with proper message
+        const errorMessage = result?.detail || result?.message || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
 
       if (result.status === 'success') {
         toast.success('Settings saved successfully!');
@@ -231,7 +273,14 @@ export function SettingsTab() {
 
     } catch (error: any) {
       console.error('Settings save error:', error);
-      toast.error('Failed to save settings: ' + error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to save settings: ${errorMessage}`);
+      
+      // Reset API key status on error
+      setApiKeyStatus({
+        configured: false,
+        message: "Failed to save API key"
+      });
     }
   };
 
@@ -371,7 +420,7 @@ export function SettingsTab() {
                       </div>
                     </FormControl>
                     {providerInfo && (
-                      <FormDescription className="flex flex-col gap-2">
+                      <div className="text-muted-foreground text-sm flex flex-col gap-2">
                         <div>
                           {providerInfo.text}{" "}
                           <a
@@ -398,7 +447,7 @@ export function SettingsTab() {
                             </a>
                           </div>
                         )}
-                      </FormDescription>
+                      </div>
                     )}
                     <FormMessage />
                   </FormItem>
@@ -418,7 +467,10 @@ export function SettingsTab() {
                           min={1}
                           max={131072}
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormDescription>
@@ -442,7 +494,10 @@ export function SettingsTab() {
                           max={2}
                           step={0.1}
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormDescription>

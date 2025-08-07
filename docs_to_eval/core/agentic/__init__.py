@@ -15,6 +15,8 @@ from .models import (
     DifficultyLevel,
     AnswerType
 )
+
+# Legacy 5-agent system (deprecated, kept for compatibility)
 from .agents import (
     ConceptMiner,
     QuestionWriter,
@@ -24,6 +26,16 @@ from .agents import (
 )
 from .orchestrator import AgenticBenchmarkOrchestrator
 from .generator import AgenticBenchmarkGenerator
+
+# Streamlined 3-agent system (recommended for production)
+from .streamlined_agents import (
+    ConceptExtractor,
+    QuestionGenerator,
+    QualityValidator
+)
+from .streamlined_orchestrator import StreamlinedOrchestrator
+
+# Validation utilities
 from .validation import (
     DeterministicGuardRail,
     QualityController,
@@ -53,16 +65,22 @@ __all__ = [
     'DifficultyLevel',
     'AnswerType',
     
-    # Agents
+    # Legacy Agents (deprecated)
     'ConceptMiner',
     'QuestionWriter',
     'Adversary',
     'Refiner',
     'Validator',
     
+    # Streamlined Agents (recommended)
+    'ConceptExtractor',
+    'QuestionGenerator', 
+    'QualityValidator',
+    
     # Orchestration
-    'AgenticBenchmarkOrchestrator',
-    'AgenticBenchmarkGenerator',
+    'AgenticBenchmarkOrchestrator',  # Legacy
+    'AgenticBenchmarkGenerator',     # Legacy
+    'StreamlinedOrchestrator',        # Recommended
     
     # Validation
     'DeterministicGuardRail',

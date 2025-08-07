@@ -208,30 +208,11 @@ export function ClassificationTab() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="corpusText"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Corpus Text (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        placeholder="Enter corpus text to classify or use file upload below..."
-                        className="min-h-[120px]"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide text content to analyze and classify automatically
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="space-y-3">
-                <Label>Upload Files or Folder</Label>
-                <div className="flex gap-3 flex-wrap">
+              <div className="flex gap-6">
+                {/* Left side - Upload Files */}
+                <div className="flex-1 space-y-3">
+                  <Label>Upload Files or Folder</Label>
+                  <div className="flex gap-3 flex-wrap">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -275,40 +256,65 @@ export function ClassificationTab() {
                     <Sparkles className="h-4 w-4" />
                     Demo Notifications
                   </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Supported formats: txt, md, py, js, json, csv, html, xml, yml, cfg, ini, log
-                </p>
-              </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Supported formats: txt, md, py, js, json, csv, html, xml, yml, cfg, ini, log
+                  </p>
 
-              {selectedFiles.length > 0 && (
-                <Card className="p-4 bg-muted/50">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium">Selected Files</h4>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFiles}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="space-y-1 max-h-24 overflow-y-auto">
-                    {selectedFiles.map(({ file, path }, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
-                        <span className="truncate">{path}</span>
-                        <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
+                  {selectedFiles.length > 0 && (
+                    <Card className="p-4 bg-muted/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">Selected Files</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFiles}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t text-sm">
-                    <span className="font-medium">{selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected</span>
-                    <span className="font-medium">{formatFileSize(totalSize)} total</span>
-                  </div>
-                </Card>
-              )}
+                      <div className="space-y-1 max-h-24 overflow-y-auto">
+                        {selectedFiles.map(({ file, path }, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <span className="truncate">{path}</span>
+                            <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t text-sm">
+                        <span className="font-medium">{selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected</span>
+                        <span className="font-medium">{formatFileSize(totalSize)} total</span>
+                      </div>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Right side - Corpus Text */}
+                <div className="flex-1">
+                  <FormField
+                    control={form.control}
+                    name="corpusText"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Corpus Text (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Enter corpus text to classify or use file upload on the left..."
+                            className="min-h-[240px]"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Provide text content to analyze and classify automatically
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
 

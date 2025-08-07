@@ -11,10 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { FileText, Upload, FolderOpen, Trash2, Play, Zap } from "lucide-react";
+import { FileText, Upload, FolderOpen, Trash2, Play, Zap, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 const evaluationSchema = z.object({
@@ -23,6 +24,7 @@ const evaluationSchema = z.object({
   numQuestions: z.number().min(1).max(200),
   temperature: z.number().min(0).max(2),
   maxConcurrent: z.number().min(1).max(20),
+  tokenThreshold: z.number().min(500).max(4000),
   useAgentic: z.boolean(),
   finetuneEnabled: z.boolean(),
   finetunePercentage: z.number(),
@@ -44,15 +46,21 @@ export function EvaluationTab() {
   const [statusMessage, setStatusMessage] = useState("");
   const [results, setResults] = useState<any>(null);
   const [currentRunId, setCurrentRunId] = useState<string | null>(null);
+  const [evaluationCompleted, setEvaluationCompleted] = useState(false);
+  const [hasFineTuneData, setHasFineTuneData] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<EvaluationFormData>({
     resolver: zodResolver(evaluationSchema),
     defaultValues: {
+      corpusText: "",
+      evalType: "",
+      runName: "",
       numQuestions: 50,
       temperature: 0.7,
       maxConcurrent: 5,
+      tokenThreshold: 2000,
       useAgentic: true,
       finetuneEnabled: true,
       finetunePercentage: 0.2,
@@ -181,6 +189,8 @@ For regression problems:
     setProgress(0);
     setStatusMessage("Starting evaluation...");
     setResults(null);
+    setEvaluationCompleted(false);
+    setHasFineTuneData(false);
 
     try {
       let corpusText = data.corpusText;
@@ -221,6 +231,7 @@ For regression problems:
         use_agentic: data.useAgentic,
         temperature: data.temperature,
         max_concurrent: data.maxConcurrent,
+        token_threshold: data.tokenThreshold,
         run_name: data.runName || null,
         finetune_test_set_enabled: data.finetuneEnabled,
         finetune_test_set_percentage: data.finetunePercentage,
@@ -349,6 +360,12 @@ For regression problems:
 
       setResults(results);
       setIsEvaluating(false);
+      setEvaluationCompleted(true);
+      
+      // Check if fine-tuning data is available
+      const hasFinetune = results?.finetune_test_set?.enabled || false;
+      setHasFineTuneData(hasFinetune);
+      
       toast.success("Evaluation completed successfully!");
 
     } catch (error: any) {
@@ -362,14 +379,16 @@ For regression problems:
     const corpusText = form.getValues("corpusText");
 
     if (!corpusText?.trim() && selectedFiles.length === 0) {
-      toast.error('Please enter corpus text or select files for Qwen evaluation');
+      toast.error('Please enter corpus text or select files for local testing');
       return;
     }
 
     setIsEvaluating(true);
     setProgress(0);
-    setStatusMessage("Starting Qwen local evaluation...");
+    setStatusMessage("Starting quick local test...");
     setResults(null);
+    setEvaluationCompleted(false);
+    setHasFineTuneData(false);
 
     try {
       let finalCorpusText = corpusText;
@@ -396,13 +415,14 @@ For regression problems:
         const uploadResult = await uploadResponse.json();
         finalCorpusText = uploadResult.corpus_text;
 
-        toast.success(`Uploaded ${uploadResult.files_processed} files for Qwen testing`);
+        toast.success(`Uploaded ${uploadResult.files_processed} files for local testing`);
       }
 
       const qwenData = {
         corpus_text: finalCorpusText,
         num_questions: form.getValues("numQuestions") || 5,
         use_fictional: true,
+        token_threshold: form.getValues("tokenThreshold") || 2000,
         run_name: form.getValues("runName") || 'Qwen Local Test'
       };
 
@@ -421,7 +441,7 @@ For regression problems:
       const result = await response.json();
       setCurrentRunId(result.run_id);
 
-      toast.info('🚀 Qwen local evaluation started - no API key required!');
+      toast.info('🚀 Quick local test started - no API key required!');
 
       connectWebSocket(result.run_id);
       pollEvaluationStatus(result.run_id);
@@ -437,6 +457,11 @@ For regression problems:
     if (currentRunId) {
       window.open(`/api/v1/evaluation/${currentRunId}/download`, '_blank');
     }
+  };
+
+  const openFinetuningDashboard = (runId: string) => {
+    const url = `/api/v1/evaluation/${runId}/lora-finetune/dashboard?run_id=${runId}`;
+    window.open(url, '_blank');
   };
 
   const totalSize = selectedFiles.reduce((acc, { file }) => acc + file.size, 0);
@@ -461,82 +486,81 @@ For regression problems:
                 {/* Left side - Upload Files */}
                 <div className="flex-1 space-y-3">
                   <Label>Upload Files or Folder</Label>
-                <div className="flex gap-3 flex-wrap">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    multiple
-                    accept=".txt,.md,.py,.js,.json,.csv,.html,.xml,.yml,.yaml,.cfg,.ini,.log"
-                    className="hidden"
-                  />
-                  <input
-                    type="file"
-                    ref={folderInputRef}
-                    onChange={handleFolderSelect}
-                    {...({ webkitdirectory: "" } as any)}
-                    multiple
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Select Files
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => folderInputRef.current?.click()}
-                    className="flex items-center gap-2"
-                  >
-                    <FolderOpen className="h-4 w-4" />
-                    Select Folder
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={loadSampleCorpus}
-                  >
-                    Load Sample
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Supported formats: txt, md, py, js, json, csv, html, xml, yml, cfg, ini, log
-                </p>
-              </div>
-
-              {selectedFiles.length > 0 && (
-                <Card className="p-4 bg-muted/50">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium">Selected Files</h4>
+                  <div className="flex gap-3 flex-wrap">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileSelect}
+                      multiple
+                      accept=".txt,.md,.py,.js,.json,.csv,.html,.xml,.yml,.yaml,.cfg,.ini,.log"
+                      className="hidden"
+                    />
+                    <input
+                      type="file"
+                      ref={folderInputRef}
+                      onChange={handleFolderSelect}
+                      {...({ webkitdirectory: "" } as any)}
+                      multiple
+                      className="hidden"
+                    />
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFiles}
-                      className="text-destructive hover:text-destructive"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Upload className="h-4 w-4" />
+                      Select Files
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => folderInputRef.current?.click()}
+                      className="flex items-center gap-2"
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                      Select Folder
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={loadSampleCorpus}
+                    >
+                      Load Sample
                     </Button>
                   </div>
-                  <div className="space-y-1 max-h-24 overflow-y-auto">
-                    {selectedFiles.map(({ file, path }, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
-                        <span className="truncate">{path}</span>
-                        <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
+                  <p className="text-sm text-muted-foreground">
+                    Supported formats: txt, md, py, js, json, csv, html, xml, yml, cfg, ini, log
+                  </p>
+
+                  {selectedFiles.length > 0 && (
+                    <Card className="p-4 bg-muted/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">Selected Files</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFiles}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t text-sm">
-                    <span className="font-medium">{selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected</span>
-                    <span className="font-medium">{formatFileSize(totalSize)} total</span>
-                  </div>
-                </Card>
-              )}
+                      <div className="space-y-1 max-h-24 overflow-y-auto">
+                        {selectedFiles.map(({ file, path }, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <span className="truncate">{path}</span>
+                            <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t text-sm">
+                        <span className="font-medium">{selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected</span>
+                        <span className="font-medium">{formatFileSize(totalSize)} total</span>
+                      </div>
+                    </Card>
+                  )}
                 </div>
 
                 {/* Right side - Corpus Text */}
@@ -603,6 +627,30 @@ For regression problems:
 
                 <FormField
                   control={form.control}
+                  name="tokenThreshold"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Token Threshold ({field.value} tokens)</FormLabel>
+                      <FormControl>
+                        <Slider
+                          min={500}
+                          max={4000}
+                          step={100}
+                          value={[field.value]}
+                          onValueChange={(value) => field.onChange(value[0])}
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Minimum token threshold for chunk concatenation (500-4000 tokens)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="numQuestions"
                   render={({ field }) => (
                     <FormItem>
@@ -613,7 +661,10 @@ For regression problems:
                           min={1}
                           max={200}
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -634,7 +685,10 @@ For regression problems:
                           max={2}
                           step={0.1}
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -654,7 +708,10 @@ For regression problems:
                           min={1}
                           max={20}
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value);
+                            field.onChange(isNaN(value) ? undefined : value);
+                          }}
                         />
                       </FormControl>
                       <FormDescription>
@@ -694,7 +751,7 @@ For regression problems:
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Enable Fine-tuning Test Set</FormLabel>
+                        <FormLabel className="text-base">Enable fine-tuning</FormLabel>
                         <FormDescription>
                           Automatically splits questions for LoRA fine-tuning
                         </FormDescription>
@@ -750,7 +807,10 @@ For regression problems:
                               min={0}
                               max={999999}
                               {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value))}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                field.onChange(isNaN(value) ? undefined : value);
+                              }}
                             />
                           </FormControl>
                           <FormDescription>
@@ -781,34 +841,56 @@ For regression problems:
           </Card>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 flex-wrap">
-            <Button
-              type="submit"
-              disabled={isEvaluating}
-              className="flex items-center gap-2"
-            >
-              {isEvaluating ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Running...
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4" />
-                  Start Evaluation
-                </>
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={startQwenEvaluation}
-              disabled={isEvaluating}
-              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 hover:from-red-600 hover:to-orange-600"
-            >
-              <Zap className="h-4 w-4" />
-              Test with Qwen (Local)
-            </Button>
+          <div className="space-y-4">
+            {/* Primary Evaluation Button */}
+            <div>
+              <Button
+                type="submit"
+                disabled={isEvaluating}
+                className="flex items-center gap-2 w-full sm:w-auto"
+                size="lg"
+              >
+                {isEvaluating ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Start Full Evaluation
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Local Testing Option */}
+            <div className="border rounded-lg p-4 bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Zap className="h-4 w-4 text-orange-600" />
+                    <span className="font-medium text-gray-900">Quick Local Test</span>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                      No API Key Required
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Test with local Qwen model (up to 20 questions). Perfect for trying the system without external API costs.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={startQwenEvaluation}
+                disabled={isEvaluating}
+                className="flex items-center gap-2 bg-white hover:bg-orange-50 border-orange-300 text-orange-700 hover:text-orange-800"
+              >
+                <Zap className="h-4 w-4" />
+                Start Local Test
+              </Button>
+            </div>
           </div>
         </form>
       </Form>
@@ -902,9 +984,9 @@ For regression problems:
                 {/* Individual Results Preview */}
                 {results.individual_results && results.individual_results.length > 0 && (
                   <div>
-                    <h4 className="font-medium mb-3">Sample Questions & Responses</h4>
+                    <h4 className="font-medium mb-3">All Questions & Responses</h4>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {results.individual_results.slice(0, 5).map((result: any, index: number) => (
+                      {results.individual_results.map((result: any, index: number) => (
                         <div key={index} className="p-4 border rounded-lg bg-muted/30">
                           <div className="font-medium mb-2">Question {index + 1}:</div>
                           <div className="text-sm mb-3">{result.question}</div>
@@ -928,11 +1010,9 @@ For regression problems:
                         </div>
                       ))}
                     </div>
-                    {results.individual_results.length > 5 && (
-                      <div className="text-center mt-3 text-sm text-muted-foreground">
-                        Showing 5 of {results.individual_results.length} questions
-                      </div>
-                    )}
+                    <div className="text-center mt-3 text-sm text-muted-foreground">
+                      Showing all {results.individual_results.length} questions
+                    </div>
                   </div>
                 )}
               </div>
@@ -941,6 +1021,34 @@ For regression problems:
                 Invalid results format received
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Fine-tune Button - Appears after evaluation completion with fine-tuning enabled */}
+      {evaluationCompleted && hasFineTuneData && currentRunId && (
+        <Card className="border-2 border-gradient-to-r from-blue-500 to-purple-500 bg-gradient-to-r from-blue-50 to-purple-50">
+          <CardContent className="p-6">
+            <div className="text-center space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold text-blue-800">Ready for Fine-tuning!</h3>
+                <p className="text-muted-foreground">
+                  Your corpus has been evaluated and fine-tuning data has been prepared. 
+                  You can now proceed with LoRA fine-tuning.
+                </p>
+              </div>
+              <Button
+                onClick={() => openFinetuningDashboard(currentRunId)}
+                size="lg"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-8 py-3"
+              >
+                <Settings className="h-5 w-5" />
+                Start Fine-tuning
+              </Button>
+              <div className="text-xs text-muted-foreground">
+                This will open the LoRA fine-tuning dashboard in a new tab
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

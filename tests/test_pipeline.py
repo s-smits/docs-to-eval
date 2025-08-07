@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch, AsyncMock
 
 from docs_to_eval.core.pipeline import EvaluationPipeline, PipelineFactory
 from docs_to_eval.utils.config import EvaluationConfig, create_default_config
-from docs_to_eval.core.evaluation import EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 
 
 @pytest.fixture

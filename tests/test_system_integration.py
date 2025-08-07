@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from docs_to_eval.core.evaluation import EvaluationFramework, EvaluationType, BenchmarkConfig
+from docs_to_eval.utils.config import EvaluationType, BenchmarkConfig
 from docs_to_eval.core.classification import EvaluationTypeClassifier
 from docs_to_eval.llm.mock_interface import MockLLMInterface, MockLLMEvaluator
 from docs_to_eval.utils.config import EvaluationConfig, create_default_config

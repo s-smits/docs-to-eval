@@ -255,86 +255,73 @@ class NonDeterministicVerifier:
 
 
 class MathVerifyVerifier:
-    """Mathematical expression verifier using math-verify library"""
+    """Mathematical expression verifier using math-verify library for strict 0/1 scoring"""
     
     @staticmethod
     def math_verify_match(prediction: str, ground_truth: str) -> VerificationResult:
-        """Smart mathematical verification with multiple strategies"""
+        """Strict mathematical verification using math-verify with 0/1 scoring only"""
         
-        # First try to extract and compare numbers for basic mathematical answers
-        pred_numbers = extract_numbers(prediction)
-        truth_numbers = extract_numbers(ground_truth)
-        
-        # Handle percentage and fraction cases
-        if pred_numbers and truth_numbers:
-            try:
-                pred_val = float(pred_numbers[0])
-                truth_val = float(truth_numbers[0])
-                
-                # Check for direct match with tolerance
-                if abs(pred_val - truth_val) <= max(0.1, abs(truth_val) * 0.01):  # 1% or 0.1 tolerance
-                    return VerificationResult(
-                        score=1.0,
-                        metrics={'numerical_match': 1.0},
-                        method='smart_numerical',
-                        details={'values_compared': (pred_val, truth_val), 'match_type': 'direct'}
-                    )
-                
-                # Check for percentage/decimal conversion issues
-                if abs(pred_val * 100 - truth_val) <= 0.1:  # pred is decimal, truth is percentage
-                    return VerificationResult(
-                        score=1.0,
-                        metrics={'percentage_conversion': 1.0},
-                        method='smart_percentage',
-                        details={'conversion': f"{pred_val} → {pred_val * 100}% (matches {truth_val}%)"}
-                    )
-                
-                if abs(truth_val * 100 - pred_val) <= 0.1:  # truth is decimal, pred is percentage
-                    return VerificationResult(
-                        score=1.0,
-                        metrics={'decimal_conversion': 1.0},
-                        method='smart_decimal',
-                        details={'conversion': f"{truth_val} → {truth_val * 100}% (matches {pred_val}%)"}
-                    )
-                    
-            except (ValueError, IndexError):
-                pass
-        
-        # Try math-verify library if available
+        # Try math-verify library first for the most accurate verification
         if MATH_VERIFY_AVAILABLE:
             try:
                 gold_parsed = parse(ground_truth)
                 answer_parsed = parse(prediction)
                 
                 is_match = verify(gold_parsed, answer_parsed)
-                if is_match:
-                    return VerificationResult(
-                        score=1.0,
-                        metrics={'math_verify_match': 1.0},
-                        method='math_verify',
-                        details={'library_available': True, 'exact_match': True}
-                    )
+                return VerificationResult(
+                    score=1.0 if is_match else 0.0,  # Strict 0/1 scoring
+                    metrics={'math_verify_match': 1.0 if is_match else 0.0},
+                    method='math_verify_strict',
+                    details={'library_available': True, 'exact_match': is_match}
+                )
                     
             except Exception as e:
+                # If math-verify fails, fall back to strict numerical comparison
                 pass
         
-        # Fallback to numerical matching with higher tolerance
-        fallback_result = DeterministicVerifier.numerical_match(prediction, ground_truth, tolerance=0.1)
-        fallback_result.method = 'fallback_numerical'
-        return fallback_result
+        # Fallback: strict numerical matching with minimal tolerance (for floating-point precision only)
+        pred_numbers = extract_numbers(prediction)
+        truth_numbers = extract_numbers(ground_truth)
+        
+        if pred_numbers and truth_numbers:
+            try:
+                pred_val = float(pred_numbers[0])
+                truth_val = float(truth_numbers[0])
+                
+                # Use minimal tolerance only for floating-point precision issues
+                is_equal = abs(pred_val - truth_val) <= 1e-9
+                
+                return VerificationResult(
+                    score=1.0 if is_equal else 0.0,  # Strict 0/1 scoring
+                    metrics={'numerical_exact': 1.0 if is_equal else 0.0},
+                    method='numerical_strict',
+                    details={'values_compared': (pred_val, truth_val), 'tolerance': 1e-9}
+                )
+                    
+            except (ValueError, IndexError):
+                pass
+        
+        # Final fallback: exact string match
+        is_exact = prediction.strip() == ground_truth.strip()
+        return VerificationResult(
+            score=1.0 if is_exact else 0.0,  # Strict 0/1 scoring
+            metrics={'exact_match': 1.0 if is_exact else 0.0},
+            method='string_exact',
+            details={'math_verify_available': MATH_VERIFY_AVAILABLE}
+        )
     
     @staticmethod
     def latex_expression_match(prediction: str, ground_truth: str) -> VerificationResult:
-        """Specialized LaTeX expression matching"""
+        """Specialized LaTeX expression matching with strict 0/1 scoring"""
         if not MATH_VERIFY_AVAILABLE:
-            # Simple LaTeX pattern matching fallback
+            # Simple LaTeX pattern matching fallback - strict 0/1 scoring
             pred_clean = re.sub(r'[{}$\\]', '', prediction).strip()
             truth_clean = re.sub(r'[{}$\\]', '', ground_truth).strip()
-            score = 1.0 if pred_clean == truth_clean else 0.0
+            is_match = pred_clean == truth_clean
             
             return VerificationResult(
-                score=score,
-                metrics={'latex_match': score},
+                score=1.0 if is_match else 0.0,  # Strict 0/1 scoring
+                metrics={'latex_match': 1.0 if is_match else 0.0},
                 method='latex_fallback',
                 details={'library_available': False}
             )
@@ -347,11 +334,10 @@ class MathVerifyVerifier:
             answer_parsed = parse(prediction, extraction_config=[LatexExtractionConfig()])
             
             is_match = verify(gold_parsed, answer_parsed)
-            score = 1.0 if is_match else 0.0
             
             return VerificationResult(
-                score=score,
-                metrics={'latex_expression_match': score},
+                score=1.0 if is_match else 0.0,  # Strict 0/1 scoring
+                metrics={'latex_expression_match': 1.0 if is_match else 0.0},
                 method='latex_math_verify',
                 details={
                     'gold_latex': str(gold_parsed),
@@ -362,14 +348,14 @@ class MathVerifyVerifier:
             )
             
         except Exception as e:
-            # Fallback to basic LaTeX cleaning
+            # Fallback to basic LaTeX cleaning - strict 0/1 scoring
             pred_clean = re.sub(r'[{}$\\]', '', prediction).strip()
             truth_clean = re.sub(r'[{}$\\]', '', ground_truth).strip()
-            score = 1.0 if pred_clean == truth_clean else 0.0
+            is_match = pred_clean == truth_clean
             
             return VerificationResult(
-                score=score,
-                metrics={'latex_match': score},
+                score=1.0 if is_match else 0.0,  # Strict 0/1 scoring
+                metrics={'latex_match': 1.0 if is_match else 0.0},
                 method='latex_fallback',
                 details={
                     'math_verify_error': str(e),
@@ -379,9 +365,35 @@ class MathVerifyVerifier:
     
     @staticmethod
     def expression_match(prediction: str, ground_truth: str) -> VerificationResult:
-        """Plain mathematical expression matching"""
+        """Plain mathematical expression matching with strict 0/1 scoring"""
         if not MATH_VERIFY_AVAILABLE:
-            return DeterministicVerifier.numerical_match(prediction, ground_truth)
+            # Use strict numerical matching as fallback
+            pred_numbers = extract_numbers(prediction)
+            truth_numbers = extract_numbers(ground_truth)
+            
+            if pred_numbers and truth_numbers:
+                try:
+                    pred_val = float(pred_numbers[0])
+                    truth_val = float(truth_numbers[0])
+                    is_equal = abs(pred_val - truth_val) <= 1e-9
+                    
+                    return VerificationResult(
+                        score=1.0 if is_equal else 0.0,  # Strict 0/1 scoring
+                        metrics={'numerical_exact': 1.0 if is_equal else 0.0},
+                        method='numerical_strict_fallback',
+                        details={'values_compared': (pred_val, truth_val), 'tolerance': 1e-9}
+                    )
+                except (ValueError, IndexError):
+                    pass
+            
+            # String exact match fallback
+            is_exact = prediction.strip() == ground_truth.strip()
+            return VerificationResult(
+                score=1.0 if is_exact else 0.0,  # Strict 0/1 scoring
+                metrics={'exact_match': 1.0 if is_exact else 0.0},
+                method='string_exact_fallback',
+                details={'math_verify_available': False}
+            )
         
         try:
             from math_verify import ExprExtractionConfig
@@ -391,11 +403,10 @@ class MathVerifyVerifier:
             answer_parsed = parse(prediction, extraction_config=[ExprExtractionConfig()])
             
             is_match = verify(gold_parsed, answer_parsed)
-            score = 1.0 if is_match else 0.0
             
             return VerificationResult(
-                score=score,
-                metrics={'expression_match': score},
+                score=1.0 if is_match else 0.0,  # Strict 0/1 scoring
+                metrics={'expression_match': 1.0 if is_match else 0.0},
                 method='expression_math_verify',
                 details={
                     'gold_expr': str(gold_parsed),
@@ -406,13 +417,41 @@ class MathVerifyVerifier:
             )
             
         except Exception as e:
-            # Fallback to numerical matching
-            fallback_result = DeterministicVerifier.numerical_match(prediction, ground_truth)
-            fallback_result.details.update({
-                'math_verify_error': str(e),
-                'fallback_used': True
-            })
-            return fallback_result
+            # Fallback to strict numerical matching
+            pred_numbers = extract_numbers(prediction)
+            truth_numbers = extract_numbers(ground_truth)
+            
+            if pred_numbers and truth_numbers:
+                try:
+                    pred_val = float(pred_numbers[0])
+                    truth_val = float(truth_numbers[0])
+                    is_equal = abs(pred_val - truth_val) <= 1e-9
+                    
+                    return VerificationResult(
+                        score=1.0 if is_equal else 0.0,  # Strict 0/1 scoring
+                        metrics={'numerical_exact': 1.0 if is_equal else 0.0},
+                        method='numerical_strict_fallback',
+                        details={
+                            'math_verify_error': str(e),
+                            'fallback_used': True,
+                            'values_compared': (pred_val, truth_val),
+                            'tolerance': 1e-9
+                        }
+                    )
+                except (ValueError, IndexError):
+                    pass
+            
+            # Final string exact match fallback
+            is_exact = prediction.strip() == ground_truth.strip()
+            return VerificationResult(
+                score=1.0 if is_exact else 0.0,  # Strict 0/1 scoring
+                metrics={'exact_match': 1.0 if is_exact else 0.0},
+                method='string_exact_fallback',
+                details={
+                    'math_verify_error': str(e),
+                    'fallback_used': True
+                }
+            )
 
 
 class LLMJudgeVerifier:
@@ -516,11 +555,12 @@ completeness: 0.75 - Covers main points adequately
 class VerificationOrchestrator:
     """Orchestrates different verification methods based on evaluation type"""
     
-    def __init__(self, corpus_text: str = ""):
+    def __init__(self, corpus_text: str = "", use_mixed: bool = True):
         self.deterministic_verifier = DeterministicVerifier()
         self.non_deterministic_verifier = NonDeterministicVerifier()
         self.llm_judge = LLMJudgeVerifier()
         self.math_verify_verifier = MathVerifyVerifier()
+        self.use_mixed = use_mixed
         
         # Import and initialize domain-specific verifier
         try:
@@ -528,10 +568,35 @@ class VerificationOrchestrator:
             self.domain_verifier = DomainSpecificVerifier(corpus_text)
         except ImportError:
             self.domain_verifier = None
+        
+        # Import and initialize mixed verification orchestrator
+        if self.use_mixed:
+            try:
+                from .mixed_verification import MixedVerificationOrchestrator
+                self.mixed_verifier = MixedVerificationOrchestrator()
+            except ImportError:
+                self.mixed_verifier = None
+        else:
+            self.mixed_verifier = None
     
     def verify(self, prediction: str, ground_truth: str, eval_type: str, 
               options: Optional[List[str]] = None, question: str = "") -> VerificationResult:
         """Main verification method that routes to appropriate verifier"""
+        
+        # Use mixed verification when question is provided for better accuracy
+        if self.mixed_verifier and question:
+            try:
+                result = self.mixed_verifier.verify(
+                    prediction=prediction,
+                    ground_truth=ground_truth,
+                    question=question,
+                    eval_type=eval_type,
+                    use_mixed=True
+                )
+                return result
+            except Exception as e:
+                # Fallback to standard verification if mixed fails
+                print(f"Mixed verification failed: {e}, falling back to standard")
         
         # Use domain-specific verification for better accuracy
         if self.domain_verifier and eval_type in ['mathematical', 'factual_qa', 'domain_knowledge']:
@@ -663,6 +728,92 @@ class VerificationOrchestrator:
         mean = sum(values) / len(values)
         variance = sum((x - mean) ** 2 for x in values) / (len(values) - 1)
         return math.sqrt(variance)
+
+
+class DomainSpecificVerifier:
+    """Domain-specific verification with enhanced reasoning and contextual assessment"""
+    
+    def __init__(self, domain_context: str = ""):
+        self.domain_context = domain_context
+    
+    def verify_mathematical_reasoning(self, prediction: str, ground_truth: str, 
+                                    question: str) -> VerificationResult:
+        """Enhanced mathematical verification with reasoning assessment"""
+        prediction = str(prediction) if prediction is not None else ""
+        ground_truth = str(ground_truth) if ground_truth is not None else ""
+        question = str(question) if question is not None else ""
+        
+        # Extract numbers and calculate mathematical accuracy
+        pred_numbers = extract_numbers(prediction)
+        truth_numbers = extract_numbers(ground_truth)
+        
+        mathematical_accuracy = 0.0
+        if pred_numbers and truth_numbers:
+            try:
+                final_pred = float(pred_numbers[-1])
+                final_truth = float(truth_numbers[-1])
+                
+                if final_truth != 0:
+                    relative_error = abs(final_pred - final_truth) / abs(final_truth)
+                    if relative_error <= 0.05:
+                        mathematical_accuracy = 1.0
+                    elif relative_error <= 0.10:
+                        mathematical_accuracy = 0.8
+                    elif relative_error <= 0.20:
+                        mathematical_accuracy = 0.6
+                else:
+                    mathematical_accuracy = 1.0 if abs(final_pred - final_truth) <= 0.1 else 0.0
+            except (ValueError, TypeError):
+                mathematical_accuracy = 0.5 if pred_numbers and truth_numbers else 0.0
+        
+        # Assess reasoning quality
+        reasoning_quality = self._assess_reasoning_quality(prediction)
+        
+        # Combined score
+        score = mathematical_accuracy * 0.7 + reasoning_quality * 0.3
+        
+        return VerificationResult(
+            score=score,
+            metrics={
+                'mathematical_accuracy': mathematical_accuracy,
+                'reasoning_quality': reasoning_quality
+            },
+            method='domain_mathematical_reasoning',
+            details={
+                'pred_numbers': pred_numbers,
+                'truth_numbers': truth_numbers
+            }
+        )
+    
+    def _assess_reasoning_quality(self, prediction: str) -> float:
+        """Assess the quality of reasoning demonstrated in the response"""
+        reasoning_indicators = [
+            r"step[s]?\s*\d+",
+            r"first[ly]?|second[ly]?|third[ly]?|finally",
+            r"therefore|thus|hence|consequently",
+            r"because|since|given that",
+            r"calculate|compute|determine",
+        ]
+        
+        reasoning_score = 0.0
+        prediction_lower = prediction.lower()
+        
+        for pattern in reasoning_indicators:
+            if re.search(pattern, prediction_lower):
+                reasoning_score += 0.15
+        
+        # Check for structured approach
+        step_count = len(re.findall(r"step\s*\d+", prediction_lower))
+        if step_count >= 2:
+            reasoning_score += 0.3
+        
+        # Check for calculations shown
+        calculation_patterns = [r"\d+\s*[+\-*/÷×]\s*\d+", r"=\s*\d+"]
+        for pattern in calculation_patterns:
+            if re.search(pattern, prediction):
+                reasoning_score += 0.1
+        
+        return min(1.0, reasoning_score)
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from docs_to_eval.core.agentic import AgenticBenchmarkGenerator
-from docs_to_eval.core.evaluation import EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 from docs_to_eval.core.verification import VerificationOrchestrator
 from docs_to_eval.llm.mock_interface import MockLLMInterface
 from docs_to_eval.llm.qwen_local_interface import QwenModelFactory, LocalQwenInterface
