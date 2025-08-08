@@ -6,9 +6,8 @@ Analyzes and improves agent prompts for better performance
 import asyncio
 import json
 import re
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-from pathlib import Path
 import logging
 
 from ...llm.openrouter_interface import OpenRouterInterface, OpenRouterConfig
@@ -348,7 +347,6 @@ class AgentPromptReviewer:
         """
         
         # Import agents to extract their prompts
-        from .agents import ConceptMiner, QuestionWriter, Adversary, Refiner, Validator
         
         extracted = {}
         
@@ -680,7 +678,7 @@ if __name__ == "__main__":
         report = await quick_prompt_review()
         
         if 'error' not in report:
-            print(f"\\nPrompt Review Summary:")
+            print("\\nPrompt Review Summary:")
             print(f"Total prompts: {report['summary']['total_prompts']}")
             print(f"Average score: {report['summary']['avg_overall_score']:.2f}")
             print(f"Prompts needing improvement: {report['summary']['prompts_needing_improvement']}")

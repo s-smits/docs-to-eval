@@ -3,15 +3,12 @@ Benchmark generators for different evaluation types
 Creates domain-specific questions and answers from corpus text
 """
 
-import json
 import re
 import random
-from functools import reduce
-from collections import defaultdict
 from typing import List, Dict, Any, Optional
 from abc import ABC, abstractmethod
 
-from .evaluation import EvaluationType, BenchmarkItem, extract_key_concepts, sample_corpus_segments
+from .evaluation import EvaluationType, extract_key_concepts, sample_corpus_segments
 
 
 class BenchmarkGenerator(ABC):
@@ -197,13 +194,13 @@ class MathematicalBenchmarkGenerator(BenchmarkGenerator):
                     result = eval(f"{num1} {operation} {num2}")
                     question = f"Calculate: {num1} {operation} {num2}"
                     answer = str(result)
-                except (SyntaxError, NameError, ZeroDivisionError, ArithmeticError) as e:
+                except (SyntaxError, NameError, ZeroDivisionError, ArithmeticError):
                     # Handle evaluation errors gracefully
-                    question = f"What is the mathematical relationship in the corpus?"
+                    question = "What is the mathematical relationship in the corpus?"
                     answer = "Mathematical concepts are discussed in the context"
             else:
-                question = f"Solve the mathematical problem presented in the corpus"
-                answer = f"The solution involves mathematical reasoning based on the given information"
+                question = "Solve the mathematical problem presented in the corpus"
+                answer = "The solution involves mathematical reasoning based on the given information"
             
             items.append(self.create_item(question, answer))
         
@@ -252,7 +249,7 @@ class CodeGenerationBenchmarkGenerator(BenchmarkGenerator):
         
         for i in range(num_questions):
             question = random.choice(code_tasks)
-            answer = f"""def solution():
+            answer = """def solution():
     # Implementation based on corpus content
     return "processed_result"
 """
@@ -444,13 +441,14 @@ class BenchmarkGeneratorFactory:
         try:
             from ..llm.openrouter_interface import OpenRouterInterface, OpenRouterConfig
             
+            # Map system LLMConfig to OpenRouterConfig
             llm_config = OpenRouterConfig(
-                model_name=config.llm.model_name,
                 api_key=config.llm.api_key,
-                temperature=config.llm.temperature,
-                max_tokens=config.llm.max_tokens,
-                timeout=config.llm.timeout,
-                max_retries=config.llm.max_retries
+                model=config.llm.model_name if getattr(config.llm, 'model_name', None) else "openai/gpt-5-mini",
+                site_url=getattr(config.llm, 'site_url', None),
+                site_name=getattr(config.llm, 'app_name', None),
+                max_retries=getattr(config.llm, 'max_retries', 3),
+                timeout=float(getattr(config.llm, 'timeout', 60))
             )
             
             # Create specialized LLM instances for different agents
@@ -520,7 +518,7 @@ def generate_domain_benchmark(corpus_text: str, eval_type: EvaluationType, num_q
         try:
             agentic_report = generator.get_generation_report()
             metadata['agentic_report'] = agentic_report
-        except (AttributeError, Exception) as e:
+        except (AttributeError, Exception):
             # Generator might not have report method or it might fail
             pass
     

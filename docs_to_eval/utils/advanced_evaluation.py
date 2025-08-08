@@ -6,10 +6,9 @@ Implements bootstrap confidence intervals, ensemble verification, and statistica
 import random
 import math
 from typing import List, Tuple, Dict, Any, Optional
-from collections import defaultdict
 import numpy as np
 
-from .similarity import calculate_multi_similarity, semantic_similarity_real
+from .similarity import calculate_multi_similarity
 from .text_processing import normalize_answer
 
 

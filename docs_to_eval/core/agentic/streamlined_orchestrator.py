@@ -15,12 +15,8 @@ from .streamlined_agents import (
     QualityValidator
 )
 from .models import (
-    EnhancedBenchmarkItem,
-    DifficultyLevel,
-    BenchmarkMetadata,
-    create_enhanced_metadata
+    DifficultyLevel
 )
-from ..evaluation import EvaluationType
 from ...llm.base import BaseLLMInterface
 
 
@@ -90,7 +86,7 @@ class StreamlinedOrchestrator:
         try:
             # Step 1: Extract concepts
             if progress_callback:
-                await progress_callback.send_log("info", f"📚 Extracting key concepts from corpus...")
+                await progress_callback.send_log("info", "📚 Extracting key concepts from corpus...")
             
             num_concepts = int(num_questions * self.config['oversample_factor'])
             concept_result = await self.concept_extractor.produce(corpus_text, num_concepts)
@@ -230,7 +226,7 @@ class StreamlinedOrchestrator:
                 concept, context, eval_type, DifficultyLevel.BASIC
             )
             return candidate
-        except:
+        except Exception:
             return None
     
     def _convert_to_dict(self, item: Any) -> Dict[str, Any]:

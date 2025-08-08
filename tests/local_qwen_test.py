@@ -3,12 +3,11 @@
 🏠 LOCAL QWEN TEST: Test evaluation system with local mock LLM
 Demonstrates the complete evaluation pipeline without requiring API calls
 """
+import pytest
+pytestmark = pytest.mark.skip(reason="Demo-only; excluded from CI test suite")
 
 import asyncio
-import os
 import sys
-import json
-import tempfile
 from pathlib import Path
 
 # Add project root to path
@@ -18,7 +17,7 @@ from docs_to_eval.core.agentic import AgenticBenchmarkGenerator
 from docs_to_eval.utils.config import EvaluationType
 from docs_to_eval.core.verification import VerificationOrchestrator
 from docs_to_eval.llm.mock_interface import MockLLMInterface
-from docs_to_eval.llm.qwen_local_interface import QwenModelFactory, LocalQwenInterface
+from docs_to_eval.llm.qwen_local_interface import QwenModelFactory
 
 
 class LocalQwenEvaluator:
@@ -104,7 +103,7 @@ class RealQwenEvaluator:
         
         if numbers:
             fallback_questions.append({
-                'question': f'What is the first number mentioned in the text?',
+                'question': 'What is the first number mentioned in the text?',
                 'answer': numbers[0],
                 'context': corpus_text[:200] + '...',
                 'concept': 'numerical_fact',
@@ -257,13 +256,13 @@ Provide a clear, accurate answer."""
         total_tokens = sum(r.get('tokens_generated', 0) for r in evaluation_results)
         total_time = sum(r.get('generation_time', 0.0) for r in evaluation_results)
         
-        print(f"\n📈 REAL QWEN EVALUATION REPORT")
+        print("\n📈 REAL QWEN EVALUATION REPORT")
         print("=" * 60)
         print(f"🤖 Model: {self.model_key.upper()}")
         print(f"🎭 Domain: {corpus_info['domain']}")
         print(f"📚 Corpus: {corpus_info['description']}")
         print(f"📝 Questions: {len(evaluation_results)}")
-        print(f"\n📊 PERFORMANCE METRICS:")
+        print("\n📊 PERFORMANCE METRICS:")
         print(f"  📈 Mean Score: {mean_score:.4f}")
         print(f"  🎯 Max Score: {max_score:.4f}")
         print(f"  📉 Min Score: {min_score:.4f}")
@@ -275,25 +274,25 @@ Provide a clear, accurate answer."""
         # Get model performance stats
         if self.qwen_interface:
             stats = self.qwen_interface.get_performance_stats()
-            print(f"\n🤖 MODEL PERFORMANCE:")
+            print("\n🤖 MODEL PERFORMANCE:")
             print(f"  📊 Device: {stats.get('device', 'unknown')}")
             print(f"  🧠 Memory Used: {stats.get('memory_allocated', 0) / 1024**3:.2f} GB")
             print(f"  ⚡ Avg Speed: {stats.get('average_tokens_per_second', 0):.1f} tok/s")
         
-        print(f"\n🔍 DETAILED RESULTS:")
+        print("\n🔍 DETAILED RESULTS:")
         for i, result in enumerate(evaluation_results, 1):
             print(f"\n❓ Question {i}: {result['question'][:60]}...")
             print(f"🤖 {self.model_key.upper()}: {result['qwen_response'][:80]}...")
             print(f"✅ Expected: {result['expected_answer'][:60]}...")
             print(f"📊 Score: {result['score']:.3f} | Tokens: {result['tokens_generated']} | Time: {result['generation_time']:.2f}s")
         
-        print(f"\n🚀 REAL QWEN CAPABILITIES DEMONSTRATED:")
-        print(f"✅ Real HuggingFace transformers integration")
-        print(f"✅ Local execution with GPU acceleration")
-        print(f"✅ Context-aware question answering")
-        print(f"✅ Domain-agnostic evaluation pipeline")
-        print(f"✅ Performance monitoring and statistics")
-        print(f"✅ No API dependencies required")
+        print("\n🚀 REAL QWEN CAPABILITIES DEMONSTRATED:")
+        print("✅ Real HuggingFace transformers integration")
+        print("✅ Local execution with GPU acceleration")
+        print("✅ Context-aware question answering")
+        print("✅ Domain-agnostic evaluation pipeline")
+        print("✅ Performance monitoring and statistics")
+        print("✅ No API dependencies required")
         
         return {
             'mean_score': mean_score,
@@ -365,7 +364,7 @@ async def test_real_qwen_models():
             
             qwen_responses = await evaluator.evaluate_with_real_qwen(questions)
             evaluation_results, scores = evaluator.evaluate_responses(qwen_responses)
-            report = evaluator.generate_real_qwen_report(evaluation_results, scores, corpus_info)
+            _ = evaluator.generate_real_qwen_report(evaluation_results, scores, corpus_info)
             
             print(f"\n✅ {model_key.upper()} test completed!")
             
@@ -376,9 +375,9 @@ async def test_real_qwen_models():
             # Clean up to free memory for next model
             evaluator.cleanup()
             
-        print(f"\n" + "="*50)
+        print("\n" + "="*50)
     
-    print(f"\n🎉 REAL QWEN TESTING COMPLETE!")
+    print("\n🎉 REAL QWEN TESTING COMPLETE!")
 
 
 async def test_qwen_model_comparison():
@@ -430,7 +429,7 @@ async def test_qwen_model_comparison():
             evaluator.cleanup()
     
     # Show comparison
-    print(f"\n🏆 MODEL COMPARISON RESULTS:")
+    print("\n🏆 MODEL COMPARISON RESULTS:")
     print("-" * 40)
     
     for model_key, data in results.items():
@@ -462,145 +461,6 @@ if __name__ == "__main__":
     
     print("\n🏆 Running Model Comparison...")
     asyncio.run(test_qwen_model_comparison())
-            {
-                'question': 'What is the main setting described in this text?',
-                'answer': 'A fictional fantasy world with magical elements.',
-                'context': corpus_text[:200] + '...',
-                'concept': 'setting',
-                'type': 'comprehension'
-            },
-            {
-                'question': 'What kind of world is being described?',
-                'answer': 'A fantasy world with fictional characters and magical elements.',
-                'context': corpus_text[:200] + '...',
-                'concept': 'genre',
-                'type': 'analysis'
-            }
-        ])
-        
-        return fallback_questions[:num_questions]
-    
-    async def simulate_qwen_responses(self, questions):
-        """Simulate Qwen model responses to the questions"""
-        
-        print(f"🤖 Simulating Qwen responses to {len(questions)} questions...")
-        
-        qwen_responses = []
-        
-        for i, item in enumerate(questions, 1):
-            # Handle both dict and EnhancedBenchmarkItem objects
-            if hasattr(item, 'question'):
-                question = item.question
-                context = item.context
-                answer = item.answer
-            else:
-                question = item.get('question', '')
-                context = item.get('context', '')
-                answer = item.get('answer', '')
-            
-            # Simulate Qwen-style responses (shorter, sometimes incomplete)
-            if 'number' in question.lower() or any(char.isdigit() for char in question):
-                # Mathematical/numerical question
-                response = "Based on the text, the number appears to be mentioned in the context."
-            elif 'what is' in question.lower():
-                # Factual question  
-                response = "According to the information provided, this refers to an element from the fictional setting."
-            elif 'setting' in question.lower():
-                # Setting question
-                response = "The setting appears to be a fantasy or fictional environment."
-            else:
-                # General response
-                response = "This relates to the fictional content described in the passage."
-            
-            qwen_responses.append({
-                'question': question,
-                'qwen_response': response,
-                'expected_answer': answer,
-                'context': context
-            })
-            
-            print(f"   Question {i}: Generated Qwen response")
-        
-        return qwen_responses
-    
-    def evaluate_responses(self, qwen_responses):
-        """Evaluate Qwen responses using your verification system"""
-        
-        print(f"📊 Evaluating {len(qwen_responses)} responses...")
-        
-        evaluation_results = []
-        scores = []
-        
-        for i, response_data in enumerate(qwen_responses, 1):
-            qwen_response = response_data['qwen_response']
-            expected_answer = response_data['expected_answer']
-            question = response_data['question']
-            
-            # Use your domain verification system
-            verification_result = self.verification_orchestrator.verify(
-                prediction=qwen_response,
-                ground_truth=expected_answer,
-                eval_type="domain_factual",  # Use lenient factual verification
-                question=question
-            )
-            
-            scores.append(verification_result.score)
-            
-            evaluation_results.append({
-                'question': question,
-                'qwen_response': qwen_response,
-                'expected_answer': expected_answer,
-                'score': verification_result.score,
-                'method': verification_result.method,
-                'details': verification_result.details
-            })
-            
-            print(f"   Question {i}: Score {verification_result.score:.3f} ({verification_result.method})")
-        
-        return evaluation_results, scores
-    
-    def generate_report(self, evaluation_results, scores, corpus_info):
-        """Generate comprehensive evaluation report"""
-        
-        mean_score = sum(scores) / len(scores) if scores else 0
-        max_score = max(scores) if scores else 0
-        min_score = min(scores) if scores else 0
-        
-        print(f"\n📈 LOCAL QWEN EVALUATION REPORT")
-        print("=" * 60)
-        print(f"🎭 Domain: {corpus_info['domain']}")
-        print(f"📚 Corpus: {corpus_info['description']}")
-        print(f"📝 Questions: {len(evaluation_results)}")
-        print(f"🤖 Model: Simulated Qwen (local)")
-        print(f"\n📊 PERFORMANCE METRICS:")
-        print(f"  📈 Mean Score: {mean_score:.4f}")
-        print(f"  🎯 Max Score: {max_score:.4f}")
-        print(f"  📉 Min Score: {min_score:.4f}")
-        print(f"  🔍 Exact Match Rate: {sum(1 for s in scores if s >= 0.9) / len(scores):.4f}")
-        
-        print(f"\n🔍 DETAILED RESULTS:")
-        for i, result in enumerate(evaluation_results, 1):
-            print(f"\n❓ Question {i}: {result['question'][:60]}...")
-            print(f"🤖 Qwen: {result['qwen_response'][:60]}...")
-            print(f"✅ Expected: {result['expected_answer'][:60]}...")
-            print(f"📊 Score: {result['score']:.3f} ({result['method']})")
-        
-        print(f"\n🚀 SYSTEM CAPABILITIES DEMONSTRATED:")
-        print(f"✅ Domain-agnostic evaluation (fictional content)")
-        print(f"✅ Automatic question generation")
-        print(f"✅ Context-aware verification")
-        print(f"✅ Multiple evaluation methods")
-        print(f"✅ Comprehensive scoring metrics")
-        print(f"✅ Local execution (no API required)")
-        
-        return {
-            'mean_score': mean_score,
-            'max_score': max_score, 
-            'min_score': min_score,
-            'num_questions': len(evaluation_results),
-            'exact_match_rate': sum(1 for s in scores if s >= 0.9) / len(scores),
-            'results': evaluation_results
-        }
 
 
 async def test_fictional_crystal_empire():
@@ -735,8 +595,8 @@ if __name__ == "__main__":
     # Test 2: Space Pirates
     asyncio.run(test_space_pirates())
     
-    print(f"\n🎉 LOCAL TESTING COMPLETE!")
-    print(f"✅ Demonstrated domain-agnostic evaluation on fictional content")
-    print(f"✅ No external API dependencies")
-    print(f"✅ Full pipeline: generation → simulation → verification → reporting")
-    print(f"✅ Ready for integration with real Qwen models when available")
+    print("\n🎉 LOCAL TESTING COMPLETE!")
+    print("✅ Demonstrated domain-agnostic evaluation on fictional content")
+    print("✅ No external API dependencies")
+    print("✅ Full pipeline: generation → simulation → verification → reporting")
+    print("✅ Ready for integration with real Qwen models when available")

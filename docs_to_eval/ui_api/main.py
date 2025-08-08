@@ -2,16 +2,13 @@
 FastAPI main application for docs-to-eval system
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
-import asyncio
 from pathlib import Path
-from typing import Dict, Any
 
 from .routes import router
-from .websockets import websocket_manager
 from ..utils.logging import setup_logging, get_logger
 
 
@@ -40,12 +37,13 @@ async def lifespan(app: FastAPI):
         logger.info(f"Ensured directory exists: {path.absolute()}")
     
     # Verify critical components
+    # Lazy import in request handlers; avoid unused import warnings here
     try:
-        from ..core.pipeline import EvaluationPipeline
-        from ..llm.openrouter_interface import OpenRouterInterface
-        logger.info("✅ Core components loaded successfully")
+        __import__("docs_to_eval.core.pipeline")
+        __import__("docs_to_eval.llm.openrouter_interface")
+        logger.info("✅ Core components available")
     except ImportError as e:
-        logger.error(f"❌ Failed to load core components: {e}")
+        logger.error(f"❌ Core components may be unavailable: {e}")
     
     yield
     

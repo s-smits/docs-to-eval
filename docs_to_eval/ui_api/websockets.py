@@ -266,6 +266,11 @@ def get_progress_tracker(run_id: str) -> EvaluationProgressTracker:
     notifier = get_progress_notifier(run_id)
     return EvaluationProgressTracker(notifier)
 
+# Backward compatibility exports expected by tests
+# Alias names to match older API
+ProgressTracker = EvaluationProgressTracker
+ProgressManager = ConnectionManager
+
 
 async def handle_websocket_connection(websocket: WebSocket, run_id: str):
     """Handle WebSocket connection lifecycle"""

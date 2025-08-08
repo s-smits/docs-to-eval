@@ -2,8 +2,7 @@
 Similarity calculation utilities for evaluation framework
 """
 
-import re
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict
 from collections import Counter
 import math
 
@@ -267,7 +266,7 @@ def calculate_multi_similarity(text1: str, text2: str) -> Dict[str, float]:
     for method in methods:
         try:
             results[method] = calculate_similarity(text1, text2, method)
-        except Exception as e:
+        except Exception:
             results[method] = 0.0
     
     # Add semantic similarity (using real embeddings when available)

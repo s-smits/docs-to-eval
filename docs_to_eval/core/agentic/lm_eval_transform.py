@@ -3,14 +3,12 @@ Core data transformation layer for lm-evaluation-harness integration
 Converts agentic benchmark items to harness-compatible formats
 """
 
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Dict, List, Any, Optional, Tuple
 from enum import Enum
 from dataclasses import dataclass
 import re
-import json
-from pathlib import Path
 
-from .models import EnhancedBenchmarkItem, AnswerType, DifficultyLevel
+from .models import EnhancedBenchmarkItem, AnswerType
 from ..evaluation import EvaluationType
 
 

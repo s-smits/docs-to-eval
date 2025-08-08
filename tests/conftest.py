@@ -7,11 +7,16 @@ import pytest
 import tempfile
 import shutil
 from pathlib import Path
-from unittest.mock import Mock
 import os
 
-from docs_to_eval.utils.config import EvaluationConfig, create_default_config
+from docs_to_eval.utils.config import create_default_config
 from docs_to_eval.llm.mock_interface import MockLLMInterface
+
+"""
+Ensure pytest-asyncio plugin is available so @pytest.mark.asyncio tests run without
+"async not supported" errors in environments where auto-discovery may fail.
+"""
+pytest_plugins = ("pytest_asyncio",)
 
 
 @pytest.fixture

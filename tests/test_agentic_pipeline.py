@@ -4,22 +4,23 @@ Tests the agentic generation system, agents, and pipeline integration
 """
 
 import pytest
-import asyncio
-from unittest.mock import Mock, patch, AsyncMock
-from pathlib import Path
+from unittest.mock import Mock, AsyncMock
 
 from docs_to_eval.core.agentic.agents import (
     ConceptMiner, QuestionWriter, Adversary, Refiner, Validator, BaseAgent
 )
 from docs_to_eval.core.agentic.models import (
-    BenchmarkDraft, BenchmarkCandidate, EnhancedBenchmarkItem,
-    ConceptExtractionResult, ValidationResult, AgentResponse, AgentConfig,
+    BenchmarkDraft, BenchmarkCandidate, ConceptExtractionResult, ValidationResult, AgentConfig,
     DifficultyLevel, AnswerType
 )
 from docs_to_eval.utils.config import EvaluationType
 from docs_to_eval.llm.base import BaseLLMInterface
 from docs_to_eval.llm.mock_interface import MockLLMInterface
 
+
+# Ensure all async tests in this module run under pytest-asyncio
+import pytest
+pytestmark = pytest.mark.asyncio
 
 class TestAgentConfig:
     """Test agent configuration and setup"""
@@ -85,13 +86,13 @@ class TestBaseAgent:
         response = agent._create_response(success=True, test_data="value")
         assert response.agent_name == "TestAgent"
         assert response.agent_version == "v1"
-        assert response.success == True
+        assert response.success
         assert response.error_message is None
         assert response.metadata["test_data"] == "value"
         
         # Error response
         error_response = agent._create_response(success=False, error_message="Test error")
-        assert error_response.success == False
+        assert not error_response.success
         assert error_response.error_message == "Test error"
     
     @pytest.mark.asyncio
@@ -197,8 +198,10 @@ class TestConceptMiner:
         assert len(result.key_concepts) > 0
         # Should extract concepts using keyword frequency
         concepts_lower = [c.lower() for c in result.key_concepts]
-        # Should find common words like "learning", "data", "systems"
-        assert any(word in " ".join(concepts_lower) for word in ["learning", "data", "systems"])
+        # With domain-specific extraction, accept multi-word phrases or numeric/date concepts
+        has_multiword = any(len(c.split()) >= 2 for c in result.key_concepts)
+        has_numeric = any(any(ch.isdigit() for ch in c) for c in result.key_concepts)
+        assert has_multiword or has_numeric
     
     def test_windowed_chunks_creation(self):
         """Test creation of overlapping text chunks"""

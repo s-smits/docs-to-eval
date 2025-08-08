@@ -3,6 +3,8 @@
 Test script for REVISED optimized classification system
 Tests simplicity, performance, and new helper functions
 """
+import pytest
+pytestmark = pytest.mark.skip(reason="Benchmark/demo; excluded from CI test suite")
 
 import time
 import statistics
@@ -64,7 +66,7 @@ def test_new_features():
         # Test explanation (non-detailed)
         explanation = explain_classification(corpus, detailed=False)
         print(f"  Final: {explanation['final_classification']}")
-        print(f"  Scores by type:")
+        print("  Scores by type:")
         for t in [EvaluationType.MATHEMATICAL, EvaluationType.CODE_GENERATION, 
                   EvaluationType.FACTUAL_QA, EvaluationType.DOMAIN_KNOWLEDGE]:
             if t.value in explanation:

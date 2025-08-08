@@ -3,15 +3,11 @@ Core evaluation framework for domain-specific LLM benchmarking
 Supports both deterministic and non-deterministic evaluation methods
 """
 
-import json
 import re
 import random
-from functools import reduce
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Union
-from dataclasses import dataclass
-from pydantic import BaseModel, Field, validator
-from enum import Enum
+from pydantic import BaseModel, Field
 
 # Import enums from central config location
 from ..utils.config import EvaluationType, VerificationMethod

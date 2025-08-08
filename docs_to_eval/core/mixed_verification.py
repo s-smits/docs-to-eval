@@ -7,7 +7,7 @@ and implements various matching strategies for different question types.
 
 import re
 import string
-from typing import Dict, List, Optional, Tuple, Any
+from typing import List, Optional, Tuple
 from difflib import SequenceMatcher
 from dataclasses import dataclass
 from enum import Enum

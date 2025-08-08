@@ -256,7 +256,7 @@ class TestVerificationDebugOutput:
     def test_domain_factual_debug_output(self):
         """Test that domain factual verification produces debug output"""
         with patch('builtins.print') as mock_print:
-            result = self.orchestrator.verify(
+            _ = self.orchestrator.verify(
                 prediction="Machine learning algorithms learn patterns",
                 ground_truth="ML algorithms identify patterns in data",
                 eval_type="domain_knowledge",

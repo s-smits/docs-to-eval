@@ -7,21 +7,18 @@ import asyncio
 import json
 import re
 import random
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from abc import ABC, abstractmethod
 import time
 import logging
 
 from .models import (
     BenchmarkCandidate,
-    EnhancedBenchmarkItem,
     ConceptExtractionResult,
     ValidationResult,
     DifficultyLevel,
-    AnswerType,
-    validate_deterministic_answer_type
+    AnswerType
 )
-from ..evaluation import EvaluationType
 from ..verification import VerificationOrchestrator
 from ...llm.base import BaseLLMInterface
 
@@ -197,7 +194,7 @@ Return a simple JSON list of concepts:
             response = await self._call_llm(prompt, temperature=0.3)
             data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
             return data.get('concepts', [])
-        except:
+        except Exception:
             return self._extract_with_keywords(sample_text, num_concepts)
     
     def _extract_with_keywords(self, text: str, num_concepts: int) -> List[str]:
@@ -335,7 +332,7 @@ Return JSON only:
             response = await self._call_llm(prompt, temperature=0.7)
             data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
             return data
-        except:
+        except Exception:
             return self._generate_with_template(concept, context, eval_type, question_type, difficulty)
     
     def _generate_with_template(self, concept: str, context: str, eval_type: str,
@@ -353,7 +350,7 @@ Return JSON only:
         
         # Generate appropriate answer based on question type
         if question_type == "factual":
-            answer = f"{concept} is defined in this context as..."
+            answer = self._extract_concise_answer(context, concept)
         elif question_type == "analytical":
             answer = f"The importance of {concept} lies in..."
         elif question_type == "comparative":
@@ -434,7 +431,7 @@ Return JSON: {{"options": ["wrong1", "wrong2", "wrong3"]}}"""
                 response = await self._call_llm(prompt, temperature=0.8)
                 data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
                 options.extend(data.get('options', []))[:4]
-            except:
+            except Exception:
                 pass
         
         # Fallback options if needed
@@ -448,7 +445,7 @@ Return JSON: {{"options": ["wrong1", "wrong2", "wrong3"]}}"""
                                  difficulty: DifficultyLevel) -> BenchmarkCandidate:
         """Create a simple fallback question"""
         question = f"What is {concept}?"
-        answer = f"{concept} is described in the context as..."
+        answer = self._extract_concise_answer(context, concept)
         
         return BenchmarkCandidate(
             question=question,
@@ -460,6 +457,22 @@ Return JSON: {{"options": ["wrong1", "wrong2", "wrong3"]}}"""
             reasoning_chain=["Fallback generation"],
             adversarial_techniques=[]
         )
+
+    def _extract_concise_answer(self, context: str, concept: str, max_chars: int = 220) -> str:
+        """Extract concise grounded answer from context using definitional cues."""
+        if not context:
+            return f"{concept} is ..."
+        sentences = [s.strip() for s in re.split(r'[\.!?]\s+', context) if s.strip()]
+        concept_lower = concept.lower()
+        cues = [' is ', ' are ', ' refers to ', ' defined as ', ' known as ', ' consists of ', ' comprises ']
+        for s in sentences:
+            s_lower = s.lower()
+            if concept_lower in s_lower and any(cue in s_lower for cue in cues):
+                return s[:max_chars].rstrip(',;: ') + ('...' if len(s) > max_chars else '')
+        for s in sentences:
+            if concept_lower in s.lower():
+                return s[:max_chars].rstrip(',;: ') + ('...' if len(s) > max_chars else '')
+        return (context[:max_chars].rstrip(',;: ') + ('...' if len(context) > max_chars else ''))
 
 
 class QualityValidator(BaseAgent):
@@ -578,5 +591,5 @@ Return JSON: {{"score": 0.7, "reason": "..."}}"""
             response = await self._call_llm(prompt, temperature=0.1)
             data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
             return float(data.get('score', 0.5))
-        except:
+        except Exception:
             return 0.5  # Neutral score on error

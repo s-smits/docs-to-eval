@@ -9,7 +9,6 @@ This demonstrates the key improvements made to fix the evaluation issues:
 """
 
 from docs_to_eval.core.mixed_verification import (
-    QuestionAnalyzer, 
     FuzzyMatcher, 
     MixedVerificationOrchestrator
 )
@@ -106,7 +105,7 @@ def demo_mixed_verification():
             use_mixed=True
         )
         
-        print(f"\nVerification Results:")
+        print("\nVerification Results:")
         print(f"  Final Score: {result.score:.3f}")
         print(f"  Method: {result.method}")
         
@@ -116,7 +115,7 @@ def demo_mixed_verification():
             
             methods_used = result.details.get('methods_used', {})
             if methods_used:
-                print(f"  Methods Used:")
+                print("  Methods Used:")
                 for method, score in methods_used.items():
                     print(f"    {method}: {score:.3f}")
         

@@ -4,11 +4,8 @@ Integrates the MLX-based LoRA fine-tuning with the evaluation pipeline
 """
 
 import json
-import os
 import tempfile
-import subprocess
 import asyncio
-import shlex
 import re
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple, Union
@@ -190,7 +187,7 @@ class LoRAFinetuningOrchestrator:
                     except Exception as e:
                         raise ValueError(f"Error formatting test item {i}: {str(e)}")
             
-            print(f"✅ Prepared training data:")
+            print("✅ Prepared training data:")
             print(f"   📝 Training samples: {len(train_data)} → {train_file}")
             print(f"   🔍 Validation samples: {len(valid_data)} → {valid_file}")
             print(f"   🧪 Test samples: {len(test_data)} → {test_file}")
@@ -309,7 +306,7 @@ class LoRAFinetuningOrchestrator:
                     # Extract loss value from line like "Iter 1000: Val loss 2.345, Val took 1.23s"
                     parts = line.split("Val loss")[1].split(",")[0].strip()
                     return float(parts)
-                except (ValueError, IndexError, AttributeError) as e:
+                except (ValueError, IndexError, AttributeError):
                     # Failed to parse loss value from this line, try next
                     continue
         return None
@@ -491,7 +488,7 @@ class LoRAFinetuningOrchestrator:
         if pred_numbers and truth_numbers:
             try:
                 return float(pred_numbers[0]) == float(truth_numbers[0])
-            except (ValueError, IndexError) as e:
+            except (ValueError, IndexError):
                 # Failed to convert to float, skip numerical comparison
                 pass
         

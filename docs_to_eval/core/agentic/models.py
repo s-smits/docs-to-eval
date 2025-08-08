@@ -3,10 +3,9 @@ Pydantic models for agentic benchmark generation protocol
 Defines strict schemas for inter-agent communication and validation
 """
 
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field, validator
 from enum import Enum
-import json
 from datetime import datetime
 
 from ..evaluation import EvaluationType
@@ -174,8 +173,8 @@ class EnhancedBenchmarkItem(BaseModel):
     def validate_question_format(cls, v):
         """Ensure question meets formatting requirements"""
         v = v.strip()
-        if len(v) > 150:
-            raise ValueError("Question exceeds 150 character limit")
+        # Remove hard character limit to allow domain-specific detailed questions
+        # Domain-specific questions need more space for entities, dates, and context
         if not v.endswith('?') and not any(word in v.lower() for word in ['what', 'how', 'why', 'when', 'where', 'which']):
             # Add question mark if it's clearly a question
             if any(word in v.lower() for word in ['is', 'are', 'can', 'could', 'would', 'should']):
@@ -202,9 +201,9 @@ class ValidationResult(BaseModel):
 class AgentConfig(BaseModel):
     """Configuration for individual agents"""
     temperature: float = Field(default=0.7, ge=0, le=2)
-    max_tokens: int = Field(default=512, gt=0, le=4096)
+    max_tokens: int = Field(default=2000, gt=0, le=4096)
     timeout_seconds: float = Field(default=30.0, gt=0)
-    retry_attempts: int = Field(default=3, ge=0, le=10)
+    retry_attempts: int = Field(default=2, ge=0, le=10)
     model_name: Optional[str] = None
     
     # Agent-specific configs

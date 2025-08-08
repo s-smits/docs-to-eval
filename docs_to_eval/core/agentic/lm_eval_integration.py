@@ -5,13 +5,12 @@ Exports agentic benchmark items as YAML tasks compatible with lm-evaluation-harn
 
 import yaml
 import json
-import re
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 import zipfile
 from datetime import datetime
 
-from .models import EnhancedBenchmarkItem, AnswerType, DifficultyLevel
+from .models import EnhancedBenchmarkItem, AnswerType
 from ..evaluation import EvaluationType
 
 

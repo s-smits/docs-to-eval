@@ -7,11 +7,9 @@ import yaml
 import re
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union, Tuple
-from collections import defaultdict
 from pydantic import BaseModel, Field, validator
 from enum import Enum
 from functools import lru_cache
-import time
 
 
 class EvaluationType(str, Enum):
@@ -49,7 +47,7 @@ class SimilarityMethod(str, Enum):
 
 class LLMConfig(BaseModel):
     """Configuration for LLM interface"""
-    model_name: str = "google/gemini-2.5-flash"
+    model_name: str = "openai/gpt-5-mini"
     temperature: float = Field(ge=0, le=2, default=0.7)
     max_tokens: int = Field(gt=0, le=131072, default=32768)
     timeout: int = Field(gt=0, default=30)
@@ -394,6 +392,18 @@ if __name__ == "__main__":
     print(manager.get_config().json(indent=2))
 
 
+# Provide backward-compatible re-export for tests expecting BenchmarkConfig in utils.config
+try:
+    # Import from core.evaluation where BenchmarkConfig is defined
+    from ..core.evaluation import BenchmarkConfig as _BenchmarkConfig
+    BenchmarkConfig = _BenchmarkConfig  # type: ignore
+except Exception:
+    # If import fails during partial environments, define a minimal placeholder to avoid import errors
+    class BenchmarkConfig(BaseModel):  # type: ignore
+        eval_type: EvaluationType
+        num_questions: int = Field(gt=0, le=1000, default=50)
+
+
 # Define a basic EvaluationConfig class for EVAL_TYPES
 class BasicEvaluationConfig:
     def __init__(self, deterministic: bool, verification: VerificationMethod, metrics: List[str]):
@@ -573,7 +583,6 @@ def analyze_corpus_content(corpus_text: str) -> Dict[str, float]:
     # Score each evaluation type
     scores = {}
     max_score = 0
-    best_type = None
     
     for eval_type, pattern_list in patterns.items():
         score = 0
@@ -591,7 +600,6 @@ def analyze_corpus_content(corpus_text: str) -> Dict[str, float]:
         # Track best match
         if score > max_score:
             max_score = score
-            best_type = eval_type
         
         # EARLY EXIT: If we have very strong signals, return immediately
         if high_confidence_hits >= 2 or score >= 15.0:

@@ -46,6 +46,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=6.0",
+    "pytest-asyncio>=0.23",
     "black>=21.0",
     "flake8>=3.8",
 ]
@@ -76,4 +77,12 @@ include = [
     "*.py",
     "README.md",
     "corpus/**/*",
+]
+
+[dependency-groups]
+dev = [
+    "autoflake>=2.3.1",
+    "pytest-asyncio>=1.1.0",
+    "ruff>=0.12.8",
+    "vulture>=2.14",
 ]

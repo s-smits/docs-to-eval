@@ -6,23 +6,19 @@ import asyncio
 import json
 import uuid
 from pathlib import Path
-from typing import Optional, List
-from datetime import datetime
+from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich.table import Table
 from rich.panel import Panel
-from rich.tree import Tree
-from rich.text import Text
 
 from docs_to_eval.utils.config import EvaluationType
 from ..core.classification import EvaluationTypeClassifier
-from ..core.pipeline import EvaluationPipeline, PipelineFactory
-from ..llm.mock_interface import MockLLMInterface, MockLLMEvaluator
+from ..core.pipeline import PipelineFactory
 from ..utils.config import EvaluationConfig, ConfigManager, create_default_config
-from ..utils.logging import setup_logging, evaluation_context
+from ..utils.logging import setup_logging
 
 app = typer.Typer(
     name="docs-to-eval",
@@ -83,7 +79,7 @@ def evaluate(
     
     try:
         asyncio.run(run_evaluation_async(corpus_text, config, run_id, output_path))
-        console.print(f"\n[green]✅ Evaluation completed successfully![/green]")
+        console.print("\n[green]✅ Evaluation completed successfully![/green]")
         console.print(f"[blue]Results saved to: {output_path}/[/blue]")
         
     except Exception as e:
@@ -110,8 +106,6 @@ async def run_evaluation_async(corpus_text: str, config: EvaluationConfig, run_i
         task = progress.add_task("Running evaluation pipeline...", total=4)
         
         # Add progress callback for pipeline phases
-        original_start_phase = None
-        original_end_phase = None
         
         def update_progress_callback(phase_name: str):
             phase_mapping = {
@@ -333,7 +327,6 @@ def server(
     
     try:
         import uvicorn
-        from ..ui_api.main import app
         
         console.print(f"[green]🚀 Starting docs-to-eval server on {host}:{port}[/green]")
         console.print(f"[blue]📚 API docs available at: http://{host}:{port}/docs[/blue]")

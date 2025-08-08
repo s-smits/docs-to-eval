@@ -2,7 +2,7 @@
 
 import mlx.core as mx
 import mlx.nn as nn
-from typing import Optional, Tuple
+from typing import Optional
 
 
 class LoRALinear(nn.Module):

@@ -5,27 +5,28 @@ FastAPI routes for docs-to-eval system
 import asyncio
 import uuid
 import json
-import shutil
 import httpx
 import re
 from pathlib import Path
+import os
+from collections import OrderedDict
+import time
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, WebSocket, Form, Depends
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, WebSocket, Form
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, ValidationError, validator
 
 from .websockets import websocket_manager, handle_websocket_connection, get_progress_tracker
-from ..core.evaluation import EvaluationFramework, BenchmarkConfig
-from ..core.classification import EvaluationTypeClassifier
+from ..core.classification import EvaluationTypeClassifier, ClassificationResult
+from ..utils.config import EvaluationType
 from ..core.agentic.agents import Validator
 from ..core.agentic.orchestrator import AgenticBenchmarkOrchestrator
-from ..core.agentic.models import PipelineConfig, DifficultyLevel, EnhancedBenchmarkItem
-from ..llm.mock_interface import MockLLMInterface, MockLLMEvaluator
+from ..core.agentic.models import PipelineConfig, DifficultyLevel
+from ..llm.mock_interface import MockLLMInterface
 from ..llm.openrouter_interface import OpenRouterInterface, OpenRouterConfig
-from ..llm.base import BaseLLMInterface
-from ..utils.config import EvaluationConfig, EvaluationType, create_default_config
+from ..utils.config import EvaluationConfig, create_default_config
 from ..utils.logging import get_logger
 
 # Create router
@@ -57,7 +58,7 @@ class CorpusUploadRequest(BaseModel):
         
         for pattern in suspicious_patterns:
             if re.search(pattern, v, re.IGNORECASE | re.DOTALL):
-                raise ValueError(f"Text contains potentially malicious content")
+                raise ValueError("Text contains potentially malicious content")
         
         return v.strip()
     
@@ -188,12 +189,11 @@ class EvaluationResult(BaseModel):
     results: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     duration_seconds: Optional[float] = None
+    # Top-level aggregate metrics for compatibility with tests expecting it at root
+    aggregate_metrics: Optional[Dict[str, Any]] = None
 
 
 # In-memory storage for evaluation runs with size limits
-from collections import OrderedDict
-import time
-from pathlib import Path
 
 class EvaluationRunManager:
     def __init__(self, max_runs: int = 100, max_age_hours: int = 24):
@@ -326,7 +326,7 @@ async def upload_corpus_text(request: CorpusUploadRequest):
             "created_at": datetime.now().isoformat()
         }
         
-        logger.info(f"Corpus uploaded", corpus_id=corpus_id, 
+        logger.info("Corpus uploaded", corpus_id=corpus_id, 
                    chars=len(request.text), 
                    primary_type=classification.primary_type)
         
@@ -415,7 +415,15 @@ async def upload_corpus_file(file: UploadFile = File(...), name: Optional[str] =
 
 
 @router.post("/corpus/upload-multiple")
-async def upload_multiple_files(files: List[UploadFile] = File(...), name: Optional[str] = Form(None)):
+async def upload_multiple_files(
+    files: List[UploadFile] = File(...),
+    name: Optional[str] = Form(None),
+    # Optional client-provided chunk thresholds (tokens)
+    min_tokens: Optional[int] = Form(None),
+    target_tokens: Optional[int] = Form(None),
+    max_tokens: Optional[int] = Form(None),
+    overlap_tokens: Optional[int] = Form(None),
+):
     """Upload multiple files as a single corpus with smart chunking"""
     try:
         file_contents = []
@@ -473,33 +481,80 @@ async def upload_multiple_files(files: List[UploadFile] = File(...), name: Optio
         # Use smart chunking to concatenate files to optimal chunk sizes
         from ..utils.text_processing import create_smart_chunks_from_files
         from ..utils.config import ChunkingConfig
-        import os
 
         # disable_chonkie = os.getenv("DISABLE_CHONKIE", "false").lower() in ["true", "1", "yes"]
     
-        # Always disable chonkie, but keep previous config for reference
-        disable_chonkie = True  # Force disable chonkie
+        # Honor env only: DISABLE_CHONKIE true disables chonkie; otherwise enabled
+        disable_chonkie = os.getenv("DISABLE_CHONKIE", "false").lower() in ["true", "1", "yes", "on"]
 
         # Previous config (for reference, not used)
-        previous_chunking_config = ChunkingConfig(
-            use_token_chunking=True,
-            target_token_size=3000,
-            max_token_size=4000,
-            enable_chonkie=True  # Previous: would enable semantic chunking if available
-        )
+        # previous_chunking_config = ChunkingConfig(
+        #     use_token_chunking=True,
+        #     target_token_size=3000,
+        #     max_token_size=4000,
+        #     enable_chonkie=True
+        # )
 
-        # New config: chonkie always disabled
+        # New config: chonkie default enabled unless disabled via env; allow client overrides
         chunking_config = ChunkingConfig(
             use_token_chunking=True,
             target_token_size=3000,
             max_token_size=4000,
-            enable_chonkie=False  # Always disable semantic chunking
+            enable_chonkie=not disable_chonkie,
         )
+
+        # Apply client-provided thresholds if present (validated & clamped)
+        def clamp(v: int, lo: int, hi: int) -> int:
+            return max(lo, min(hi, v))
+
+        # Defaults / bounds
+        MIN_ALLOWED = 500
+        MAX_ALLOWED = 8192
+        DEFAULT_MIN = 2000
+        DEFAULT_TARGET = 3000
+        DEFAULT_MAX = 4000
+        DEFAULT_OVERLAP = 300
+
+        # Start from defaults in config
+        current_min = DEFAULT_MIN
+        current_target = DEFAULT_TARGET
+        current_max = DEFAULT_MAX
+        current_overlap = DEFAULT_OVERLAP
+
+        if isinstance(min_tokens, int):
+            current_min = clamp(min_tokens, MIN_ALLOWED, MAX_ALLOWED)
+        if isinstance(target_tokens, int):
+            current_target = clamp(target_tokens, MIN_ALLOWED, MAX_ALLOWED)
+        if isinstance(max_tokens, int):
+            current_max = clamp(max_tokens, MIN_ALLOWED, MAX_ALLOWED)
+        if isinstance(overlap_tokens, int):
+            current_overlap = clamp(overlap_tokens, 0, 1024)
+
+        # Ensure ordering: min <= target <= max
+        if current_min > current_max:
+            current_min, current_max = current_max, current_min
+        current_target = clamp(current_target, current_min, current_max)
+
+        # Push into config
+        chunking_config.min_token_size = current_min
+        chunking_config.target_token_size = current_target
+        chunking_config.max_token_size = current_max
+        chunking_config.overlap_tokens = current_overlap
 
         if disable_chonkie:
             logger.info("Chonkie disabled via DISABLE_CHONKIE environment variable")
+        else:
+            logger.info("Chonkie enabled (default)")
         
-        logger.info(f"Creating smart chunks from {len(file_contents)} files with target ~3k tokens per chunk")
+        logger.info(
+            "Creating smart chunks from %d files (min=%d, target=%d, max=%d, overlap=%d, chonkie=%s)",
+            len(file_contents),
+            chunking_config.min_token_size,
+            chunking_config.target_token_size,
+            chunking_config.max_token_size,
+            chunking_config.overlap_tokens,
+            str(chunking_config.enable_chonkie),
+        )
         chunks = create_smart_chunks_from_files(file_contents, chunking_config)
         
         # Combine all chunks into final text (for backward compatibility)
@@ -535,6 +590,13 @@ async def upload_multiple_files(files: List[UploadFile] = File(...), name: Optio
         result["chunks_created"] = len(chunks)
         result["chunking_info"] = chunk_info
         result["smart_chunking_enabled"] = True
+        result["chunking_thresholds"] = {
+            "min_token_size": chunking_config.min_token_size,
+            "target_token_size": chunking_config.target_token_size,
+            "max_token_size": chunking_config.max_token_size,
+            "overlap_tokens": chunking_config.overlap_tokens,
+            "chonkie_enabled": chunking_config.enable_chonkie,
+        }
         
         logger.info(f"Smart chunking complete: {len(file_names)} files → {len(chunks)} chunks")
         
@@ -552,7 +614,7 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
     """Start a new evaluation run"""
     try:
         # Debug logging
-        logger.info(f"Evaluation request received", 
+        logger.info("Evaluation request received", 
                    corpus_text_length=len(request.corpus_text) if request.corpus_text else 0,
                    eval_type=request.eval_type,
                    num_questions=request.num_questions,
@@ -599,7 +661,7 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
                         eval_type = et
                         break
                 config.eval_type = eval_type or EvaluationType.DOMAIN_KNOWLEDGE
-            except (AttributeError, ValueError) as e:
+            except (AttributeError, ValueError):
                 # Failed to parse eval_type, use default
                 config.eval_type = EvaluationType.DOMAIN_KNOWLEDGE
         else:
@@ -642,7 +704,7 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
         # Start evaluation in background
         background_tasks.add_task(run_evaluation, run_id, request, config)
         
-        logger.info(f"Evaluation started", run_id=run_id, eval_type=config.eval_type)
+        logger.info("Evaluation started", run_id=run_id, eval_type=config.eval_type)
         
         return {
             "run_id": run_id,
@@ -663,7 +725,7 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
 async def start_qwen_local_evaluation(request: QwenEvaluationRequest, background_tasks: BackgroundTasks):
     """🤖 Start local Qwen evaluation with fictional content testing"""
     try:
-        logger.info(f"Qwen local evaluation request received", 
+        logger.info("Qwen local evaluation request received", 
                    corpus_text_length=len(request.corpus_text) if request.corpus_text else 0,
                    num_questions=request.num_questions,
                    use_fictional=request.use_fictional,
@@ -695,7 +757,7 @@ async def start_qwen_local_evaluation(request: QwenEvaluationRequest, background
         # Start Qwen evaluation in background
         background_tasks.add_task(run_qwen_local_evaluation, run_id, request)
         
-        logger.info(f"Qwen local evaluation started", run_id=run_id)
+        logger.info("Qwen local evaluation started", run_id=run_id)
         
         return {
             "run_id": run_id,
@@ -898,7 +960,7 @@ async def generate_agentic_questions_with_orchestrator(corpus_text: str, num_que
         
         eval_type_enum = eval_type_map.get(eval_type, EvaluationType.DOMAIN_KNOWLEDGE)
         
-        await tracker.send_log("info", f"⚡ ConceptMiner: Extracting key concepts from corpus...")
+        await tracker.send_log("info", "⚡ ConceptMiner: Extracting key concepts from corpus...")
         
         # Run the orchestrator
         enhanced_items = await orchestrator.generate(
@@ -1283,6 +1345,7 @@ Generate {num_questions} challenging questions as a JSON array. Return only the 
                             await tracker.send_log("warning", f"❌ Rejected Q{i+1}: ISSUES - {issues_summary}")
                 
                 # Update questions list with only verified questions
+                questions = []
                 for verified_q in verified_questions:
                     questions.append(verified_q)
                 
@@ -1323,10 +1386,11 @@ Generate {num_questions} challenging questions as a JSON array. Return only the 
                 lines = content.split('\n')
                 question_lines = [line for line in lines if '?' in line and len(line.strip()) > 10]
                 
+                questions = []
                 for i, line in enumerate(question_lines[:num_questions]):
                     questions.append({
                         "question": line.strip(),
-                        "answer": f"Answer related to this question",
+                        "answer": "Answer related to this question",
                         "context": None,
                         "eval_type": eval_type,
                         "source": "agentic_llm_fallback"
@@ -1343,6 +1407,8 @@ Generate {num_questions} challenging questions as a JSON array. Return only the 
         return await generate_corpus_questions(corpus_text, num_questions, eval_type, tracker)
     
     # If we didn't get enough questions, fill with corpus-based ones
+    if 'questions' not in locals():
+        questions = []
     if len(questions) < num_questions:
         remaining = num_questions - len(questions)
         await tracker.send_log("info", f"Generating {remaining} additional corpus-based questions")
@@ -1619,12 +1685,34 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
         if request.eval_type and request.eval_type not in ["auto-detect", "auto"]:
             # Use explicitly specified evaluation type
             eval_type_str = request.eval_type
+            # Ensure a classification object exists for downstream usage
+            try:
+                primary = EvaluationType(eval_type_str) if hasattr(EvaluationType, eval_type_str.upper()) else EvaluationType.DOMAIN_KNOWLEDGE
+            except Exception:
+                primary = EvaluationType.DOMAIN_KNOWLEDGE
+            classification = ClassificationResult(
+                primary_type=primary,
+                secondary_types=[EvaluationType.FACTUAL_QA] if primary != EvaluationType.FACTUAL_QA else [EvaluationType.READING_COMPREHENSION],
+                confidence=0.7,
+                analysis="Explicit eval_type provided by user",
+                reasoning="Using explicit eval_type; constructed minimal classification for pipeline"
+            )
             await tracker.send_log("info", f"Using explicitly specified evaluation type: {eval_type_str}")
             await tracker.end_phase({"primary_type": eval_type_str, "method": "explicit"})
         else:
             # Auto-detect evaluation type
             classifier = EvaluationTypeClassifier()
             classification = classifier.classify_corpus(request.corpus_text)
+            # Ensure classification is available for later phases
+            if not classification:
+                # Create a minimal default classification result
+                classification = ClassificationResult(
+                    primary_type=EvaluationType.DOMAIN_KNOWLEDGE,
+                    secondary_types=[EvaluationType.FACTUAL_QA],
+                    confidence=0.6,
+                    analysis="Default classification",
+                    reasoning="Fallback due to empty classification"
+                )
             eval_type_str = classification.primary_type.value if hasattr(classification.primary_type, 'value') else str(classification.primary_type)
             await tracker.send_log("info", f"Auto-detected evaluation type: {eval_type_str}")
             await tracker.end_phase({"primary_type": eval_type_str, "method": "auto_detected"})
@@ -1716,9 +1804,11 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
         
         verification_results = []
         for i, result in enumerate(llm_results):
-            # Use real verification based on the classification type
-            # Convert enum to string for verification system
-            eval_type_str = classification.primary_type.value if hasattr(classification.primary_type, 'value') else str(classification.primary_type)
+            # Use real verification based on the classification type; guard against missing classification
+            eval_type_str = (
+                classification.primary_type.value if (classification and hasattr(classification.primary_type, 'value'))
+                else (str(classification.primary_type) if classification else 'factual_qa')
+            )
             verification_result = orchestrator.verify(
                 prediction=result["prediction"],
                 ground_truth=result["ground_truth"],
@@ -1788,6 +1878,16 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
                 "test_percentage": 0.0
             }
 
+        # Ensure classification exists for final results
+        if not classification:
+            classification = ClassificationResult(
+                primary_type=EvaluationType.DOMAIN_KNOWLEDGE,
+                secondary_types=[EvaluationType.FACTUAL_QA],
+                confidence=0.6,
+                analysis="Default classification",
+                reasoning="Fallback due to missing classification"
+            )
+
         final_results = {
             "run_id": run_id,
             "evaluation_config": config.dict(),
@@ -1822,12 +1922,12 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
         # Send completion notification
         await tracker.notifier.send_evaluation_complete(final_results)
         
-        logger.info(f"Evaluation completed", run_id=run_id, mean_score=mean_score)
+        logger.info("Evaluation completed", run_id=run_id, mean_score=mean_score)
         
     except Exception as e:
         # Handle errors
         error_msg = str(e)
-        logger.error(f"Evaluation error", run_id=run_id, error=error_msg)
+        logger.error("Evaluation error", run_id=run_id, error=error_msg)
         
         evaluation_runs.update_run(run_id, {
             "status": "error",
@@ -1908,7 +2008,7 @@ async def run_qwen_local_evaluation(run_id: str, request: QwenEvaluationRequest)
             'description': f'Local Qwen evaluation on {len(corpus_text)} character corpus'
         }
         
-        report = evaluator.generate_report(evaluation_results, scores, corpus_info)
+        _ = evaluator.generate_report(evaluation_results, scores, corpus_info)
         
         # Create final results
         final_results = {
@@ -1958,12 +2058,12 @@ async def run_qwen_local_evaluation(run_id: str, request: QwenEvaluationRequest)
         # Send completion notification
         await tracker.notifier.send_evaluation_complete(final_results)
         
-        logger.info(f"Qwen local evaluation completed", run_id=run_id, mean_score=mean_score, num_questions=len(questions))
+        logger.info("Qwen local evaluation completed", run_id=run_id, mean_score=mean_score, num_questions=len(questions))
         
     except Exception as e:
         # Handle errors
         error_msg = str(e)
-        logger.error(f"Qwen local evaluation error", run_id=run_id, error=error_msg)
+        logger.error("Qwen local evaluation error", run_id=run_id, error=error_msg)
         
         evaluation_runs.update_run(run_id, {
             "status": "error",
@@ -2065,7 +2165,8 @@ async def list_evaluation_runs():
             logger.warning(f"Error processing run {run_id}: {e}")
             continue
     
-    return sorted(runs, key=lambda x: x["start_time"], reverse=True)
+    runs_sorted = sorted(runs, key=lambda x: x["start_time"], reverse=True)
+    return {"runs": runs_sorted}
 
 
 @router.delete("/runs/{run_id}")
@@ -2075,9 +2176,9 @@ async def delete_evaluation_run(run_id: str):
         raise HTTPException(status_code=404, detail="Run not found")
     
     evaluation_runs.delete_run(run_id)
-    logger.info(f"Evaluation run deleted", run_id=run_id)
+    logger.info("Evaluation run deleted", run_id=run_id)
     
-    return {"message": "Run deleted successfully"}
+    return {"deleted": True, "run_id": run_id}
 
 
 @router.get("/evaluation/{run_id}/finetune-test-set")
@@ -2485,7 +2586,6 @@ async def test_api_key(api_test: dict):
         
         # Test with a simple OpenRouter call
         import aiohttp
-        import asyncio
         
         test_url = "https://openrouter.ai/api/v1/models"
         headers = {

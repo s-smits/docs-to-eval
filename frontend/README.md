@@ -119,10 +119,9 @@ DOCS_TO_EVAL_PROVIDER=openrouter
 
 ### Supported Models
 
-- **Claude Sonnet 4** (Latest & Best)
-- **Gemini 2.5 Flash** (Fast)
-- **Gemini 2.5 Pro** (Balanced)
-- **GPT-4.1** (Latest OpenAI)
+- **GPT-5** (Latest & Best)
+- **GPT-5-mini** (Fast & Cheap)
+- **Claude Sonnet 4** (Anthropic)
 
 ## Deployment
 

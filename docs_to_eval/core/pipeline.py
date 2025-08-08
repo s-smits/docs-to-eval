@@ -100,7 +100,7 @@ class EvaluationPipeline:
             # Save results
             await self._save_results(results, output_path)
             
-            eval_logger.logger.info(f"Evaluation pipeline completed successfully")
+            eval_logger.logger.info("Evaluation pipeline completed successfully")
             return results
     
     async def _classify_corpus(self, corpus_text: str, logger) -> Any:

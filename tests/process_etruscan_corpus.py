@@ -116,7 +116,7 @@ def display_benchmark_sample(items: List[Any], max_display: int = 3):
 
 def analyze_corpus_semantics(chunks: List[Dict[str, Any]]):
     """Analyze semantic structure of chunked corpus"""
-    print(f"\n🔍 Corpus Semantic Analysis:")
+    print("\n🔍 Corpus Semantic Analysis:")
     print("-" * 40)
     
     # Semantic scores analysis
@@ -131,7 +131,7 @@ def analyze_corpus_semantics(chunks: List[Dict[str, Any]]):
         print(f"   📊 Score range: {min(semantic_scores):.3f} - {max(semantic_scores):.3f}")
     
     # Content preview
-    print(f"\n   📖 Semantic Chunks Preview:")
+    print("\n   📖 Semantic Chunks Preview:")
     for i, chunk in enumerate(chunks[:2]):
         text_preview = chunk['text'][:100].replace('\n', ' ').strip()
         method = chunk.get('method', 'unknown')
@@ -196,7 +196,7 @@ async def main():
     end_time = time.time()
     total_time = end_time - start_time
     
-    print(f"\n🎉 PROCESSING COMPLETE!")
+    print("\n🎉 PROCESSING COMPLETE!")
     print("=" * 50)
     print(f"⏱️  Total processing time: {total_time:.2f}s")
     print(f"📚 Corpus processed: {len(etruscan_texts)} texts")
@@ -205,16 +205,16 @@ async def main():
     total_items = sum(len(items) for items in all_results.values())
     print(f"🤖 Benchmark items generated: {total_items}")
     
-    print(f"\n📊 Results by evaluation type:")
+    print("\n📊 Results by evaluation type:")
     for eval_type, items in all_results.items():
         print(f"   • {eval_type}: {len(items)} items")
     
-    print(f"\n✨ Key Features Demonstrated:")
-    print(f"   ✓ Used existing AgenticBenchmarkGenerator")
-    print(f"   ✓ Leveraged chonkie semantic chunking") 
-    print(f"   ✓ Processed domain-specific Etruscan corpus")
-    print(f"   ✓ Generated multiple evaluation types")
-    print(f"   ✓ Zero new abstractions - all existing utilities!")
+    print("\n✨ Key Features Demonstrated:")
+    print("   ✓ Used existing AgenticBenchmarkGenerator")
+    print("   ✓ Leveraged chonkie semantic chunking") 
+    print("   ✓ Processed domain-specific Etruscan corpus")
+    print("   ✓ Generated multiple evaluation types")
+    print("   ✓ Zero new abstractions - all existing utilities!")
     
     return all_results
 

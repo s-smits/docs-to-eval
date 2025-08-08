@@ -1,10 +1,9 @@
 # Copyright © 2023-2024 Apple Inc.
 
-import glob
 import json
 import logging
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Tuple
 
 import mlx.core as mx
 import mlx.nn as nn
@@ -148,7 +147,7 @@ def create_model(args: ModelArgs) -> nn.Module:
         def load_weights(self, path, strict=True):
             """Load weights from file"""
             try:
-                weights = mx.load(path)
+                _ = mx.load(path)
                 # Simple weight loading - in real implementation you'd match parameter names
                 logger.info(f"Loaded weights from {path}")
             except Exception as e:

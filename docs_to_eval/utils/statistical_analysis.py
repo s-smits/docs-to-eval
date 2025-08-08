@@ -6,7 +6,7 @@ Implements bootstrap confidence intervals, statistical significance testing, and
 import math
 import random
 import numpy as np
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple
 from collections import Counter
 from dataclasses import dataclass
 
@@ -64,7 +64,7 @@ class EvaluationStatistics:
             
             return (float(lower_bound), float(upper_bound))
             
-        except Exception as e:
+        except Exception:
             # Fallback to simple mean +/- error
             mean_score = np.mean(scores) if scores else 0.0
             error = np.std(scores) / np.sqrt(len(scores)) if len(scores) > 1 else 0.0

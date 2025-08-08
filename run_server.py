@@ -30,9 +30,9 @@ def load_environment():
         # Check testing mode
         testing_mode = os.getenv("DOCS_TO_EVAL_TESTING_MODE", "false").lower()
         if testing_mode in ["true", "1", "yes"]:
-            print(f"🧪 TESTING MODE ENABLED - Full agentic loops will run every time")
+            print("🧪 TESTING MODE ENABLED - Full agentic loops will run every time")
         else:
-            print(f"📊 Production mode - Normal chunking behavior")
+            print("📊 Production mode - Normal chunking behavior")
     else:
         print(f"⚠️  Environment file not found: {env_path}")
         print("Creating basic .env file with placeholders...")

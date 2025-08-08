@@ -379,7 +379,7 @@ export function SettingsTab() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="anthropic/claude-sonnet-4">Claude Sonnet 4 (Latest & Best)</SelectItem>
-                          <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash (Fast)</SelectItem>
+                          <SelectItem value="openai/gpt-5-mini">GPT-5-mini (Fast)</SelectItem>
                           <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro (Balanced)</SelectItem>
                           <SelectItem value="openai/gpt-4.1">GPT-4.1 (Latest OpenAI)</SelectItem>
                         </SelectContent>

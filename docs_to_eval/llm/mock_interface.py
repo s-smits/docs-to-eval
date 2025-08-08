@@ -3,12 +3,10 @@ Mock LLM interface for testing the evaluation pipeline
 Simulates various LLM behaviors and capabilities for comprehensive testing
 """
 
-import json
 import re
 import random
 import time
 import asyncio
-from functools import reduce
 from collections import defaultdict
 from typing import Dict, Any, Optional, List
 
@@ -588,7 +586,7 @@ if __name__ == "__main__":
         print(f"\nPerformance Stats: {llm.get_performance_stats()}")
         
         # Test evaluator
-        print(f"\n" + "=" * 50)
+        print("\n" + "=" * 50)
         print("Testing Mock LLM Evaluator:")
         
         evaluator = MockLLMEvaluator(llm)

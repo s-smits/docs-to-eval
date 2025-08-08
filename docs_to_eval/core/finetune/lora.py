@@ -138,7 +138,7 @@ class Dataset:
             self._data = None
         else:
             with open(path, "r") as fid:
-                self._data = [json.loads(l) for l in fid]
+                self._data = [json.loads(line) for line in fid]
         self._key = key
 
     def __getitem__(self, idx: int):
@@ -341,11 +341,11 @@ if __name__ == "__main__":
     model, tokenizer, _ = lora_utils.load(args.model, tokenizer_config)
     # Freeze all layers other than LORA linears
     model.freeze()
-    for l in model.model.layers[len(model.model.layers) - args.lora_layers :]:
-        l.self_attn.q_proj = LoRALinear.from_linear(l.self_attn.q_proj)
-        l.self_attn.v_proj = LoRALinear.from_linear(l.self_attn.v_proj)
-        if hasattr(l, "block_sparse_moe"):
-            l.block_sparse_moe.gate = LoRALinear.from_linear(l.block_sparse_moe.gate)
+    for layer in model.model.layers[len(model.model.layers) - args.lora_layers :]:
+        layer.self_attn.q_proj = LoRALinear.from_linear(layer.self_attn.q_proj)
+        layer.self_attn.v_proj = LoRALinear.from_linear(layer.self_attn.v_proj)
+        if hasattr(layer, "block_sparse_moe"):
+            layer.block_sparse_moe.gate = LoRALinear.from_linear(layer.block_sparse_moe.gate)
 
     p = sum(v.size for _, v in tree_flatten(model.parameters())) / 10**6
     print(f"Total parameters {p:.3f}M")

@@ -7,7 +7,7 @@ Real HuggingFace transformers integration for Qwen 0.6B, 1.7B, and 4B models
 import torch
 import time
 import logging
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -326,7 +326,7 @@ async def demo_qwen_models():
         except Exception as e:
             print(f"❌ Failed to test {model_key}: {e}")
     
-    print(f"\n🎉 Demo complete!")
+    print("\n🎉 Demo complete!")
 
 
 if __name__ == "__main__":

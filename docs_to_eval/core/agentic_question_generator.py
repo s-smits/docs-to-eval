@@ -3,16 +3,13 @@ Agentic question generation system
 Uses multiple strategies to generate high-quality domain-specific questions from corpus
 """
 
-import json
 import re
 import random
-from functools import reduce
-from collections import defaultdict, Counter
-from typing import Dict, List, Any, Optional, Callable
+from collections import Counter
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 
 from docs_to_eval.core.evaluation import extract_key_concepts, sample_corpus_segments, EvaluationType
-from docs_to_eval.core.benchmarks import BenchmarkGeneratorFactory
 
 
 @dataclass
@@ -621,7 +618,7 @@ if __name__ == "__main__":
     print(f"Quality Statistics: {benchmark['quality_stats']}")
     print(f"Strategy Distribution: {benchmark['strategy_distribution']}")
     
-    print(f"\nSample Questions:")
+    print("\nSample Questions:")
     for i, question in enumerate(benchmark['questions'][:5], 1):
         print(f"\n{i}. [{question['category']}] {question['question']}")
         print(f"   Answer: {question['answer'][:80]}...")

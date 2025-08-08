@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class OpenRouterConfig:
     """Configuration for OpenRouter API using iRouter"""
     api_key: Optional[str] = None
-    model: str = "anthropic/claude-sonnet-4"
+    model: str = "openai/gpt-5-mini"
     site_url: Optional[str] = None
     site_name: Optional[str] = None
     max_retries: int = 3
@@ -263,7 +263,7 @@ def get_available_models(api_key: Optional[str] = None) -> List[str]:
     # Popular OpenRouter models that work well with iRouter
     return [
         "anthropic/claude-sonnet-4",
-        "google/gemini-2.5-flash",
+        "openai/gpt-5-mini",
         "openai/gpt-4o",
         "anthropic/claude-3.5-sonnet",
         "google/gemini-pro",

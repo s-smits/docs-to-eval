@@ -404,6 +404,15 @@ def create_smart_chunks(text: str, chunking_config: Optional[ChunkingConfig] = N
     # Use default config if none provided
     if chunking_config is None:
         chunking_config = ChunkingConfig()
+
+    # Simple environment override: only honor DISABLE_CHONKIE; default is chonkie enabled
+    try:
+        env_disable = os.getenv("DISABLE_CHONKIE")
+        if isinstance(env_disable, str) and env_disable.strip().lower() in {"1", "true", "yes", "on"}:
+            chunking_config.enable_chonkie = False
+    except Exception:
+        # Non-fatal: ignore env parsing issues
+        pass
     
     # Check for testing mode to disable caching and force full chunking
     import os
@@ -428,9 +437,9 @@ def create_smart_chunks(text: str, chunking_config: Optional[ChunkingConfig] = N
                     print(f"✅ Chonkie produced {len(chunks)} chunks successfully")
                     return chunks
                 else:
-                    print(f"⚠️ Chonkie chunks too small, falling back to simple chunking")
+                    print("⚠️ Chonkie chunks too small, falling back to simple chunking")
             else:
-                print(f"⚠️ Chonkie produced no chunks, falling back to simple chunking")
+                print("⚠️ Chonkie produced no chunks, falling back to simple chunking")
                 
         except ImportError as e:
             print("⚠️ Chonkie not available, falling back to simple chunking")
@@ -439,7 +448,7 @@ def create_smart_chunks(text: str, chunking_config: Optional[ChunkingConfig] = N
         except Exception as e:
             error_msg = str(e)
             if "aten::_embedding_bag" in error_msg and "MPS device" in error_msg:
-                print(f"⚠️ MPS device compatibility issue detected")
+                print("⚠️ MPS device compatibility issue detected")
                 print("💡 This is an Apple Silicon compatibility issue with PyTorch embeddings")
                 print("✅ The system has automatically set PYTORCH_ENABLE_MPS_FALLBACK=1")
                 print("🔧 Falling back to simple chunking for now")
@@ -491,7 +500,7 @@ def _concatenate_files_to_target_size(file_contents: List[Dict[str, str]], confi
         if token_counter and config.use_token_chunking:
             try:
                 return len(token_counter.encode(text))
-            except (AttributeError, TypeError) as e:
+            except (AttributeError, TypeError):
                 # Token encoding failed, use character approximation
                 return len(text) // 4  # Fallback approximation
         return len(text)
@@ -587,11 +596,11 @@ def _create_chonkie_chunks(text: str, config: ChunkingConfig, testing_mode: bool
         # Detect device compatibility
         device_info = _detect_device_compatibility()
         if device_info["is_apple_silicon"]:
-            print(f"🍎 Apple Silicon detected - MPS fallback enabled for PyTorch embeddings")
+            print("🍎 Apple Silicon detected - MPS fallback enabled for PyTorch embeddings")
         
         # Try to import chonkie chunkers
         try:
-            from chonkie import SemanticChunker, SentenceChunker, RecursiveChunker, TokenChunker
+            from chonkie import SemanticChunker, SentenceChunker, RecursiveChunker
         except ImportError as e:
             print(f"⚠️ Chonkie import failed: {e}")
             raise ImportError(f"Chonkie not available: {e}")
@@ -602,8 +611,7 @@ def _create_chonkie_chunks(text: str, config: ChunkingConfig, testing_mode: bool
                 # Try to use semantic chunking with token awareness
                 # Approximate character count for target token range (1 token ≈ 3.5-4 chars average)
                 target_chars = int(config.target_token_size * 3.7)  # ~3k tokens = ~11k chars
-                max_chars = int(config.max_token_size * 3.7)        # ~4k tokens = ~15k chars  
-                min_chars = int(config.min_token_size * 3.7)        # ~2k tokens = ~7.5k chars
+                # Keep local variables only if needed for downstream chunkers
                 overlap_chars = int(config.overlap_tokens * 3.7)    # ~300 tokens = ~1.1k chars
                 
                 # Use SEMANTIC chunking with token-approximated sizes
@@ -687,12 +695,12 @@ def _create_chonkie_chunks(text: str, config: ChunkingConfig, testing_mode: bool
             raw_chunks = chunker.chunk(text)
         except Exception as e:
             print(f"⚠️ Chonkie chunking failed: {e}")
-            print(f"💡 Falling back to simple chunking due to chonkie error")
+            print("💡 Falling back to simple chunking due to chonkie error")
             raise Exception(f"Chonkie chunking operation failed: {e}")
         
         # Validate we got reasonable chunks
         if not raw_chunks:
-            print(f"⚠️ Chonkie returned no chunks")
+            print("⚠️ Chonkie returned no chunks")
             raise Exception("Chonkie returned no chunks")
         
         # Convert to our format with metadata and token validation
@@ -778,15 +786,15 @@ def _create_chonkie_chunks(text: str, config: ChunkingConfig, testing_mode: bool
             # If chonkie produced chunks that are way too small, fail fast
             if config.use_token_chunking and avg_tokens < config.min_token_size / 4:
                 print(f"⚠️ Chonkie chunks too small: avg {avg_tokens:.0f} tokens (need {config.min_token_size}+)")
-                print(f"💡 Chonkie semantic chunking produced inadequate results")
-                print(f"💡 This may be due to missing model2vec dependencies")
+                print("💡 Chonkie semantic chunking produced inadequate results")
+                print("💡 This may be due to missing model2vec dependencies")
                 raise Exception(f"Chonkie chunks too small: average {avg_tokens:.0f} tokens")
             
             # Post-process: concatenate chunks that are below minimum token size
             if config.use_token_chunking and token_counter:
                 chunks = _concatenate_small_chunks(chunks, config, token_counter)
         else:
-            print(f"⚠️ No valid chunks produced by chonkie")
+            print("⚠️ No valid chunks produced by chonkie")
             raise Exception("No valid chunks produced")
         
         return chunks
@@ -896,13 +904,11 @@ def _create_simple_chunks(text: str, config: ChunkingConfig) -> List[Dict[str, A
     if config.use_token_chunking:
         # Convert token sizes to approximate character sizes
         # Average: 1 token ≈ 3.5-4 characters
-        target_size = config.target_token_size * 4
         min_size = config.min_token_size * 4  
         max_size = config.max_token_size * 4
         overlap = config.overlap_tokens * 4
         print(f"📏 Simple chunking with token targets: {config.min_token_size}-{config.max_token_size} tokens")
     else:
-        target_size = config.target_chunk_size
         min_size = config.min_chunk_size
         max_size = config.max_chunk_size
         overlap = config.overlap_size

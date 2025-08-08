@@ -5,7 +5,7 @@ Determines the best evaluation methodology for a given corpus using an LLM
 
 import json
 import re
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 from docs_to_eval.utils.config import EvaluationType, EVAL_TYPES, analyze_corpus_content
 from ..utils.logging import get_logger
 

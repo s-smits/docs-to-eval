@@ -26,6 +26,7 @@ from .agents import (
 )
 from .orchestrator import AgenticBenchmarkOrchestrator
 from .generator import AgenticBenchmarkGenerator
+from ..agentic_question_generator import AgenticQuestionGenerator, QuestionItem
 
 # Streamlined 3-agent system (recommended for production)
 from .streamlined_agents import (
@@ -80,6 +81,8 @@ __all__ = [
     # Orchestration
     'AgenticBenchmarkOrchestrator',  # Legacy
     'AgenticBenchmarkGenerator',     # Legacy
+     'AgenticQuestionGenerator',      # Legacy compatibility
+     'QuestionItem',                  # Legacy compatibility
     'StreamlinedOrchestrator',        # Recommended
     
     # Validation

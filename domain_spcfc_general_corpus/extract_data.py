@@ -12,15 +12,15 @@ import logging
 import os
 import re
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Set
-from urllib.parse import urljoin, urlparse
+from typing import Dict, List, Optional
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup, Comment
 from rich.console import Console
-from rich.progress import Progress, TaskID, track
+from rich.progress import Progress
 from rich.logging import RichHandler
 
 # Configuration
@@ -729,7 +729,7 @@ def main():
             else:
                 scraper.console.print(f"  {key.replace('_', ' ').title()}: {value:,}")
         
-        scraper.console.print(f"\n[bold]Outputs:[/bold]")
+        scraper.console.print("\n[bold]Outputs:[/bold]")
         scraper.console.print(f"  JSON: {config.output_file}")
         scraper.console.print(f"  Text files: {config.text_output_dir}/")
         
