@@ -13,6 +13,13 @@ from abc import ABC, abstractmethod
 
 from .evaluation import EvaluationType, BenchmarkItem, extract_key_concepts, sample_corpus_segments
 
+# Expose AgenticBenchmarkGenerator as a module attribute for test patching
+try:
+    from .agentic.generator import AgenticBenchmarkGenerator as AgenticBenchmarkGenerator  # noqa: F401
+except Exception:
+    # Leave attribute defined for patching even if import fails at runtime
+    AgenticBenchmarkGenerator = None  # type: ignore
+
 
 class BenchmarkGenerator(ABC):
     """Base class for generating benchmarks from corpus text"""
@@ -363,13 +370,19 @@ class BenchmarkGeneratorFactory:
         # Attempt agentic generation if requested and supported
         if use_agentic and eval_type in cls._agentic_generators:
             try:
-                from .agentic.generator import AgenticBenchmarkGenerator
+                # Prefer module-level attribute to support test-time patching
+                AgenticCls = globals().get('AgenticBenchmarkGenerator')
+                if AgenticCls is None:
+                    from .agentic.generator import AgenticBenchmarkGenerator as AgenticCls  # type: ignore
+                
+                # Only pass explicit agentic_config if provided; avoid passing unrelated dicts
+                agentic_cfg = agentic_config if agentic_config is not None else None
                 
                 # Create agentic generator with proper configuration
-                agentic_gen = AgenticBenchmarkGenerator(
-                    eval_type=eval_type, 
-                    llm_pool=llm_pool, 
-                    config=agentic_config or (config.dict() if config else None)
+                agentic_gen = AgenticCls(
+                    eval_type=eval_type,
+                    llm_pool=llm_pool,
+                    config=agentic_cfg
                 )
                 
                 # Wrap to provide consistent interface

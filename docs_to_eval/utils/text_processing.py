@@ -3,7 +3,7 @@ Text processing utilities for evaluation framework
 """
 
 import re
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 
 def clean_text(text: str) -> str:
@@ -196,3 +196,162 @@ def contains_math_patterns(text: str) -> bool:
             return True
     
     return False
+
+
+def _enforce_min_size(chunks: List[Dict[str, Any]], min_size: int) -> List[Dict[str, Any]]:
+    """Merge adjacent chunks until each meets the minimum character threshold.
+
+    Ensures downstream agents receive sufficiently informative snippets.
+    """
+    if not chunks:
+        return []
+
+    merged: List[Dict[str, Any]] = []
+    buffer: Optional[Dict[str, Any]] = None
+
+    def make_chunk(text: str, method: str, meta: Dict[str, Any]) -> Dict[str, Any]:
+        out = {"text": text, "method": method}
+        out.update(meta)
+        out["semantic_score"] = meta.get("semantic_score", 1.0)
+        return out
+
+    for current in chunks:
+        text = current.get("text", "")
+        method = current.get("method", "unknown")
+        meta = {k: v for k, v in current.items() if k not in {"text", "method"}}
+
+        if buffer is None:
+            buffer = make_chunk(text, method, meta)
+            if len(buffer["text"]) >= min_size:
+                merged.append(buffer)
+                buffer = None
+            continue
+
+        # Merge with buffer
+        buffer["text"] = (buffer["text"].rstrip() + "\n\n" + text.lstrip()).strip()
+        buffer["method"] = f"{buffer['method']}+{method}"
+        buffer["semantic_score"] = (buffer.get("semantic_score", 1.0) + current.get("semantic_score", 1.0)) / 2
+
+        if len(buffer["text"]) >= min_size:
+            merged.append(buffer)
+            buffer = None
+
+    if buffer is not None:
+        # Append any remaining buffer even if still small to avoid data loss
+        merged.append(buffer)
+
+    return merged
+
+
+def create_smart_chunks(text: str, chunking_config: Any) -> List[Dict[str, Any]]:
+    """Create semantic chunks with optional chonkie integration.
+
+    - Honors `min_chunk_size` strictly by merging undersized adjacent chunks.
+    - Supports `enable_chonkie` when the chonkie package is available.
+    - Returns list of dicts with keys: `text`, `method`, `semantic_score`.
+    """
+    if not text:
+        return []
+
+    # Extract config with safe defaults
+    cfg = getattr(chunking_config, "dict", None)
+    if callable(cfg):
+        cfg = chunking_config.dict()
+    else:
+        # Support passing a plain object with attributes
+        cfg = {k: getattr(chunking_config, k) for k in dir(chunking_config) if not k.startswith("__")}
+
+    target = int(cfg.get("target_chunk_size", 1500))
+    max_size = int(cfg.get("max_chunk_size", 2500))
+    min_size = int(cfg.get("min_chunk_size", 800))
+    enable_chonkie = bool(cfg.get("enable_chonkie", False))
+    force_chunker = cfg.get("force_chunker") or cfg.get("chunking_strategy", "semantic")
+    overlap_size = int(cfg.get("overlap_size", 200))
+    overlap_percent = float(cfg.get("overlap_percent", 15.0))
+
+    chunks: List[Dict[str, Any]] = []
+
+    # Try chonkie if enabled
+    used_chonkie = False
+    if enable_chonkie:
+        try:
+            import chonkie  # type: ignore
+            used_chonkie = True
+
+            # Configure window/semantic modes heuristically
+            strategy = (force_chunker or "semantic").lower()
+            if strategy.startswith("semantic") and hasattr(chonkie, "semantic_chunk"):
+                pieces = chonkie.semantic_chunk(
+                    text,
+                    target_size=target,
+                    max_size=max_size,
+                    min_size=min_size // 2,  # let chonkie be flexible; we'll enforce strictly later
+                )
+                for p in pieces:
+                    chunks.append({
+                        "text": p.text if hasattr(p, "text") else str(p),
+                        "method": "chonkie_semantic",
+                        "semantic_score": getattr(p, "score", 1.0),
+                    })
+            elif hasattr(chonkie, "window_chunk"):
+                pieces = chonkie.window_chunk(
+                    text,
+                    window_size=target,
+                    overlap=int(max(overlap_size, target * (overlap_percent / 100.0))),
+                )
+                for p in pieces:
+                    chunks.append({
+                        "text": p.text if hasattr(p, "text") else str(p),
+                        "method": "chonkie_window",
+                        "semantic_score": 1.0,
+                    })
+        except Exception:
+            used_chonkie = False
+
+    if not used_chonkie:
+        # Fallback: simple sentence/word based chunking
+        sentences = split_into_sentences(text)
+        current: List[str] = []
+        current_len = 0
+        for s in sentences:
+            if current_len + len(s) + 1 <= max_size:
+                current.append(s)
+                current_len += len(s) + 1
+            else:
+                if current:
+                    chunk_text = ". ".join(current).strip()
+                    if chunk_text and not chunk_text.endswith('.'):
+                        chunk_text += '.'
+                    chunks.append({
+                        "text": chunk_text,
+                        "method": "fallback_sentence",
+                        "semantic_score": 1.0,
+                    })
+                # start new
+                current = [s]
+                current_len = len(s)
+        if current:
+            chunk_text = ". ".join(current).strip()
+            if chunk_text and not chunk_text.endswith('.'):
+                chunk_text += '.'
+            chunks.append({
+                "text": chunk_text,
+                "method": "fallback_sentence",
+                "semantic_score": 1.0,
+            })
+
+        # Introduce overlap if beneficial
+        if len(chunks) > 1 and overlap_size > 0:
+            overlapped: List[Dict[str, Any]] = []
+            prev_tail = ""
+            for ch in chunks:
+                txt = ch["text"]
+                prefix = (prev_tail + "\n\n" + txt).strip() if prev_tail else txt
+                overlapped.append({**ch, "text": prefix})
+                prev_tail = txt[-overlap_size:]
+            chunks = overlapped
+
+    # Enforce strict minimum size by merging adjacent chunks
+    chunks = _enforce_min_size(chunks, min_size)
+
+    return chunks

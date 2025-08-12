@@ -7,6 +7,7 @@ entry point for all evaluation workflows.
 import uuid
 import asyncio
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 
@@ -198,12 +199,20 @@ class EvaluationPipeline:
         
         scores = [r["score"] for r in verification_results]
         
+        # Compute mean with Decimal to avoid floating-point representation drift
+        if scores:
+            decimal_sum = sum(Decimal(str(s)) for s in scores)
+            decimal_mean = (decimal_sum / Decimal(len(scores))).quantize(Decimal('0.0000000000000001'), rounding=ROUND_HALF_UP)
+            mean_value = float(decimal_mean)
+        else:
+            mean_value = 0.0
+
         return {
             "run_id": self.run_id,
             "config": self.config.dict(),
             "classification": classification.to_dict() if hasattr(classification, 'to_dict') else str(classification),
             "aggregate_metrics": {
-                "mean_score": sum(scores) / len(scores) if scores else 0,
+                "mean_score": mean_value,
                 "min_score": min(scores) if scores else 0,
                 "max_score": max(scores) if scores else 0,
                 "num_samples": len(verification_results),
