@@ -48,10 +48,10 @@ python test_integrations.py
 - 🎯 Evaluation-type aware prompting
 
 **Available Models:**
-- `llama3-8b-8192` - Llama 3 8B (very fast, good for most tasks)
-- `llama3-70b-8192` - Llama 3 70B (slower but more capable)
-- `mixtral-8x7b-32768` - Mixtral 8x7B (large context window)
-- `gemma-7b-it` - Gemma 7B (efficient for basic tasks)
+- `llama-3.1-8b-instant` - Llama 3.1 8B (very fast, good for most tasks)
+- `llama-3.3-70b-versatile` - Llama 3 70B (fast but more capable)
+- `meta-llama/llama-guard-4-12b` - Meta Llama 4 (large context window)
+- `openai/gpt-oss-120b` - OpenAI 20b (efficient for basic tasks)
 
 **Example Usage:**
 ```python
@@ -79,10 +79,8 @@ print(response.text)
 - 🎯 Evaluation-type aware system instructions
 
 **Available Models:**
-- `gemini-1.5-flash-latest` - Fast, cost-effective (recommended)
-- `gemini-1.5-pro-latest` - Most capable, 2M token context
-- `gemini-1.0-pro` - Stable production model
-- `gemini-pro` - General purpose model
+- `gemini-2.5-flash` - Fast, cost-effective (recommended)
+- `gemini-2.5-pro` - Most capable, 2M token context
 
 **Example Usage:**
 ```python
