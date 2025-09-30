@@ -6,7 +6,7 @@ import asyncio
 import json
 import uuid
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Annotated
 from datetime import datetime
 
 import typer
@@ -16,33 +16,42 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.tree import Tree
 from rich.text import Text
+from rich import print as rprint
 
 from ..core.evaluation import EvaluationFramework, EvaluationType
 from ..core.classification import EvaluationTypeClassifier
 from ..core.pipeline import EvaluationPipeline, PipelineFactory
+from ..core.exceptions import (
+    DocsToEvalError,
+    EmptyCorpusError,
+    ConfigurationError,
+    PipelineError
+)
 from ..llm.mock_interface import MockLLMInterface, MockLLMEvaluator
 from ..utils.config import EvaluationConfig, ConfigManager, create_default_config
 from ..utils.logging import setup_logging, evaluation_context
 
 app = typer.Typer(
     name="docs-to-eval",
-    help="Automated LLM Evaluation System",
-    add_completion=False
+    help="🤖 Automated LLM Evaluation System - Generate domain-specific benchmarks from documentation",
+    add_completion=True,
+    rich_markup_mode="rich",
+    no_args_is_help=True
 )
 
 console = Console()
 
 
-@app.command()
+@app.command(name="evaluate", help="📊 Run evaluation on a corpus and generate benchmarks")
 def evaluate(
-    corpus: str = typer.Argument(..., help="Path to corpus file or directory"),
-    eval_type: Optional[EvaluationType] = typer.Option(None, "--type", "-t", help="Evaluation type"),
-    num_questions: int = typer.Option(20, "--questions", "-q", help="Number of questions to generate"),
-    use_agentic: bool = typer.Option(True, "--agentic/--no-agentic", help="Use agentic generation"),
-    temperature: float = typer.Option(0.7, "--temperature", help="LLM temperature"),
-    output_dir: str = typer.Option("output", "--output", "-o", help="Output directory"),
-    config_file: Optional[str] = typer.Option(None, "--config", "-c", help="Configuration file"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output")
+    corpus: Annotated[str, typer.Argument(help="Path to corpus file or directory")],
+    eval_type: Annotated[Optional[EvaluationType], typer.Option("--type", "-t", help="[bold]Evaluation type[/bold] (auto-detected if not specified)")] = None,
+    num_questions: Annotated[int, typer.Option("--questions", "-q", min=1, max=1000, help="Number of questions to generate")] = 20,
+    use_agentic: Annotated[bool, typer.Option("--agentic/--no-agentic", help="Use advanced agentic generation")] = True,
+    temperature: Annotated[float, typer.Option("--temperature", min=0.0, max=2.0, help="LLM temperature")] = 0.7,
+    output_dir: Annotated[str, typer.Option("--output", "-o", help="Output directory")] = "output",
+    config_file: Annotated[Optional[str], typer.Option("--config", "-c", help="Configuration file path")] = None,
+    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Enable verbose output")] = False
 ):
     """Run evaluation on a corpus"""
     
@@ -258,10 +267,10 @@ def show_results_summary(results: dict):
     console.print(f"\n[cyan]Performance Level:[/cyan] {level}")
 
 
-@app.command()
+@app.command(name="classify", help="🔍 Classify corpus evaluation type without running full evaluation")
 def classify(
-    corpus: str = typer.Argument(..., help="Path to corpus file or directory"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Verbose output")
+    corpus: Annotated[str, typer.Argument(help="Path to corpus file or directory")],
+    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show detailed classification reasoning")] = False
 ):
     """Classify corpus evaluation type"""
     
@@ -286,11 +295,11 @@ def classify(
                 console.print(f"     Answer: {example['answer']}")
 
 
-@app.command()
+@app.command(name="config", help="⚙️  Manage configuration files")
 def config(
-    create: bool = typer.Option(False, "--create", help="Create default config file"),
-    file: str = typer.Option("evaluation_config.yaml", "--file", "-f", help="Config file path"),
-    show: bool = typer.Option(False, "--show", help="Show current configuration")
+    create: Annotated[bool, typer.Option("--create", help="Create a new default config file")] = False,
+    file: Annotated[str, typer.Option("--file", "-f", help="Config file path")] = "evaluation_config.yaml",
+    show: Annotated[bool, typer.Option("--show", help="Display current configuration")] = False
 ):
     """Manage configuration"""
     
@@ -318,12 +327,12 @@ def config(
         console.print("Use --create to create config or --show to display current config")
 
 
-@app.command()
+@app.command(name="server", help="🚀 Start the FastAPI web server")
 def server(
-    host: str = typer.Option("0.0.0.0", "--host", help="Host to bind to"),
-    port: int = typer.Option(8000, "--port", help="Port to bind to"),
-    reload: bool = typer.Option(False, "--reload", help="Enable auto-reload"),
-    log_level: str = typer.Option("info", "--log-level", help="Log level")
+    host: Annotated[str, typer.Option("--host", help="Host address to bind to")] = "0.0.0.0",
+    port: Annotated[int, typer.Option("--port", "-p", min=1024, max=65535, help="Port number")] = 8000,
+    reload: Annotated[bool, typer.Option("--reload", help="Enable hot-reload for development")] = False,
+    log_level: Annotated[str, typer.Option("--log-level", help="Logging level")] = "info"
 ):
     """Start the FastAPI server"""
     
@@ -348,9 +357,9 @@ def server(
         raise typer.Exit(1)
 
 
-@app.command()
+@app.command(name="version", help="ℹ️  Show version and system information")
 def version():
-    """Show version information"""
+    """Display version and system information"""
     
     try:
         from .. import __version__
@@ -375,9 +384,50 @@ def version():
     console.print(table)
 
 
+@app.command(name="interactive", help="🎯 Start interactive guided session")
+def interactive():
+    """Launch the interactive session for step-by-step evaluation setup"""
+    try:
+        from .interactive import InteractiveSession
+        
+        console.print("[bold blue]Starting Interactive Mode...[/bold blue]\n")
+        session = InteractiveSession()
+        session.run()
+        
+    except ImportError as e:
+        console.print(f"[red]✗ Error: Interactive mode dependencies not available: {e}[/red]")
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]⚠ Interactive session cancelled by user[/yellow]")
+        raise typer.Exit(0)
+    except Exception as e:
+        console.print(f"[red]✗ Interactive session error: {e}[/red]")
+        if console.is_terminal:
+            import traceback
+            console.print("[dim]" + traceback.format_exc() + "[/dim]")
+        raise typer.Exit(1)
+
+
 def main_cli():
-    """Main CLI entry point"""
-    app()
+    """Main CLI entry point with global error handling"""
+    try:
+        app()
+    except DocsToEvalError as e:
+        console.print(f"\n[bold red]✗ Error:[/bold red] {e.message}")
+        if e.details:
+            console.print("[dim]Details:[/dim]")
+            for key, value in e.details.items():
+                console.print(f"  [dim]{key}:[/dim] {value}")
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]⚠ Operation cancelled by user[/yellow]")
+        raise typer.Exit(130)  # Standard exit code for Ctrl+C
+    except Exception as e:
+        console.print(f"\n[bold red]✗ Unexpected error:[/bold red] {e}")
+        if console.is_terminal:
+            import traceback
+            console.print("[dim]" + traceback.format_exc() + "[/dim]")
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
