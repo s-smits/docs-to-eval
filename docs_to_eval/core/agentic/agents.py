@@ -92,6 +92,12 @@ class ConceptMiner(BaseAgent):
     
     async def produce(self, corpus_text: str, k: int = 20, min_chunk_size: int = 400) -> ConceptExtractionResult:
         """Extract key concepts from corpus"""
+        if not corpus_text or not corpus_text.strip():
+            raise ValueError("corpus_text cannot be empty")
+        
+        if k <= 0 or k > 100:
+            raise ValueError(f"k must be between 1 and 100, got {k}")
+        
         start_time = time.time()
         
         try:
@@ -109,8 +115,14 @@ class ConceptMiner(BaseAgent):
                 )
                 chunk_dicts = create_smart_chunks(corpus_text, chunking_config=cfg)
                 chunks = [c.get('text', '') for c in chunk_dicts if c.get('text')]
-            except Exception:
+                
+                if not chunks:
+                    raise ValueError("Semantic chunking produced no chunks")
+                    
+            except Exception as e:
                 # Fallback to simple windowed chunks
+                import logging
+                logging.warning(f"Semantic chunking failed: {e}. Using windowed chunks.")
                 chunks = self._create_windowed_chunks(corpus_text, chunk_size=800, overlap=100)
             
             # Extract concepts from each chunk

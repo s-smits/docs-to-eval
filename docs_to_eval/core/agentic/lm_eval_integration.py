@@ -170,7 +170,7 @@ class LMEvalHarnessExporter:
         
         # Add context if present
         if any(item.context for item in items):
-            config['doc_to_text'] = "Context: {{context}}\\n\\nQuestion: {{question}}"
+            config['doc_to_text'] = "Context: {{context}}\n\nQuestion: {{question}}"
         
         return config
     
@@ -191,7 +191,7 @@ class LMEvalHarnessExporter:
                     {'metric': 'exact_match', 'aggregation': 'mean', 'higher_is_better': True}
                 ],
                 'generation_kwargs': {
-                    'until': ['\\n', '.', '?'],
+                    'until': ['\n', '.', '?'],
                     'max_gen_toks': 50
                 }
             }
@@ -203,7 +203,7 @@ class LMEvalHarnessExporter:
                     {'metric': 'bleu', 'aggregation': 'mean', 'higher_is_better': True}
                 ],
                 'generation_kwargs': {
-                    'until': ['\\n\\n', '# End'],
+                    'until': ['\n\n', '# End'],
                     'max_gen_toks': 512
                 },
                 'process_results': '!function utils.code_postprocess'
@@ -216,7 +216,7 @@ class LMEvalHarnessExporter:
                     {'metric': 'f1', 'aggregation': 'mean', 'higher_is_better': True}
                 ],
                 'generation_kwargs': {
-                    'until': ['\\n', '.'],
+                    'until': ['\n', '.'],
                     'max_gen_toks': 100
                 }
             }
@@ -228,7 +228,7 @@ class LMEvalHarnessExporter:
                     {'metric': 'rouge', 'aggregation': 'mean', 'higher_is_better': True}
                 ],
                 'generation_kwargs': {
-                    'until': ['\\n\\n'],
+                    'until': ['\n\n'],
                     'max_gen_toks': 256
                 }
             }
@@ -238,19 +238,19 @@ class LMEvalHarnessExporter:
         
         # Base template
         if sample_item.context:
-            template = "Context: {{context}}\\n\\nQuestion: {{question}}"
+            template = "Context: {{context}}\n\nQuestion: {{question}}"
         else:
             template = "Question: {{question}}"
         
         # Add answer type specific prompting
         if answer_type == AnswerType.MULTIPLE_CHOICE:
-            template += "\\nA. {{choices[0]}}\\nB. {{choices[1]}}\\nC. {{choices[2]}}\\nD. {{choices[3]}}\\nAnswer:"
+            template += "\nA. {{choices[0]}}\nB. {{choices[1]}}\nC. {{choices[2]}}\nD. {{choices[3]}}\nAnswer:"
         elif answer_type == AnswerType.CODE:
-            template += "\\n\\nProvide your code solution:"
+            template += "\n\nProvide your code solution:"
         elif answer_type in [AnswerType.NUMERIC_EXACT, AnswerType.NUMERIC_TOLERANCE]:
-            template += "\\n\\nProvide the numerical answer:"
+            template += "\n\nProvide the numerical answer:"
         else:
-            template += "\\n\\nAnswer:"
+            template += "\n\nAnswer:"
         
         return template
     
@@ -379,9 +379,9 @@ class LMEvalHarnessExporter:
         
         # Save dataset JSONL
         jsonl_file = output_dir / f"{task_name}_dataset.jsonl"
-        with open(jsonl_file, 'w') as f:
+        with open(jsonl_file, 'w', encoding='utf-8') as f:
             for item in dataset_content:
-                f.write(json.dumps(item) + '\\n')
+                f.write(json.dumps(item, ensure_ascii=False) + '\n')
         files_created['dataset'] = str(jsonl_file)
         
         # Save metadata JSON
