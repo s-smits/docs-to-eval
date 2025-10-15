@@ -1,492 +1,73 @@
 # Etruscan civilization
 
-TheEtruscan civilization(/ɪˈtrʌskən/ih-TRUS-kən) was an ancient civilization created by the Etruscans, a people who inhabitedEtruriainancient Italy, with a common language and culture, and formed a federation ofcity-states.After adjacent lands had been conquered its territory covered, at its greatest extent, roughly what is nowTuscany, westernUmbriaand northernLazio,as well as what are now thePo Valley,Emilia-Romagna, south-easternLombardy, southernVenetoand westernCampania.
-
-A large body of literature has flourished on the origins of the Etruscans, but the consensus among modern scholars is that the Etruscans were an indigenous population.The earliest evidence of aculturethat is identifiably Etruscan dates from about 900 BC.This is the period of theIron AgeVillanovan culture, considered to be the earliest phase of Etruscan civilization,which itself developed from the previous late Bronze AgeProto-Villanovan culturein the same region,part of the central EuropeanUrnfield culturesystem. Etruscan civilization dominated Italy until it fell tothe expanding Romebeginning in the late 4th century BC as a result of theRoman–Etruscan Wars;Etruscans were grantedRoman citizenshipin 90 BC and in 27 BC the whole Etruscan territory was incorporated into the newly establishedRoman Empire.
-
-The territorial extent of Etruscan civilization reached its maximum around 500 BC, shortly after theRoman Kingdombecame theRoman Republic. Its culture flourished in three confederacies of cities: that ofEtruria(Tuscany, Latium and Umbria), that of thePo Valleywith the easternAlps, and that ofCampania.The league in northern Italy is mentioned inLivy.The reduction in Etruscan territory was gradual, but after 500 BC the political balance of power on the Italian peninsula shifted away from the Etruscans in favor of the risingRoman Republic.
-
-The earliest-known examples of Etruscan writing are inscriptions found in southernEtruriathat date to around 700 BC.The Etruscans developed a system of writing derived from theEuboean alphabet, which was used in theMagna Graeciacoastal areas inSouthern Italy. TheEtruscan languageremains only partly understood, making modern understanding of their society and culture heavily dependent on much later and generally disapproving Roman and Greek sources. In the Etruscan political system authority resided in its individual small cities and probably in its prominent individual families. At the height of Etruscan power, elite Etruscan families grew very rich through trade with theCeltsto the north and the Greeks to the south, and they filled their large family tombs with imported luxuries.
-
-Legend and history
-
-
-## Legend and history
-
-
-Ethnonym and etymology
-
-
-### Ethnonym and etymology
-
-
-According toDionysiusthe Etruscans called themselvesRasenna(Greek Ῥασέννα), a stem from the Etruscan Rasna (𐌛𐌀𐌔𐌍𐌀), the people. Evidence of inscriptions as Tular Rasnal (𐌕𐌖𐌋𐌀𐌛 𐌛𐌀𐌔𐌍𐌀𐌋), "boundary of the people", or Mechlum Rasnal (𐌌𐌄𐌙𐌋 𐌛𐌀𐌔𐌍𐌀𐌋). "community of the people", attest to its autonym usage. TheTyrsenianetymology, however, remains unknown.
-
-InAttic Greekthe Etruscans were known asTyrrhenians(Τυρρηνοί,Tyrrhēnoi, earlierΤυρσηνοίTyrsēnoi),from which the Romans derived the namesTyrrhēnī,Tyrrhēnia(Etruria),andMare Tyrrhēnum(Tyrrhenian Sea).
-
-The ancient Romans referred to the Etruscans as theTuscīorEtruscī(singularTuscus).Their Roman name is the origin of the termsToscana, which refers to their heartland, andEtruria, which can refer to their wider region. The termTusciis thought by linguists to have been the Umbrian word for Etruscan, based on an inscription on anancient bronze tabletfrom a nearby region.The inscription contains the phraseturskum ... nomen, literally ‘the Tuscan name’. Based on a knowledge of Umbrian grammar, linguists can infer that the base form of the word turskum is *Tursci,which would, throughmetathesisand a word-initialepenthesis, be likely to lead to the form,E-trus-ci.
-
-As for the original meaning of the root, *Turs-, a widely cited hypothesis is that it, like the Latinturris, means ‘tower’ and comes from the ancient Greek word for tower:τύρσις,likely a loan into Greek. On this hypothesis, the Tusci were called the ‘people who build towers"or "the tower builders".This proposed etymology is made the more plausible because the Etruscans preferred to build their towns on high precipices reinforced by walls. Alternatively,GiulianoandLarissa Bonfantehave speculated that Etruscan houses may have seemed like towers to the simple Latins.The proposed etymology has a long history,Dionysius of Halicarnassushaving observed in the first century BC, "[T]here is no reason that the Greeks should not have called [the Etruscans] by this name, both from their living in towers and from the name of one of their rulers."In his recentEtymological Dictionary of Greek, Robert Beekes claims the Greek word is a "loanword from a Mediterranean language", a hypothesis that goes back to an article byPaul KretschmerinGlottafrom 1934.
-
-Ancient sources
-
-
-#### Ancient sources
-
-
-Literary and historical texts in the Etruscan language have not survived, and the language itself is only partially understood by modern scholars. This makes modern understanding of their society and culture heavily dependent on much later and generally disapproving Roman and Greek sources. These ancient writers differed in their theories about the origin of the Etruscan people. Some suggested they werePelasgianswho had migrated there from Greece. Others maintained that they were indigenous to central Italy.
-
-The first Greek author to mention the Etruscans, whom the Ancient Greeks calledTyrrhenians, was the 8th-century BC poetHesiodin his work theTheogony. He mentioned them as residing in central Italy alongside the Latins.The 7th-century BCHomeric Hymnto Dionysusreferred to them as pirates.Unlike later Greek authors, these authors did not suggest that Etruscans had migrated to Italy from the east and did not associate them with the Pelasgians.
-
-It was only in the 5th century BC, when the Etruscan civilization had been established for several centuries, that Greek writers started associating the name "Tyrrhenians" with the "Pelasgians", and even then some did so in a way that suggests they were meant only as generic, descriptive labels for "non-Greek" and "indigenous ancestors of Greeks" respectively.The 5th-century BC historiansHerodotus,andThucydidesand the 1st-century BC historianStrabo,did seem to suggest that the Tyrrhenians were originally Pelasgians who migrated to Italy fromLydiaby way of the Greek island ofLemnos. They all described Lemnos as having been settled by Pelasgians, whom Thucydides identified as "belonging to the Tyrrhenians" (τὸ δὲ πλεῖστον Πελασγικόν, τῶν καὶ Λῆμνόν ποτε καὶ Ἀθήνας Τυρσηνῶν). As Strabo and Herodotus told it,the migration to Lemnos was led byTyrrhenus/ Tyrsenos, the son ofAtys(who was king of Lydia). Straboadded that the Pelasgians of Lemnos andImbrosthen followed Tyrrhenus to theItalian Peninsula. According to the logographerHellanicus of Lesbos, there was a Pelasgian migration fromThessalyin Greece to the Italian peninsula, as part of which the Pelasgians colonized the area he called Tyrrhenia, and they then came to be called Tyrrhenians.
-
-There is some evidence suggesting a link between Lemnos and the Tyrrhenians. TheLemnos stelebears inscriptions in a language with strong structural resemblances to the language of the Etruscans.The discovery of these inscriptions in modern times has led to the suggestion of a "Tyrrhenian language group" consisting of Etruscan, Lemnian, and theRaeticspoken in theAlps.
-
-Τhis is aligned with the famous and largely debated testimony of Herodotus:"The emigrants went down to Smyrna and built ships, and sailed away in search of a livelihood. After passing many nations, they came to the land of the Ombricans, where they built cities and have lived ever since. They no longer called themselves Lydians, but after the name of the king's son who led them out, they called themselves Tyrrhenians.” (Herodotus)
-
-Herodotus also mentions the existence of a tribe called Tyrsenioi/Tyrrhenoi in Central Macedonia:
-''"based on the Pelasgians, who even now dwell above the Tyrrhenians in the city of Creston and who were once neighbors of those now called Dorians (for at that time the Pelasgians inhabited the land which is now called Thessaliotis)."By this Herodotus refers to Creston, a city/region in Macedonia, and that Pelasgians are residing above the Tyrsinoi that are known by Thucydides to dwell in the Athos Peninshula (Acte).
-
-In Acte were settled barbarian peoples, mixed and bilingual, and a small number of Chalcidians; but the greater part were Pelasgians Tyrrhenians from Lemnos and Athens, alongside Visaltai, Kristones, and Idones.(Thucydides)
-
-But the 1st-century BC historianDionysius of Halicarnassus, a Greek living in Rome, dismissed many of the ancient theories of other Greek historians and postulated that the Etruscans were indigenous people who had always lived in Etruria and were different from both the Pelasgians and the Lydians.Dionysius noted that the 5th-century historianXanthus of Lydia, who was originally fromSardisand was regarded as an important source and authority for the history of Lydia, never suggested a Lydian origin of the Etruscans and never named Tyrrhenus as a ruler of the Lydians.
-
-For this reason, therefore, I am persuaded that the Pelasgians are a different people from the Tyrrhenians. And I do not believe, either, that the Tyrrhenians were a colony of the Lydians; for they do not use the same language as the latter, nor can it be alleged that, though they no longer speak a similar tongue, they still retain some other indications of their mother country. For they neither worship the same gods as the Lydians nor make use of similar laws or institutions, but in these very respects they differ more from the Lydians than from the Pelasgians. Indeed, those probably come nearest to the truth who declare that the nation migrated from nowhere else, but was native to the country, since it is found to be a very ancient nation and to agree with no other either in its language or in its manner of living.
-
-The credibility of Dionysius of Halicarnassus is arguably bolstered by the fact that he was the first ancient writer to report theendonymof the Etruscans: Rasenna.
-
-The Romans, however, give them other names: from the country they once inhabited, named Etruria, they call them Etruscans, and from their knowledge of the ceremonies relating to divine worship, in which they excel others, they now call them, rather inaccurately, Tusci, but formerly, with the same accuracy as the Greeks, they called them Thyrscoï [an earlier form of Tusci]. Their own name for themselves, however, is the same as that of one of their leaders, Rasenna.
-
-Similarly, the 1st-century BC historianLivy, in hisAb Urbe Condita Libri, said that the Rhaetians were Etruscans who had been driven into the mountains by the invading Gauls; and he asserted that the inhabitants of Raetia were of Etruscan origin.
-
-The Alpine tribes have also, no doubt, the same origin (of the Etruscans), especially the Raetians; who have been rendered so savage by the very nature of the country as to retain nothing of their ancient character save the sound of their speech, and even that is corrupted.
-
-The first-century historianPliny the Elderalso put the Etruscans in the context of theRhaetian peopleto the north, and wrote in hisNatural History(AD 79):
-
-Adjoining these the (Alpine)Noricansare the Raeti andVindelici. All are divided into a number of states. The Raeti are believed to be people of Tuscan race driven out by theGauls, their leader was named Raetus.
-
-Archeological evidence and modern etruscology
-
-
-#### Archeological evidence and modern etruscology
-
-
-The question of the Etruscans' origins has long been a subject of interest and debate among historians. In modern times, all the evidence gathered by prehistoric and protohistoric archaeologists, anthropologists, and etruscologists points to an autochthonous origin of the Etruscans.There is no archaeological or linguistic evidence of a migration of the Lydians or Pelasgians into Etruria.Modernetruscologistsand archeologists, such asMassimo Pallottino(1947), have shown that early historians' assumptions and assertions on the subject were groundless.In 2000, the etruscologistDominique Briquelexplained in detail why he believes that ancient Greek narratives on Etruscan origins should not even count as historical documents.He argues that the ancient story of the Etruscans' 'Lydian origins' was a deliberate, politically motivated fabrication, and that ancient Greeks inferred a connection between the Tyrrhenians and the Pelasgians solely on the basis of certain Greek and local traditions and because there had been trade between the Etruscans and Greeks.He noted that, even if these stories include historical facts suggesting contact, such contact is more plausibly traceable to cultural exchange than to migration.
-
-Several archaeologists specializing inPrehistoryandProtohistorywho have analyzed Bronze Age and Iron Age remains that were excavated in the territory of historical Etruria have pointed out that no evidence has been found, related either tomaterial cultureor tosocial practices, to support a migration theory.The most marked and radical change that has been archaeologically attested in the area is the adoption, starting in about the 12th century BC, of the funeral rite of incineration in terracotta urns, a Continental European practice derived from theUrnfield culture; nothing about it suggests an ethnic contribution fromAsia Minoror theNear East.
-
-A 2012 survey of the previous 30 years' archaeological findings based on excavations of the major Etruscan cities showed a continuity of culture from the last phase of the Bronze Age (13th–11th century BC) to the Iron Age (10th–9th century BC). This is evidence that the Etruscan civilization, which emerged around 900 BC, was built by people whose ancestors had inhabited that region for at least the previous 200 years.Based on this cultural continuity, there is now a consensus among archeologists that Proto-Etruscan culture developed, during the last phase of the Bronze Age, from the indigenousProto-Villanovan cultureand that the subsequent Iron AgeVillanovan cultureis most accurately described as an early phase of the Etruscan civilization.It is possible that there were contacts between northern-central Italy and theMycenaean worldat the end of the Bronze Age, but contacts between the inhabitants of Etruria and inhabitants ofGreece,Aegean SeaIslands, Asia Minor, and the Near East are attested only centuries later, when Etruscan civilization was already flourishing and Etruscanethnogenesiswas well established. The first of these attested contacts relate to theGreek colonies in Southern ItalyandPhoenician-Puniccolonies inSardinia, and the consequentorientalizing period.
-
-One of the most common mistakes for a long time, even among some scholars of the past, has been to associate the laterOrientalizing periodof Etruscan civilization with the question of its origins. Orientalization was an artistic and cultural phenomenon that spread among the Greeks themselves and throughout much of the central and western Mediterranean, not only in Etruria.The Etruscan orientalizing period was due, as has been amply demonstrated by archeologists, to contacts with the Greeks and the Eastern Mediterranean and not to mass migrations.The facial features (the profile, almond-shaped eyes, large nose) in the frescoes and sculptures and the depiction of reddish-brown men and light-skinned women, influenced by archaic Greek art, followed the artistic traditions from the Eastern Mediterranean that had spread even among the Greeks themselves, and to a lesser extent also to several other civilizations in the central and western Mediterranean up to theIberian Peninsula. Actually, many of the tombs of the Late Orientalizing and Archaic periods, such as theTomb of the Augurs, theTomb of the Tricliniumand theTomb of the Leopards, as well as other tombs from the archaic period in theMonterozzi necropolisinTarquinia, were painted by Greek painters or at least foreign artists. These images have, therefore, a very limited value for a realistic representation of the Etruscan population.It was only from the end of the 4th century BC that evidence of physiognomic portraits began to be found in Etruscan art and Etruscan portraiture became more realistic.
-
-Archeogenetics
-
-
-#### Archeogenetics
-
-
-There have been numerous biological studies on the Etruscan origins, the oldest of which dates to the 1950s, when research was still based on blood tests of modern samples and DNA analysis (including the analysis of ancient samples) was not yet possible.Only very recently, with the development ofarchaeogenetics, have comprehensive studies containing thewhole genome sequencingof Etruscan samples been published, includingautosomal DNAandY-DNA, autosomal DNA being the "most valuable to understand what really happened in an individual's history", as stated by geneticistDavid Reich, whereas previously studies were based only onmitochondrial DNAanalysis, which contains less and limited information.
-
-An archeogenetic study focusing on Etruscan origins was published in September 2021 in the journalScience Advancesand analyzed theautosomal DNAand the uniparental markers (Y-DNA and mtDNA) of 48 Iron Age individuals fromTuscanyandLazio, spanning from 800 to 1 BC and concluded that the Etruscans were autochthonous (locally indigenous) and had a genetic profile similar to their Latin neighbors. In the Etruscan individuals the ancestral componentSteppewas present in the same percentages as those found in the previously analyzed Iron Age Latins, and the Etruscan DNA bore no trace of recent admixture with Anatolia and the Eastern Mediterranean. Both Etruscans and Latins were firmly part of the European cluster, west of modern Italians. The Etruscans were a mixture of WHG, EEF and Steppe ancestry; 75% of the Etruscan male individuals were found to belong tohaplogroup R1b (R1b M269), especially its cladeR1b-P312and its derivativeR1b-L2, whose direct ancestor isR1b-U152, whilst the most common mitochondrial DNA haplogroup among the Etruscans wasH.
-
-The conclusions of the 2021 study are in line with a 2019 study published in the journalSciencethat analyzed the remains of elevenIron Ageindividuals from the areas around Rome, of whom four were Etruscan, one buried inVeio Grotta Gramicciafrom the Villanovan era (900-800 BC) and three buried in La Mattonara Necropolis nearCivitavecchiafrom the Orientalizing period (700-600 BC). The study concluded that Etruscans (900–600 BC) and theLatins(900–500 BC) fromLatium vetuswere genetically similar,with genetic differences between the examined Etruscans and Latins found to be insignificant.The Etruscan individuals and contemporary Latins were distinguished from preceding populations of Italy by the presence ofc.30%steppe ancestry.Their DNA was a mixture of two-thirdsCopper Ageancestry (EEF+WHG; Etruscans ~66–72%, Latins ~62–75%) and one-thirdSteppe-related ancestry(Etruscans ~27–33%, Latins ~24–37%).The only sample ofY-DNAbelonged tohaplogroup J-M12 (J2b-L283), found in an individual dated 700-600 BC, and carried the M314 derived allele also found in a Middle Bronze Age individual fromCroatia(1631–1531 BC).  The four samples ofmtDNAextracted belonged to haplogroupsU5a1,H,T2b32,K1a4.
-
-Among the older studies, based only on mitochondrial DNA, a mtDNA study, published in 2018 in theAmerican Journal of Physical Anthropologycompared both ancient and modern samples from Tuscany, fromPrehistory, the Etruscan age,Roman age,Renaissanceand the present day and concluded that the Etruscans appear to be a local population, intermediate between the prehistoric and the other samples, placing them in the temporal network between theEneolithic Ageand the Roman Age.
-
-A couple ofmitochondrial DNAstudies published in 2013 in the journalsPLOS OneandAmerican Journal of Physical Anthropology, based on Etruscan samples from Tuscany and Latium, concluded that the Etruscans were an indigenous population, showing that Etruscan mtDNA appears to be very close to a Neolithic population fromCentral Europe(Germany,Austria,Hungary) and to other Tuscan populations, strongly suggesting that the Etruscan civilization developed locally from theVillanovan culture, as supported by archaeological evidence and anthropological research,and that genetic links between Tuscany and westernAnatoliadate to at least 5,000 years ago during theNeolithicand the "most likely separation time between Tuscany and Western Anatolia falls around 7,600 years ago", at the time of the migrations ofEarly European Farmers(EEF) from Anatolia to Europe in the early Neolithic. The ancient Etruscan samples had mitochondrial DNA haplogroups (mtDNA)JT(subclades ofJandT) andU5, with a minority ofmtDNA H1b.
-
-An mtDNA study published in 2004, based on about 28 samples of individuals who lived from 600 to 100 BC inVeneto, Etruria and Campania, found that the Etruscans had no significant heterogeneity and that all mitochondrial lineages observed among the Etruscan samples appear typically European orWest Asianbut only a fewhaplotypeswere shared with modern populations. Allele sharing between the Etruscans and modern populations is highest amongGermans(seven haplotypes in common), theCornishfrom the South West of Britain (five haplotypes in common), theTurks(four haplotypes in common) and theTuscans(two haplotypes in common).The modern populations with the shortest genetic distance from the ancient Etruscans, based solely on mtDNA and FST, wereTuscansfollowed by the Turks, other populations from the Mediterranean and the Cornish after.This study was much criticized by other geneticists, because "data represent severely damaged or partly contaminated mtDNA sequences" and "any comparison with modern population data must be considered quite hazardous",and by archaeologists, who argued that the study was not clear-cut and had not provided evidence that the Etruscans were an intrusive population to the European context.
-
-In the collective volumeEtruscologypublished in 2017, British archeologist Phil Perkins, echoing an article of his from 2009, provides an analysis of the state of DNA studies and writes, "none of the DNA studies to date conclusively prove that [the] Etruscans were an intrusive population in Italy that originated in the Eastern Mediterranean or Anatolia" and "there are indications that the evidence of DNA can support the theory that Etruscan people are autochthonous in central Italy".
-
-In his 2021 bookA Short History of Humanity, German geneticistJohannes Krause, codirector of theMax Planck Institute for Evolutionary AnthropologyinJena, concludes that it is likely that theEtruscan language(as well asBasque,Paleo-SardinianandMinoan) "developed on the continent in the course of theNeolithic Revolution".
-
-Periodization of Etruscan civilization
-
-
-### Periodization of Etruscan civilization
-
-
-The Etruscan civilization begins with the early Iron AgeVillanovan culture, regarded as the oldest phase, that occupied a large area of northern and central Italy during the Iron Age.The Etruscans themselves dated their nation's origin to a date corresponding to the 11th or 10th century BC.The Villanovan culture emerges with the phenomenon of regionalization from the late Bronze Age culture called "Proto-Villanovan", part of the central EuropeanUrnfield culture system. In the last Villanovan phase, called the recent phase (about 770–730 BC), the Etruscans established relations of a certain consistency with the firstGreek immigrants in southern Italy(inPithecusaand then inCuma), so much so as to initially absorb techniques and figurative models and soon more properly cultural models, with the introduction, for example, of writing, of a new way of banqueting, of a heroic funerary ideology, that is, a new aristocratic way of life, such as to profoundly change the physiognomy of Etruscan society.Thus, thanks to the growing number of contacts with the Greeks, the Etruscans entered what is called theorientalizing period. In this phase, there was a heavy influence in Greece, most of Italy and some areas of Spain, from the most advanced areas of theeastern Mediterraneanand theancient Near East.Also directly Phoenician, or otherwise Near Eastern, craftsmen, merchants and artists contributed to the spread in southern Europe of Near Eastern cultural and artistic motifs. The last three phases of Etruscan civilization are called, respectively, Archaic, Classical, and Hellenistic, which roughly correspond to the homonymous phases of the ancient Greek civilization.
-
-Chronology
-
-
-#### Chronology
-
-
-Etruscan expansion was concentrated both in the north, beyond the Apennines, and in Campania, although the Etruscan presence in the Emilia-Romagna area, according to archaeologists, was not due to a recent expansion but to a much older presence. However, it is thought that the political structure of the Etruscan culture was similar to, albeit more aristocratic than,Magna Graeciain the south. The mining and commerce of metal, especiallycopperandiron, led to an enrichment of the Etruscans and to the expansion of their influence in the Italian peninsula and the westernMediterranean Sea. Here, their interests collided with those of the Greeks, especially in the sixth century BC, whenPhocaeansof Italy founded colonies along the coast ofSardinia,SpainandCorsica. This led the Etruscans to ally themselves withCarthage, whose interests also collided with the Greeks.
-
-Around 540 BC, theBattle of Alalialed to a new distribution of power in the western Mediterranean. Though the battle had no clear winner,Carthagemanaged to expand its sphere of influence at the Greeks' expense, and Etruria saw itself relegated to the northernTyrrhenian Seawith full ownership ofCorsica. From the first half of the 5th century BC, the new political situation meant the beginning of the Etruscan decline after losing their southern provinces. In 480 BC, Etruria's ally Carthage was defeated by a coalition of Magna Graecia cities led bySyracuse, Sicily. A few years later, in 474 BC, Syracuse's tyrantHierodefeated the Etruscans at theBattle of Cumae. Etruria's influence over the cities ofLatiumand Campania weakened, and the area was taken over by Romans andSamnites.
-
-In the 4th century BC, Etruria saw aGallicinvasion end its influence over thePo Valleyand theAdriatic coast. Meanwhile,Romehad started annexing Etruscan cities. This led to the loss of the northern Etruscan provinces. During theRoman–Etruscan Wars, Etruria was conquered by Rome in the 3rd century BC.
-
-Etruscan League
-
-
-### Etruscan League
-
-
-According to legend,there was a period between 600 BC and 500 BC in which an alliance formed among 12 Etruscan settlements, known today as theEtruscan League,Etruscan Federation, orDodecapolis(Ancient Greek:Δωδεκάπολις). According to a legend, the Etruscan League of 12 cities was founded byTarchonand his brotherTyrrhenus. Tarchon lent his name to the city ofTarchna, or Tarquinnii, as it was known by the Romans. Tyrrhenus gave his name to theTyrrhenians, the alternative name for the Etruscans. Although there is no consensus on which cities were in the league, the following list may be close to the mark:Arretium,Caisra,Clevsin,Curtun,Perusna,Pupluna,Veii,Tarchna,Vetluna,Volterra,Velzna, andVelch. Some modern authors includeRusellae.The league was mostly an economic and religious league, or a loose confederation, similar to the Greek states. During the laterimperialtimes, when Etruria was just one of many regions controlled by Rome, the number of cities in the league increased by three. This is noted on many gravestones from the 2nd century BC onwards. According toLivy, the 12city-statesmet once a year at theFanum VoltumnaeatVolsinii, where a leader was chosen to represent the league.
-
-There were two other Etruscan leagues ("Lega dei popoli"): that ofCampania, the main city of which wasCapua, and thePo Valleycity-states in northern Italy, which includedBologna,SpinaandAdria.
-
-Possible founding of Rome
-
-
-### Possible founding of Rome
-
-
-Those who subscribe to aLatinfoundation of Rome followed by an Etruscan invasion typically speak of an Etruscan "influence" on Roman culture – that is, cultural objects which were adopted by Rome from neighboring Etruria. The prevailing view is that Rome was founded by Latins who later merged with Etruscans. In this interpretation, Etruscan cultural objects are considered influences rather than part of a heritage.Rome was probably a small settlement until the arrival of the Etruscans, who constructed the first elements of its urban infrastructure such as the drainage system.
-
-The main criterion for deciding whether an object originated at Rome and traveled by influence to the Etruscans, or descended to the Romans from the Etruscans, is date. Many, if not most, of the Etruscan cities were older than Rome. If one finds that a given feature was there first, it cannot have originated at Rome. A second criterion is the opinion of the ancient sources. These would indicate that certain institutions and customs came directly from the Etruscans. Rome is located on the edge of what was Etruscan territory. When Etruscan settlements turned up south of the border, it was presumed that the Etruscans spread there after the foundation of Rome, but the settlements are now known to have preceded Rome.
-
-Etruscan settlements were frequently built on hills—the steeper the better—and surrounded by thick walls. According toRoman mythology, whenRomulus and Remusfounded Rome, they did so on thePalatine Hillaccording to Etruscan ritual; that is, they began with apomeriumor sacred ditch. Then they proceeded to the walls. Romulus was required to kill Remus when the latter jumped over the wall, breaking its magic spell (see also underPons Sublicius). The name of Rome is attested in Etruscan in the formRuma-χmeaning 'Roman', a form that mirrors other attested ethnonyms in that language with the same suffix-χ:Velzna-χ'(someone) from Volsinii' andSveama-χ'(someone) fromSovana'. But this in itself does not prove Etruscan origin conclusively. If Tiberius is fromθefarie, then Ruma would have been placed on theThefar(Tiber) river. A heavily discussed topic among scholars is who was the founding population of Rome. In 390 BC, thecity of Rome was attackedby theGauls, and as a result may have lost many, though not all, of its earlier records.
-
-Later history relates that some Etruscans lived in theVicus Tuscus,the "Etruscan quarter", and that there was an Etruscan line of kings (albeit ones descended from a Greek,Demaratus of Corinth) that succeeded kings of Latin and Sabine origin. Etruscophile historians argue that this, together with evidence for institutions, religious elements and other cultural elements, proves that Rome was founded by Etruscans.
-
-Under Romulus andNuma Pompilius, the people were said to have been divided into 30curiaeand threetribes. Few Etruscan words enteredLatin, but the names of at least two of the tribes—RamnesandLuceres—seem to be Etruscan. The last kings may have borne the Etruscan titlelucumo, while theregaliawere traditionally considered of Etruscan origin—the golden crown, the sceptre, thetoga palmata(a special robe), thesella curulis(curule chair), and above all the primary symbol of state power: thefasces. The latter was a bundle of whipping rods surrounding a double-bladed axe, carried by the king'slictors. An example of the fasces are the remains of bronze rods and the axe from a tomb in EtruscanVetulonia. This allowed archaeologists to identify the depiction of a fasces on the gravesteleof Avele Feluske, who is shown as a warrior wielding the fasces. The most telling Etruscan feature is the wordpopulus, which appears as an Etruscan deity,Fufluns.
-
-Roman families of Etruscan origin
-
-
-### Roman families of Etruscan origin
-
-
-Ancharia gensArruntia gensCaecinia gensCaelia gensCaesennia gensCeionia gensCilnia gensHerminia gens–PatricianErucia gensLartia gens– PatricianPerpernia gensPersia gensRasinia gensSanquinia gensSpurinnia gensTapsennia gensTarquinia gens– Patrician (?)Tarquitia gens– PatricianUrgulania gensVerginia gens– PatricianVolumnia gens– Patrician
-
-Ancharia gensArruntia gensCaecinia gensCaelia gensCaesennia gensCeionia gensCilnia gensHerminia gens–PatricianErucia gensLartia gens– PatricianPerpernia gensPersia gensRasinia gensSanquinia gensSpurinnia gensTapsennia gensTarquinia gens– Patrician (?)Tarquitia gens– PatricianUrgulania gensVerginia gens– PatricianVolumnia gens– Patrician
-
+Pre-Roman civilization of Etruria (9th-1st century BC)
+Etruscans
+𐌓𐌀𐌔𐌄𐌍𐌍𐌀
+Rasenna
+900 BC
+[
+1
+]
+–27 BC
+[
+1
+]
+Extent of Etruscan civilization and the twelve Etruscan League cities
+Status
+City-states
+Common languages
+Etruscan
+Religion
+Etruscan
 Government
-
-
-### Government
-
-
-The historical Etruscans had achieved astatesystem of society, with remnants of thechiefdomand tribal forms. Rome was in a sense the first Italic state, but it began as an Etruscan one. It is believed that the Etruscan government style changed from totalmonarchytooligarchicrepublic(as the Roman Republic) in the 6th century BC.
-
-The government was viewed as being a central authority, ruling over all tribal and clan organizations. It retained the power of life and death; in fact, thegorgon, an ancient symbol of that power, appears as a motif in Etruscan decoration. The adherents to this state power were united by a common religion. Political unity in Etruscan society was the city-state, which was probably the referent ofmethlum, "district". Etruscan texts name quite a number ofmagistrates, without much of a hint as to their function: Thecamthi, theparnich, thepurth, thetamera, themacstrev, and so on. The people were themech.
-
-Importance of Religion in the Government
-
-
-#### Importance of Religion in the Government
-
-
-Governments in ancient Mediterranean societies were explicitly interweaved with the religious practices of the contemporary. The Etruscan Kinglucomo (plural: lucumones),was considered the supreme authority and under the Etruscans’ theocratic governmental approach acted as the connection between god and people. The royal title was not just limited to hereditary succession but was also given due to elite lineage, divine sanction and also wealth. This prominence of divine sanction is reflective of the importance of religion in Etruscan governments and as such, all Etruscan kingship was also believed to be under divine approval and held the final word. Roman historian Titus Livius records the story of Lucomo which reflects how the divinity was revered and understood in the Etruscan era as captured by Roman historians. Lucomo was propelled by his wife Tanaquil to acquire power in Rome due to the inability to do so in Etruscan government,(Rome is considered the first Italic state) and on their journey an eagle replaced Lucomo's cap, which was interpreted as an omen from the divine of future kingship.
-
-“That such bird had come from such a quarter of the heavens... it had lifted the ornament placed on the head of man, to restore it to the same, by direction of the gods.”
-
-This notion of combined political power and religious authorities held by the kingship is reinforced bySybille Haynes, an expert on Etruscology, described thelucomoto also be "chief priest."Tombs of the royals found also are engraved with divine symbols, which can be interpreted to understand that kings in this society acted as a connection between humans and the spiritual.
-
-While there was a transition from monarchy to oligarchic democracy, religion was deeply intertwined with Etruscan political and governmental identity, as Kings and magistrates worked to ensure peace with the gods by rituals and interpretation of the divine and their will through haruspicy and augury.  Theharuspiceswere a group of pristries who by analysis of the celestial signs and animal entrails could deduce the will of the gods. The creation of city-states as Tenney Frank argued took place due to economic and natural advantages, and also due to a need for common tribal meetings in ancient polities.It allowed for a dialogue of ideas to increase communication, and desires and was headed by thezilath mechl rasnal, (“magistrate of the Etruscan people”)  who as modern scholars have argued functioned largely as a ceremonial leader, rather than a federal executive.  Modelling a decentralised theocracy, this role further ties together the idea that Entruscan government was held through shared religious rituals and beliefs.
-
-It is important to note that while Etruscan city states such as Tarquinia and Veii were established as politically autonomous, being centered around aristocratic rule and magistrates, international composition in these states were also considered progressive by scholars and historians. It is believed often due to the abundance of Greek and Roman sources over Etruscan ones that women were not allowed participation and enjoyment in public life, however  their society was depicted to revere female gods, and women were allowed to participate in public life.This reverence for female duties can be deduced to understand how gender-diverse spirituality was also an important aspect of Etruscan society.
-
-Political religion also extended to the establishment of the twelve city-states, whose league was called “duodecim populi Etruriae.” This league held assemblies annually and selected theirzilath mechl rasnaat theFanun Voltumnae,the shrine ofVoltuma.Taking place at a sanctuary dedicated to the god Voltuma. These assemblies acted as both political conferences where military and peace talks could be held as well as religious festivals. Foreign policy, related to war, and alliances, were believed to be an outcome of the will of the gods, and discussions regarding this also took place at the yearly assemblies.Mario Torelliarticulates that these asemblies served the purpose of ensuing a divine sanction for the actions decided by the collective.Lastly, the importance of religion in these meetings is further emblematic by the appointment of a dictator,who was chosen based on religious rituals to then hold the same supreme authority that the King had enjoyed in early Etruscan civilisation. As such, it can be envisioned that Etruscan policy and assemblies prioritised and revered divine legitimacy, the messages from gods were treated as the ultimate authority and the government's desire to maintain a strong positive relationship is prevalent.
-
-Religion was further embedded into the urban and geographical organisations of city states, and temples became an important political feature where decisions would be made as gods would act as a tool of legitimation. Mario Torelli, an Italian scholar of the culture of Etruscans, notes the intersection of temples as a place of worship and political power, creating the ultimate intersection cultivating an environment of sacred order.
-
-Etruscan's political and governmental strategies, with their influence of religion, also left a legacy in Roman religion and statecraft. Roman annexation of Etruscan city states occurred in the 4th and 3rd century BCE, and saw the adoption of many religious-political practices. Practices such as augury and haruspicy remained especially prevalent, as Etruscan haruspices were called upon by the Roman senate reflecting the importance of religion in nation building. As much of what is known about Etruscans comes from Greek and Roman authors, due to the few written records remaining from Etruscan's, it is studied through perspectives other than their own leading to a diminished understanding of religious importance in Etruscan governance.
-
-The princely tombs were not of individuals. The inscription evidence shows that families were interred there over long periods, marking the growth of the aristocratic family as a fixed institution, parallel to thegensat Rome and perhaps even its model. The Etruscans could have used any model of the eastern Mediterranean. That the growth of this class is related to the new acquisition of wealth through trade is unquestioned. The wealthiest cities were located near the coast. At the center of the society was the married couple,tusurthir. The Etruscans were a monogamous society that emphasized pairing.
-
-Similarly, the behavior of some wealthy women is not uniquely Etruscan. The apparent promiscuous revelry has a spiritual explanation. Swaddling and Bonfante (among others) explain that depictions of the nude embrace, or symplegma, "had the power to ward off evil", as did baring the breast, which was adopted bywestern cultureas anapotropaic device, appearing finally on the figureheads of sailing ships as a nude female upper torso. It is also possible that Greek and Roman attitudes to the Etruscans were based on a misunderstanding of the place of women within their society. In both Greece and the earliest Republican Rome, respectable women were confined to the house and mixed-sex socialising did not occur. Thus, the freedom ofwomen within Etruscan societycould have been misunderstood as implying their sexual availability.A number of Etruscan tombs carry funerary inscriptions in the form "X son of (father) and (mother)", indicating the importance of the mother's side of the family.
-
-The Etruscans, like the contemporary cultures ofAncient GreeceandAncient Rome, had a significant military tradition. In addition to marking the rank and power of certain individuals, warfare was a considerable economic advantage to Etruscan civilization. Like many ancient societies, the Etruscans conducted campaigns during summer months, raiding neighboring areas, attempting to gain territory and combatingpiracyas a means of acquiring valuable resources, such as land, prestige, goods, and slaves. It is likely that individuals taken in battle would be ransomed back to their families and clans at high cost. Prisoners could also potentially be sacrificed on tombs to honor fallen leaders of Etruscan society, not unlike the sacrifices made byAchillesforPatrocles.
-
-550 BC: Etruscan-Puniccoalition against Greece off the coast of Corsica540 BC:Naval victory at Alalia524 BC: Defeat atCymeagainst the Greeks510 BC: Fall of the Etruscan kingship ofLucius Tarquinius Superbusin Rome508 BC:Lars Porsenabesieges Rome508 BC: War betweenClusium and Aricia482 BC: Beginning of the conflict betweenVeiiand Rome474 BC: Defeat of the Etruscans againstSyracusein theBattle of Cyme(also Cumae)430 BC 406 BC: Defeat against theSamnitesinCampania406 BC: Siege of Veii by Rome396 BC: Destruction of Veii by Romefrom 396 BC: Invasion of the Celts into thePo Valley384 BC: Plunder ofPyrgi(Santa Severa) byDionysius I of Syracuse358 BC: Alliance ofTarquiniaandCerveteriagainst Rome310 BC: Defeat against the Romans atLake Vadimone300 BC: Pyrgi becomes a Roman colony280 BC: Defeat ofVulciagainst Rome264 BC 100 BC: Defeat ofVolsiniiagainst Rome260 BC: Subjugation by the Gauls in the Po Valley205 BC: Support ofScipioin the campaign againstHannibal183 BC: Foundation of the Roman colony inSaturnia90 BC: Granting ofRoman citizenship82 BC: Repression ofSullain Etruria79 BC: Capitulation ofVolterrafrom 40 BC: Final Romanization of Etruria
-
-The range of Etruscan civilization is marked byits cities. They were entirely assimilated by Italic,Celtic, or Roman ethnic groups, but the names survive from inscriptions and their ruins are of aesthetic and historic interest in most of the cities of central Italy. Etruscan cities flourished over most of Italy during theRoman Iron Age, marking the farthest extent of Etruscan civilization. They were gradually assimilated first by Italics in the south, then by Celts in the north and finally in Etruria itself by the growing Roman Republic.
-
-That many Roman cities were formerly Etruscan was well known to all the Roman authors. Some cities were founded by Etruscans in prehistoric times, and bore entirely Etruscan names. Others were colonized by Etruscans who Etruscanized the name, usuallyItalic.
-
-Agriculture
-
-
-### Agriculture
-
-
-The Etruscans were aware of the techniques ofwater accumulation and conservationin Egypt, Mesopotamia and Greece. They built canals and dams to irrigate the land, and drained and reclaimed swamps. The archaeological remains of this infrastructure are still evident in the maritime southwestern parts ofTuscany.
-
-Vite maritatais aviticulturetechnique exploitingcompanion plantingnamed after theMaremmaregion of Italy which may be relevant toclimate change.It was developed around the area by these early predecessors of the Romans who cultivated plant as nearly as possible in their natural habitat. Thevinesfrom which wine is made are a kind oflianathat naturally intertwine with trees such as maples or willows.
-
-The Etruscan system of belief was animmanentpolytheism; that is, all visible phenomena were considered to be a manifestation ofdivinepower and that power was subdivided intodeitiesthat acted continually on the world of man and could be dissuaded or persuaded in favor of human affairs. How to understand the will of deities, and how to behave, had been revealed to the Etruscans by two initiators,Tages, a childlike figure born from tilled land and immediately gifted with prescience, andVegoia, a female figure. Their teachings were kept in a series of sacred books. Three layers of deities are evident in the extensive Etruscan art motifs. One appears to be divinities of an indigenous nature:CathaandUsil, the sun;Tivr, the moon;Selvans, a civil god;Turan, the goddess of love;Laran, the god of war;Leinth, the goddess of death;Maris;Thalna;Turms; and the ever-popularFufluns, whose name is related in some way to the city ofPopuloniaand thepopulus Romanus, possibly, the god of the people.
-
-Ruling over this pantheon of lesser deities were higher ones that seem to reflect theIndo-Europeansystem: Tin orTinia, the sky,Unihis wife (Juno), andCel, the earth goddess. In addition, some Greek and Roman gods were inspired by the Etruscan system:Aritimi(Artemis),Menrva(Minerva), Pacha (Dionysus). The Greek heroes taken fromHomeralso appear extensively in art motifs.
-
-Architecture
-
-
-### Architecture
-
-
-Relatively little is known about the architecture of the ancient Etruscans. They adapted the native Italic styles with influence from the external appearance ofGreek architecture. In turn,ancient Roman architecturebegan with Etruscan styles, and then accepted still further Greek influence.Roman templesshow many of the same differences in form to Greek ones that Etruscan temples do, but like the Greeks, use stone, in which they closely copy Greek conventions. The houses of the wealthy were evidently often large and comfortable, but the burial chambers of tombs, often filled with grave-goods, are the nearest approach to them to survive. In the southern Etruscan area, tombs have large rock-cut chambers under atumulusin largenecropoleis, and these, together with some city walls, are the only Etruscan constructions to survive. Etruscan architecture is not generally considered as part of the body of Greco-Romanclassical architecture.
-
-Art and music
-
-
-### Art and music
-
-
-Etruscan art was produced by the Etruscan civilization between the 9th and 2nd centuries BC. Particularly strong in this tradition were figurative sculpture in terracotta (particularly lifesize onsarcophagior temples), wall-painting andmetalworking(especially engraved bronze mirrors). Etruscan sculpture in cast bronze was famous and widely exported, but few large examples have survived (the material was too valuable, and recycled later). In contrast to terracotta and bronze, there was apparently little Etruscan sculpture in stone, despite the Etruscans controlling fine sources of marble, includingCarrara marble, which seems not to have been exploited until the Romans. Most surviving Etruscan art comes from tombs, including all thefrescowall-paintings, a minority of which show scenes of feasting and some narrative mythological subjects.
-
-Buccherowares in black were the early and native styles of fine Etruscan pottery. There was also a tradition of elaborateEtruscan vase painting, which sprung from its Greek equivalent; the Etruscans were the main export market forGreek vases. Etruscan temples were heavily decorated with colorfully painted terracottaantefixesand other fittings, which survive in large numbers where the wooden superstructure has vanished. Etruscan art was strongly connected toreligion; the afterlife was of major importance in Etruscan art.
-
-The Etruscan musical instruments seen in frescoes and bas-reliefs are different types of pipes, such as theplagiaulos(the pipes ofPanorSyrinx), the alabaster pipe and the famous double pipes, accompanied on percussion instruments such as thetintinnabulum,tympanumandcrotales, and later by stringed instruments like thelyreandkithara.
-
-Etruscans left around 13,000inscriptionswhich have been found so far, only a small minority of which are of significant length. Attested from 700 BC to AD 50, the relation of Etruscan to other languages has been a source of long-running speculation and study. The Etruscans are believed to have spoken aPre-Indo-EuropeanandPaleo-European language,and the majority consensus is that Etruscan is related only to other members of what is called theTyrsenian language family, which in itself is anisolate family, that is unrelated directly to other known language groups. SinceRix(1998), it is widely accepted that the Tyrsenian family groupsRaeticandLemnianare related to Etruscan.
-
-Literature
-
-
-### Literature
-
-
-Etruscan texts, written in a space of seven centuries, use a form of theGreek alphabetdue to close contact between the Etruscans and the Greek colonies atPithecusaeandCumaein the 8th century BC (until it was no longer used, at the beginning of the 1st century AD). Etruscan inscriptions disappeared fromChiusi,PerugiaandArezzoaround this time. Only a few fragments survive, religious and especially funeral texts, most of which are late (from the 4th century BC). In addition to the original texts that have survived to this day, there are a large number of quotations and allusions from classical authors. In the 1st century BC,Diodorus Siculuswrote that literary culture was one of the great achievements of the Etruscans. Little is known of it and even what is known of their language is due to the repetition of the same few words in the many inscriptions found (by way of the modern epitaphs) contrasted in bilingual or trilingual texts with Latin andPunic. Out of the aforementioned genres, is just one such Volnio (Volnius) cited in classical sources mentioned.With a few exceptions, such as theLiber Linteus, theonly written records in the Etruscan languagethat remain are inscriptions, mainly funerary. The language is written in theEtruscan alphabet, a script related to the earlyEuboean Greek alphabet.Many thousand inscriptions in Etruscan are known, mostlyepitaphs, and a fewvery short textshave survived, which are mainly religious. Etruscan imaginative literature is evidenced only in references by later Roman authors, but it is evident from their visual art that the Greek myths were well known.
-
-With the founding ofPithekussaionIschiaand Kyme (lat.Cumae) inCampaniain the course of theGreek colonization, the Etruscans came under the influence of theGreek culturein the 8th century BC. The Etruscans adopted analphabetfrom the western Greek colonists that came from their homeland, the EuboeanChalkis. This alphabet from Cumae is therefore also called Euboeanor ChalcidianAlphabet. The oldest written records of the Etruscans date from around 700 BC.
-
-One of the oldest Etruscan written documents is found on thetablet of Marsiliana d’Albegnafrom the hinterland ofVulci, which is now kept in theNational Archaeological MuseumofFlorence. A western Greek model alphabet is engraved on the edge of thiswax tabletmade ofivory. In accordance with later Etruscan writing habits, thelettersin this model alphabet were mirrored and arranged from right to left:
-
-The script with these letters was first used in southern Etruria around 700 BC in the EtruscanCisra(lat.Caere), today'sCerveteri.The science of writing quickly reached central and northern Etruria. From there, the alphabet spread fromVolterra(Etr.Velathri) toFelsina, today'sBologna, and later fromChiusi(Etr.Clevsin) to the Po Valley. In southern Etruria, the writing spread fromTarquinia(Etr.Tarchna) andVeii(Etr.Veia) further south to Campania, which was controlled by the Etruscans at the time.In the following centuries the Etruscans consistently used the letters mentioned, so that thedecipheringof the Etruscan inscriptions is not a problem. As in Greek, the characters were subject to regional and temporal changes. Overall, one can distinguish an archaic script from the 7th to 5th centuries from a more recent script from the 4th to 1st centuries BC, in which some characters were no longer used, including the X for a sh sound. In addition, in writing and language, the emphasis on the first syllable meant that internal vowels were not reproduced, e.g.Menrvainstead ofMenerva.Accordingly,linguistsalso distinguish between Old and New Etruscan.
-
-Alongside thetablet of Marsiliana d’Albegna, around 70 objects with model alphabets have been preserved from the early period.The most famous of these are:
-
-Alabastronfrom theRegolini-Galassi tombin CerveteriBucchero amphora from FormelloBucchero cockerel from ViterboBuccherovessel from the necropolis of Sorbo near Cerveteri
-
-As all four artifacts date from the 7th century B.C. come from, the alphabets are always written clockwise.The last object has the special feature that, in addition to the letters of the alphabet, almost all consonants are shown in sequence in connection with the vowels I, A, U and E (Syllabary). This syllabic writing system was probably used to practice the written characters.
-
-The most important Etruscan written monuments that contain a large number of words include:
-
-Liber Linteus(Liber Linteus Zagrabiensis) – ritual text with around 1400 wordsClay Tablet of Capua(TabulaorTegula Capuana) – ritual text as a bustrophedon with 62 lines and around 300 wordsTablet of Cortona(Tabula Cortonensis) – contract text with a length of 32 lines and about 200 wordsCippus Perusinus– travertine block with 46 lines and about 125 words from nearPerugiaPyrgi Tablets– parallel texts in Etruscan andPunic scriptSarcophagus of Laris Pulenas– grave inscription of Laris Pulena with nine lines of text on a sarcophagus scrollLiver of Piacenza– model of a sheep's liver with 40 inscriptionsLead Plaque of Magliano– sacrificial instructions with 70 wordsLead strip from Santa Marinella– two fragments of a sacrificial vowBuilding inscription of the tomb of San Manno near Perugia – 30-word consecration inscriptionPoupé aryballos[fr]– Clockwise dedication inscription on a bucchero bottleTuscanian dice– Two dice with the numbers 1 to 6
-
-No further Etruscan literature has survived and from the early 1st century AD, inscriptions with Etruscan characters have ceased to exist. All existing ancient Etruscan written documents are systematically collected in theCorpus Inscriptionum Etruscarum.
-
-In the middle of the 7th century BC, the Romans adopted the Etruscan writing system and letters. In particular, they used the three different characters C, K and Q for a K sound. Z was also initially adopted into the Roman alphabet, although the affricate TS did not occur in the Latin language. Later, Z was replaced in the alphabet by the newly formed letter G, which was derived from C, and Z was finally placed at the end of the alphabet.The letters Θ, Φ and Ψ were omitted by the Romans because the corresponding aspirated sounds did not occur in their language.
-
-The Etruscan alphabet spread across the northern and central parts of the Italian peninsula. It is assumed that the formation of theOscan script, probably in the 6th century BC, was fundamentally influenced by Etruscan. The characters of theUmbrian,FaliscanandVeneticlanguages can also be traced back to Etruscan alphabets.
-
-Part ofa serieson the
-
-EarlyPrehistoric ItalyNuragic civilization(18th–3rd c. BC)Etruscan civilization(12th–6th c. BC)Magna Graecia(8th–3rd c. BC)
-
-Prehistoric ItalyNuragic civilization(18th–3rd c. BC)Etruscan civilization(12th–6th c. BC)Magna Graecia(8th–3rd c. BC)
-
-Prehistoric ItalyNuragic civilization(18th–3rd c. BC)Etruscan civilization(12th–6th c. BC)Magna Graecia(8th–3rd c. BC)
-
-Ancient RomeKingdom(753 BC–509 BC)Republic(509 BC–27 BC)Roman expansion in ItalyRoman ItalyPopularesandOptimatesEmpire(27 BC–286 AD)Western Empire(286 AD–476 AD)Praetorian prefecture of Italy
-
-Ancient Rome
-
-Kingdom(753 BC–509 BC)Republic(509 BC–27 BC)Roman expansion in ItalyRoman ItalyPopularesandOptimatesEmpire(27 BC–286 AD)Western Empire(286 AD–476 AD)Praetorian prefecture of Italy
-
-Kingdom(753 BC–509 BC)Republic(509 BC–27 BC)Roman expansion in ItalyRoman ItalyPopularesandOptimatesEmpire(27 BC–286 AD)Western Empire(286 AD–476 AD)Praetorian prefecture of Italy
-
-Romano-Barbarian KingdomsOdoacer's476–493Ostrogothic493–553Vandal435–534Lombard568–774Frankish(Carolingian Empire)774–962Germanic(Holy Roman Empire)962–1801
-
-Romano-Barbarian Kingdoms
-
-Odoacer's476–493Ostrogothic493–553Vandal435–534Lombard568–774Frankish(Carolingian Empire)774–962Germanic(Holy Roman Empire)962–1801
-
-MedievalItaly in the Middle AgesByzantine reconquest of Italy(6th–8th c.)IslamandNormansin southern ItalyMaritime republicsandItalian city-statesGuelphs and Ghibellines
-
-Italy in the Middle AgesByzantine reconquest of Italy(6th–8th c.)IslamandNormansin southern ItalyMaritime republicsandItalian city-statesGuelphs and Ghibellines
-
-Italy in the Middle AgesByzantine reconquest of Italy(6th–8th c.)IslamandNormansin southern ItalyMaritime republicsandItalian city-statesGuelphs and Ghibellines
-
-Early modernItalian Renaissance(14th–16th c.)Italian Wars(1494–1559)Catholic revival(1545–1648)Mid-16th c. to early 19th c.NapoleonicItaly (1801–1814)RepublicKingdomRisorgimento(1815–1871)Young Italy
-
-Early modern
-
-Italian Renaissance(14th–16th c.)Italian Wars(1494–1559)Catholic revival(1545–1648)Mid-16th c. to early 19th c.NapoleonicItaly (1801–1814)RepublicKingdomRisorgimento(1815–1871)Young Italy
-
-Italian Renaissance(14th–16th c.)Italian Wars(1494–1559)Catholic revival(1545–1648)Mid-16th c. to early 19th c.NapoleonicItaly (1801–1814)
-
-RepublicKingdom
-
-RepublicKingdom
-
-Risorgimento(1815–1871)
-
-Young Italy
-
-Young Italy
-
-ModernMonarchy(1861–1946)Colonial Empire(1882–1960)Italy in World War I(1914–1918)Fascism(1922–1943)Italy in World War II(1940–1945)FascistItalian Social Republic,PartisansandItalian Civil War(1943–1945)Republic(1946–1994)Years of Lead(1970s–1980s)Maxi Trial(1986–1992)Mani pulite(1992–2001)
-
-Monarchy(1861–1946)Colonial Empire(1882–1960)Italy in World War I(1914–1918)Fascism(1922–1943)Italy in World War II(1940–1945)FascistItalian Social Republic,PartisansandItalian Civil War(1943–1945)Republic(1946–1994)Years of Lead(1970s–1980s)Maxi Trial(1986–1992)Mani pulite(1992–2001)
-
-Monarchy(1861–1946)Colonial Empire(1882–1960)Italy in World War I(1914–1918)Fascism(1922–1943)Italy in World War II(1940–1945)FascistItalian Social Republic,PartisansandItalian Civil War(1943–1945)Republic(1946–1994)Years of Lead(1970s–1980s)Maxi Trial(1986–1992)Mani pulite(1992–2001)
-
-ContemporarySecond Republic(1994–2022)Great Recession(2007–2009)European migrant crisis(2014–2016)COVID-19 pandemic(2020–2023)Rinnovamento(2021–present)
-
-Contemporary
-
-Second Republic(1994–2022)Great Recession(2007–2009)European migrant crisis(2014–2016)COVID-19 pandemic(2020–2023)Rinnovamento(2021–present)
-
-Second Republic(1994–2022)Great Recession(2007–2009)European migrant crisis(2014–2016)COVID-19 pandemic(2020–2023)Rinnovamento(2021–present)
-
-By topicCitizenshipCurrency and coinageEconomyFashionFlagsGeneticHistoric statesJudaismLGBTMilitaryMusicNamePostageRailway
-
-CitizenshipCurrency and coinageEconomyFashionFlagsGeneticHistoric statesJudaismLGBTMilitaryMusicNamePostageRailway
-
-CitizenshipCurrency and coinageEconomyFashionFlagsGeneticHistoric statesJudaismLGBTMilitaryMusicNamePostageRailway
-
-CitizenshipCurrency and coinageEconomyFashionFlagsGeneticHistoric statesJudaismLGBTMilitaryMusicNamePostageRailway
-
-Near EastSumerKishEgyptElamEblaMariArmiHattiDilmunMaganNubiaBerbersAkkadAssyriaBabyloniaQatnaAmurruYamhadUrkeshMitanniHittitesPhrygiansUgaritCanaanPhoeniciaAlashiyaArameansIsrael and JudahSabaʾHimyarChaldeaUrartuMediaPhrygiaAchaemenid EmpireSea PeoplesAnatoliaArabiaEgyptIranThe LevantMesopotamia
-
-SumerKishEgyptElamEblaMariArmiHattiDilmunMaganNubiaBerbersAkkadAssyriaBabyloniaQatnaAmurruYamhadUrkeshMitanniHittitesPhrygiansUgaritCanaanPhoeniciaAlashiyaArameansIsrael and JudahSabaʾHimyarChaldeaUrartuMediaPhrygiaAchaemenid EmpireSea PeoplesAnatoliaArabiaEgyptIranThe LevantMesopotamia
-
-SumerKishEgyptElamEblaMariArmiHattiDilmunMaganNubiaBerbersAkkadAssyriaBabyloniaQatnaAmurruYamhadUrkeshMitanniHittitesPhrygiansUgaritCanaanPhoeniciaAlashiyaArameansIsrael and JudahSabaʾHimyarChaldeaUrartuMediaPhrygiaAchaemenid EmpireSea PeoplesAnatoliaArabiaEgyptIranThe LevantMesopotamia
-
-EuropeAegean CivilizationGreeceThraciansDaciansIllyriansPelasgiansArgaricTorreanNuragicTalaioticTartessosGuanchesEtruscansRomeMigration PeriodBarbarian kingdomsCeltsGermanicsSlavsIberiaItalyGaulBritish IslesIllyriaThraciaDaciaMaltaCaucasus
-
-Aegean CivilizationGreeceThraciansDaciansIllyriansPelasgiansArgaricTorreanNuragicTalaioticTartessosGuanchesEtruscansRomeMigration PeriodBarbarian kingdomsCeltsGermanicsSlavsIberiaItalyGaulBritish IslesIllyriaThraciaDaciaMaltaCaucasus
-
-Aegean CivilizationGreeceThraciansDaciansIllyriansPelasgiansArgaricTorreanNuragicTalaioticTartessosGuanchesEtruscansRomeMigration PeriodBarbarian kingdomsCeltsGermanicsSlavsIberiaItalyGaulBritish IslesIllyriaThraciaDaciaMaltaCaucasus
-
-Horn of AfricaLand of PuntNubiaKerma KingdomMacrobiaDʿmtKingdom of KushKingdom of AksumKingdom of SimienHarla KingdomBarbariaOponeMalaoMosylonMundusTonikiAromataAvalitesSarapionNiconEssinaRausoNilotic PeoplesAfrican kingdoms
-
-Horn of Africa
-
-Land of PuntNubiaKerma KingdomMacrobiaDʿmtKingdom of KushKingdom of AksumKingdom of SimienHarla KingdomBarbariaOponeMalaoMosylonMundusTonikiAromataAvalitesSarapionNiconEssinaRausoNilotic PeoplesAfrican kingdoms
-
-Land of PuntNubiaKerma KingdomMacrobiaDʿmtKingdom of KushKingdom of AksumKingdom of SimienHarla KingdomBarbariaOponeMalaoMosylonMundusTonikiAromataAvalitesSarapionNiconEssinaRausoNilotic PeoplesAfrican kingdoms
-
-North AfricaCarthageGaramantesNasamones chiefdomCyreneBlemmyesMassylii ConfederationNumidiaMauretaniaNobatiaKingdom of OuarsenisKingdom of the Vandals and AlansKingdom of CapsusKingdom of MasunaKingdom of the AurèsKingdom of MakuriaKingdom of HodnaNemenchaLaguatanAlodiaKingdom of AltavaLibyaAfrican kingdoms
-
-North Africa
-
-CarthageGaramantesNasamones chiefdomCyreneBlemmyesMassylii ConfederationNumidiaMauretaniaNobatiaKingdom of OuarsenisKingdom of the Vandals and AlansKingdom of CapsusKingdom of MasunaKingdom of the AurèsKingdom of MakuriaKingdom of HodnaNemenchaLaguatanAlodiaKingdom of AltavaLibyaAfrican kingdoms
-
-CarthageGaramantesNasamones chiefdomCyreneBlemmyesMassylii ConfederationNumidiaMauretaniaNobatiaKingdom of OuarsenisKingdom of the Vandals and AlansKingdom of CapsusKingdom of MasunaKingdom of the AurèsKingdom of MakuriaKingdom of HodnaNemenchaLaguatanAlodiaKingdom of AltavaLibyaAfrican kingdoms
-
-Eurasian SteppeProto-Indo-EuropeansAfanasievoIndo-IraniansScythiaTungusicMoheTochariansQiangDonghuYuezhiWusunXiongnuHunsHunasXionitesIranian HunsHephthalitesProto-MongolsWuhuanKumo XiXianbeiTuyuhunRouranKhitanShiweiPannonian AvarsTurksHuFour BarbariansFive BarbariansEurasian nomadsNomadic empireSiberia
-
-Eurasian Steppe
-
-Proto-Indo-EuropeansAfanasievoIndo-IraniansScythiaTungusicMoheTochariansQiangDonghuYuezhiWusunXiongnuHunsHunasXionitesIranian HunsHephthalitesProto-MongolsWuhuanKumo XiXianbeiTuyuhunRouranKhitanShiweiPannonian AvarsTurksHuFour BarbariansFive BarbariansEurasian nomadsNomadic empireSiberia
-
-Proto-Indo-EuropeansAfanasievoIndo-IraniansScythiaTungusicMoheTochariansQiangDonghuYuezhiWusunXiongnuHunsHunasXionitesIranian HunsHephthalitesProto-MongolsWuhuanKumo XiXianbeiTuyuhunRouranKhitanShiweiPannonian AvarsTurksHuFour BarbariansFive BarbariansEurasian nomadsNomadic empireSiberia
-
-Central AsiaBactriaBactria–MargianaSarazmSogdia/KangjuGreco-Bactrian KingdomYavana KingdomKushan EmpireBadakhshanTransoxianaKhwarazmKhorasanMargianaParthiaDahaeFergana ValleyTarim Basin
-
-Central Asia
-
-BactriaBactria–MargianaSarazmSogdia/KangjuGreco-Bactrian KingdomYavana KingdomKushan EmpireBadakhshanTransoxianaKhwarazmKhorasanMargianaParthiaDahaeFergana ValleyTarim Basin
-
-BactriaBactria–MargianaSarazmSogdia/KangjuGreco-Bactrian KingdomYavana KingdomKushan EmpireBadakhshanTransoxianaKhwarazmKhorasanMargianaParthiaDahaeFergana ValleyTarim Basin
-
-East AsiaChinaJapanKoreaManchuriaMongoliaTaiwanTibetXinjiang
-
-ChinaJapanKoreaManchuriaMongoliaTaiwanTibetXinjiang
-
-ChinaJapanKoreaManchuriaMongoliaTaiwanTibetXinjiang
-
-South AsiaIndus Valley CivilisationVedic periodMahajanapadasNanda EmpireMaurya EmpireSatavahana dynastySangam periodMiddle kingdoms
-
-South Asia
-
-Indus Valley CivilisationVedic periodMahajanapadasNanda EmpireMaurya EmpireSatavahana dynastySangam periodMiddle kingdoms
-
-Indus Valley CivilisationVedic periodMahajanapadasNanda EmpireMaurya EmpireSatavahana dynastySangam periodMiddle kingdoms
-
-Northern AmericaAdenaHopewellMississippianAncestral PuebloansHohokamMogollonFremontPatayanSinaguaPre-DorsetThule peopleGladesSt. Johns culture
-
-Northern America
-
-AdenaHopewellMississippianAncestral PuebloansHohokamMogollonFremontPatayanSinaguaPre-DorsetThule peopleGladesSt. Johns culture
-
-AdenaHopewellMississippianAncestral PuebloansHohokamMogollonFremontPatayanSinaguaPre-DorsetThule peopleGladesSt. Johns culture
-
-MesoamericaOlmecsEpi-OlmecCapachaMayaHuastecMixtecXochipalaGran CocléIzapaTlatilcoCuicuilcoZapotecMezcalaChupícuaroQuelepaWestern Mexico shaft tomb traditionTeuchitlánVeraguasDiquisCholulaTeotihuacanNicoyaVeracruzTotonacToltec
-
-Mesoamerica
-
-OlmecsEpi-OlmecCapachaMayaHuastecMixtecXochipalaGran CocléIzapaTlatilcoCuicuilcoZapotecMezcalaChupícuaroQuelepaWestern Mexico shaft tomb traditionTeuchitlánVeraguasDiquisCholulaTeotihuacanNicoyaVeracruzTotonacToltec
-
-OlmecsEpi-OlmecCapachaMayaHuastecMixtecXochipalaGran CocléIzapaTlatilcoCuicuilcoZapotecMezcalaChupícuaroQuelepaWestern Mexico shaft tomb traditionTeuchitlánVeraguasDiquisCholulaTeotihuacanNicoyaVeracruzTotonacToltec
-
-AndesCaral–SupeCasma–SechinChavínParacasNazcaMocheLimaTiwanakuWari
-
-Caral–SupeCasma–SechinChavínParacasNazcaMocheLimaTiwanakuWari
-
-Caral–SupeCasma–SechinChavínParacasNazcaMocheLimaTiwanakuWari
-
-CaribbeanOrtoiroid peopleGuanahatabeySaladoidKalinagoKalinaArawakIndigenous peoplesSeafaring
-
-Ortoiroid peopleGuanahatabeySaladoidKalinagoKalinaArawakIndigenous peoplesSeafaring
-
-Ortoiroid peopleGuanahatabeySaladoidKalinagoKalinaArawakIndigenous peoplesSeafaring
-
-West AfricaandCentral AfricaKintampoDhar TichittOualataNokSaoEkoiSenegambiaSererSenegambia megalithsPre-imperial MaliDjenné-DjennoIgodomigodoBantuBuraSahelian kingdomsGhana EmpireTakrurPygmiesAfrican kingdoms
-
-West AfricaandCentral Africa
-
-KintampoDhar TichittOualataNokSaoEkoiSenegambiaSererSenegambia megalithsPre-imperial MaliDjenné-DjennoIgodomigodoBantuBuraSahelian kingdomsGhana EmpireTakrurPygmiesAfrican kingdoms
-
-KintampoDhar TichittOualataNokSaoEkoiSenegambiaSererSenegambia megalithsPre-imperial MaliDjenné-DjennoIgodomigodoBantuBuraSahelian kingdomsGhana EmpireTakrurPygmiesAfrican kingdoms
-
-Southeast AsiaandOceaniaMelanesiansAustronesiansAustraliaMicronesiaMelanesiaPolynesiaHồng BàngSuvarnabhumiSinghanavatiSungai BatuMonPyuThatonÂu LạcNanyueChi TuTun SunFunanTambralingaLangkasukaTagaungGangga NegaraSri KsetraChampaLâm ẤpQuduqianPan PanArakanKutaiXituTarumanagaraKantoliMueang PahangLavoKalinggaMelayuDvaravatiChenlaSrivijayaShailendraCambodiaLaosMalaysiaMyanmarThailandVietnamBruneiIndonesiaTimorPhilippinesSingapore
-
-Southeast AsiaandOceania
-
-MelanesiansAustronesiansAustraliaMicronesiaMelanesiaPolynesiaHồng BàngSuvarnabhumiSinghanavatiSungai BatuMonPyuThatonÂu LạcNanyueChi TuTun SunFunanTambralingaLangkasukaTagaungGangga NegaraSri KsetraChampaLâm ẤpQuduqianPan PanArakanKutaiXituTarumanagaraKantoliMueang PahangLavoKalinggaMelayuDvaravatiChenlaSrivijayaShailendraCambodiaLaosMalaysiaMyanmarThailandVietnamBruneiIndonesiaTimorPhilippinesSingapore
-
-MelanesiansAustronesiansAustraliaMicronesiaMelanesiaPolynesiaHồng BàngSuvarnabhumiSinghanavatiSungai BatuMonPyuThatonÂu LạcNanyueChi TuTun SunFunanTambralingaLangkasukaTagaungGangga NegaraSri KsetraChampaLâm ẤpQuduqianPan PanArakanKutaiXituTarumanagaraKantoliMueang PahangLavoKalinggaMelayuDvaravatiChenlaSrivijayaShailendraCambodiaLaosMalaysiaMyanmarThailandVietnamBruneiIndonesiaTimorPhilippinesSingapore
-
-See alsoHuman historyAncient maritime historyProtohistoryCopper AgeBronze AgeAxial AgeIron AgeHistoriographyAncient literatureAncient warfareCradle of civilizationAncient religion
-
-Human historyAncient maritime historyProtohistoryCopper AgeBronze AgeAxial AgeIron AgeHistoriographyAncient literatureAncient warfareCradle of civilizationAncient religion
-
-Human historyAncient maritime historyProtohistoryCopper AgeBronze AgeAxial AgeIron AgeHistoriographyAncient literatureAncient warfareCradle of civilizationAncient religion
-
-CategoryFollowed byPost-classical history
-
-References
-
-
-## References
-
-
-Antonio, Margaret L.; et al. (November 8, 2019)."Ancient Rome: A genetic crossroads of Europe and the Mediterranean".Science.366(6466).American Association for the Advancement of Science:708–714.Bibcode:2019Sci...366..708A.doi:10.1126/science.aay6826.PMC7093155.PMID31699931.Strauss Clay, Jenny(2016). "Visualizing Divinity: The Reception of theHomeric Hymnsin Greek Vase Painting". In Faulkner, Andrew; Vergados, Athanassios; Schwab, Andreas (eds.).The Reception of the Homeric Hymns. Oxford: Oxford University Press. pp.29–52.doi:10.1093/acprof:oso/9780198728788.003.0002.ISBN9780191795510.
-
-Antonio, Margaret L.; et al. (November 8, 2019)."Ancient Rome: A genetic crossroads of Europe and the Mediterranean".Science.366(6466).American Association for the Advancement of Science:708–714.Bibcode:2019Sci...366..708A.doi:10.1126/science.aay6826.PMC7093155.PMID31699931.Strauss Clay, Jenny(2016). "Visualizing Divinity: The Reception of theHomeric Hymnsin Greek Vase Painting". In Faulkner, Andrew; Vergados, Athanassios; Schwab, Andreas (eds.).The Reception of the Homeric Hymns. Oxford: Oxford University Press. pp.29–52.doi:10.1093/acprof:oso/9780198728788.003.0002.ISBN9780191795510.
-
-Further reading
-
-
-## Further reading
-
-
-Barker Graeme, Rasmussen Tom,The Etruscans, Oxford: Blackwell Publishing, 1998.Bartoloni, Gilda (ed.).Introduzione all'Etruscologia(in Italian). Milan: Hoepli, 2012.Bell, Sinclairand Carpino A. Alexandra (eds.).A Companion to the Etruscans, Oxford; Chichester; Malden, MA: Wiley Blackwell, 2016.Bonfante, GiulianoandBonfante Larissa.The Etruscan Language: An Introduction. Manchester: Manchester University Press, 2002.Bonfante, Larissa.Out of Etruria: Etruscan Influence North and South. Oxford: B.A.R., 1981.Bonfante, Larissa.Etruscan Life and Afterlife: A Handbook of Etruscan Studies. Detroit: Wayne State University Press, 1986.Bonfante, Larissa.Etruscan Myths. London: British Museum Press, 2006.Briquel, Dominique.Les Étrusques, peuple de la différence, series Civilisations U, éditions Armand Colin, Paris, 1993.Briquel, Dominique.La civilisation étrusque, éditions Fayard, Paris, 1999.De Grummond, Nancy T. (2014).Ethnicity and the Etruscans. In McInerney, Jeremy (ed.).A Companion to Ethnicity in the Ancient Mediterranean. Chichester, UK: John Wiley & Sons, Inc. pp. 405–422.Haynes, Sybille.Etruscan Civilization: A Cultural History.Los Angeles: J. Paul Getty Museum, 2000.Izzet, Vedia.The Archaeology of Etruscan Society. New York: Cambridge University Press, 2007.Lawrence, D. H.Sketches of Etruscan Places and Other Italian Essays. New York: Viking, 1932.Naso, Alessandro (ed).Etruscology, Berlin, Boston: De Gruyter, 2017.Pallottino, Massimo.Etruscologia. Milan: Hoepli, 1942 (English ed.,The Etruscans.David Ridgway, editor. Bloomington, IN: Indiana University Press, 1975).Salomon, Xavier F."D. H. Lawrence among the Etruscans".Apollo, 5 August 2017.Shipley, Lucy.The Etruscans: Lost Civilizations, London: Reaktion Books, 2017.Smith, C.The Etruscans: a very short introduction, Oxford: Oxford University Press, 2014.Spivey, Nigel.Etruscan Art. New York: Thames and Hudson, 1997.Swaddling, Judithand Philip Perkins.Etruscan by Definition: The Culture, Regional, and Personal Identity of the Etruscans: Papers in Honor of Sybille Haynes. London: British Museum, 2009.Torelli, M. (ed.) (2001)The Etruscans. London.Turfa, Jean MacIntosh(ed).The Etruscan World. London: Routledge, 2013.Turfa, Jean MacIntosh.The Etruscans. In Farney, Gary D.; Bradley, Gary (eds.).The Peoples of Ancient Italy. Berlin: De Gruyter. pp. 637–672.
-
-Cities and sites
-
-
-### Cities and sites
-
-
-(Soprintendenza per i Beni Archeologici dell'Umbria) "The Cai Cutu Etruscan tomb"An undisturbed late Etruscan family tomb, reused between the 3rd and 1st century BC, reassembled in the National Archeological Museum of PerugiaHypogeum of the Volumnis digital media archive(creative commons-licensed photos, laser scans, panoramas), data from aUniversity of Ferrara/CyArkresearch partnership
-
-External links
-
-
-## External links
-
-
-Wikimedia Commons has media related toEtruscans.
-
-Wikimedia Commons has media related toEtruscans.
-
-Wikimedia Commons has media related toEtruscans.
-
-Wikiquote has quotations related toEtruscan civilization.
-
-Wikiquote has quotations related toEtruscan civilization.
-
-Wikiquote has quotations related toEtruscan civilization.
-
-"Etruscan weapons and warfare". Archived fromthe originalon 30 January 2016. Retrieved3 November2017."Etruscan Lion Plaque Pendant".Archivedfrom the original on 9 May 2017. Retrieved2 February2002.Nancy Thomson de Grummond."Britannica. Ancient Italic people: the Etruscans". Chicago: Encyclopædia Britannica. Retrieved21 September2023.
+Chiefdom
+Legislature
+Etruscan League
+Historical era
+Iron Age
+,
+Ancient history
+•
+Villanovan culture
+900 BC
+[
+1
+]
+• Last Etruscan cities formally absorbed by Rome
+27 BC
+[
+1
+]
+Currency
+Etruscan coinage
+(5th century BC onward)
+Preceded by
+Succeeded by
+Proto-Villanovan culture
+Roman Empire
+Today part of
+Italy
+Vatican City
+San Marino
+Corsica
+The
+Etruscan civilization
+(
+/
+ɪ
+ˈ
+t
+r
+ʌ
+s
+k
+ən
+/
+ih-
+TRUS
+-kən
+) was an ancient civilization created by the Etruscans, a people who inhabited
+Etruria
+in
+ancient Italy
+, with a common language and culture, and f

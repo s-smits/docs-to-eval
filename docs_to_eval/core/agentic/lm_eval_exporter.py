@@ -182,7 +182,7 @@ class JSONLDatasetExporter:
             for item in dataset_items:
                 # Ensure proper JSON formatting
                 json_line = json.dumps(item, ensure_ascii=False, separators=(',', ':'))
-                f.write(json_line + '\\n')
+                f.write(json_line + '\n')
         
         logger.info(f"Exported dataset JSONL: {output_path} ({len(dataset_items)} items)")
         return output_path

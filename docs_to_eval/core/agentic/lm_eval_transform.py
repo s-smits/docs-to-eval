@@ -160,28 +160,28 @@ class AnswerTypeMapper:
         if answer_type in [AnswerType.NUMERIC_EXACT, AnswerType.NUMERIC_TOLERANCE]:
             return {
                 **base_kwargs,
-                "until": ["\\n", ".", "?", " "],
+                "until": ["\n", ".", "?", " "],
                 "max_gen_toks": 50
             }
         
         elif answer_type in [AnswerType.STRING_EXACT, AnswerType.BOOLEAN]:
             return {
                 **base_kwargs,
-                "until": ["\\n", ".", "?"],
+                "until": ["\n", ".", "?"],
                 "max_gen_toks": 100
             }
         
         elif answer_type == AnswerType.CODE:
             return {
                 **base_kwargs,
-                "until": ["\\n\\n", "# End", "```"],
+                "until": ["\n\n", "# End", "```"],
                 "max_gen_toks": 512
             }
         
         else:  # FREE_TEXT
             return {
                 **base_kwargs,
-                "until": ["\\n\\n"],
+                "until": ["\n\n"],
                 "max_gen_toks": 256
             }
 
@@ -198,25 +198,25 @@ class TemplateGenerator:
         
         # Start with base template
         if item.context:
-            template = "Context: {{context}}\\n\\nQuestion: {{question}}"
+            template = "Context: {{context}}\n\nQuestion: {{question}}"
         else:
             template = "Question: {{question}}"
         
         # Add answer type specific formatting
         if answer_type == AnswerType.MULTIPLE_CHOICE:
-            template += "\\nA. {{choices[0]}}\\nB. {{choices[1]}}\\nC. {{choices[2]}}\\nD. {{choices[3]}}\\nAnswer:"
+            template += "\nA. {{choices[0]}}\nB. {{choices[1]}}\nC. {{choices[2]}}\nD. {{choices[3]}}\nAnswer:"
         
         elif answer_type == AnswerType.CODE:
-            template += "\\n\\nProvide your code solution:"
+            template += "\n\nProvide your code solution:"
         
         elif answer_type in [AnswerType.NUMERIC_EXACT, AnswerType.NUMERIC_TOLERANCE]:
-            template += "\\n\\nProvide the numerical answer:"
+            template += "\n\nProvide the numerical answer:"
         
         elif answer_type == AnswerType.BOOLEAN:
-            template += "\\n\\nAnswer with True or False:"
+            template += "\n\nAnswer with True or False:"
         
         else:
-            template += "\\n\\nAnswer:"
+            template += "\n\nAnswer:"
         
         return template
     

@@ -74,14 +74,14 @@ def create_app() -> FastAPI:
     app.include_router(router, prefix="/api/v1")
     
     # Mount static files (for serving the frontend)
-    static_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
+    static_path = Path(__file__).parent.parent.parent / "frontend" / ".next" / "static"
     if static_path.exists():
-        app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+        app.mount("/_next/static", StaticFiles(directory=str(static_path)), name="static")
     
     # Root endpoint - serve the frontend
     @app.get("/")
     async def root():
-        static_path = Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html"
+        static_path = Path(__file__).parent.parent.parent / "frontend" / ".next" / "server" / "app" / "index.html"
         if static_path.exists():
             from fastapi.responses import FileResponse
             return FileResponse(static_path)

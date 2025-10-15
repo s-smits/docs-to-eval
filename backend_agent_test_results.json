@@ -1,0 +1,17 @@
+{
+  "timestamp": 1754352181.612504,
+  "results": {
+    "domain_classification": true,
+    "chunking_processing": false,
+    "verification_orchestrator": true,
+    "concurrent_llm": true,
+    "agentic_generation": false,
+    "evaluation_pipeline": false,
+    "ui_api_routes": true
+  },
+  "summary": {
+    "total_tests": 7,
+    "passed_tests": 4,
+    "pass_rate": 0.5714285714285714
+  }
+}

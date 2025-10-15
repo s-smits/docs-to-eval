@@ -1,0 +1,150 @@
+# Tabula Capuana
+
+TheTabula Capuana("Tablet from Capua";Ital.Tavola Capuana),is an ancientterracottaslab, 50 by 60 cm (20 by 24 in), with a long inscribed text inEtruscan, dated to around 470 BCE,apparently a ritualcalendar.About 390 words are legible, making it the second-most extensive surviving Etruscan text.The longest is the linen book(Liber Linteus), also a ritual calendar, used inancient Egyptformummywrappings, now atZagreb. The Tabula Capuana is located in theAltes Museum,Berlin.
+
+Description
+
+
+## Description
+
+
+Horizontal scribed linesdivide the text into ten sections. The writing is most similar to that used inCampaniain the mid-5th century BC, though surely the text being transcribed is much older. The text is boustrophedon, with the first line to be read left to right, the next right to left, etc.
+
+Attempts at deciphering the text (Mauro Cristofani, 1995) are most generally based on the supposition that it prescribes certain rites on certain days of the year at certain places for certain deities. The ten visible sections seem to each be devoted to a different month, March through December, January and February presumably having been treated in the missing top sections. The text itself was edited by Francesco Roncalli, inScrivere etrusco, 1985.
+
+Recently, a major scholar in the field, Bouke van der Meer, has proposed a "very tentative partial word-for-word translation" of the text:
+
+Text example
+
+
+## Text example
+
+
+(/ indicates line break; some word breaks are uncertain)
+
+First section (lines 1-7): MARCH?
+
+
+### First section (lines 1-7): MARCH?
+
+
+The first legible section likely is devoted to rituals to be held in March (though the Etruscan word for this month,Velcitna, does not occur in the legible text, presumably because it was in the missing parts).
+
+There are three to five initial lines missing and then 30-50 characters missing in the initial damaged lines shown here.
+
+...vacil.../2ai savcnes satiriasa.../3...[nunθ?]eri θuθcuvacil  śipir  śuri leθamsulci tartiria /4cim clevaac asri halχteivacil iceu  śuni savlasie...
+
+(~5-8 characters broken off at the end of this line)
+
+/5[mul]u rizile picasrisavlasieisvacil lunaśie vaca iχnacfuli/6nuśnesvacil savcnes itnamulu rizile picasriianevacil l/7eθamsul scuvunemarzac saca⋮
+
+Notes: 
+In line 1 and throughout,vacilmay mean "libation" (or some similar rite or ceremony), in which case each of the first phrases beginning with it presumably indicate what deity to pour a libation to and perhaps other information.However, Steinbauer (agreeing with Rix) has challenged this assumption and, considering that it seems to be positioned at the beginning of a series of phrases within the context of a step-by-step instruction, proposed thatvacil(with its variantsvacalandvacl) simply means "then."
+
+In line 2,savc-nesaccording to van der Meer is an Apolline god, perhaps related in form tosaucsaθat 3.15 of theLiber Linteus. The form in the Liber Linteus, preceded as here by the termvacl"libation," also falls in a section that probably deals with March, though as here there is no explicit mention of a month name. The relevant text from that passage of the Liber Linteus is as follows (3.15-3.17):vacl . an . ścanince . saucsaθ . persin / cletram . śrenχve . iχ . ścanince . ciz . vacl / araroughly: "The libation which was poured toSauc- Pers-(should be performed) with the decorated litter just as it had been poured (before); perform the libation three times."
+
+Note that the ending-nes/-nisalso occurs in the formsfulinuś-nes(5-6) andcaθ-nis(9), all referring to deities.
+
+In line 2,satiriasa(if one word) may be a form ofSatrethe Etruscan term forSaturn, which also appears on thePiacenza Liveramong chthonic deities.Or it could be in some way connected to or contrasting withtartiriaat the end of line 3.
+
+In line three,śuriis a (not necessarily exclusively) chthonic deity.The form also appears on theLead Plaque of Magliano.Leθam-sappears on thePiacenza Liveramong chthonic deities, but may have other connections as well. The genitive is used here as usual for indirect object.
+
+In lines three and four,ci(m)means "three," and bothtartiriaandclevaindicate kinds of offerings, yielding a possible partial translation: "To Lethams, threetartiria(perhaps related to Greek Tartaros, as if '(gifts) for the underworld'?) offerings and threeclevaofferings ..."In line 4,halχ-is likely the name of a kind of vase.
+
+A verbal form ofvacilmay be seen in line 5:vac-a"make a libation (to)?"; But van der Meer readsfacahere, with unknown meaning. A similar form,vac-iis in line 28, also preceding a form offuli/nuśnes.Also in line 5,lunaśiebrings to mind the Roman moon goddess,Luna(which some equate withCath, see below).pi-cas(ri)(5,6) is defined by Pallottino as a verb of offering, to be compared witha-cas"to do; to offer."mulu-(4/5, 6) andscu-(7, 10) seem to be roots meaning "to offer, give" and "finish", respectively; andsac-means "carry out a sacred act; consecrate."In lines 5-6,fuli/nuśnesmay be a form ofFufluns, the EtruscanDionysuswho is associated with the Etruscan goddessCaθawho also seems to be mentioned in this text (see below).A somewhat similar form,fuln[folnius]can be found on line 29 of theTabula Cortonensis.
+
+Note the frequent repetitions (besidesvacil):savcnes(2, 6);leθamsul(3, 6/7, 8...);mulu-ri zile picas-ri(4/5, 6, 18/19 but with...a-cas-rirather thanpi-cas-ri);savlasie(is)(4, 5);scu-vune marza(c)(7) versusmarza...scuvse(10)...
+
+The tentative partial translation by van der Meer, building on the work of many others suggests this part of the ritual calendar calls for an indeterminate offering be made to the god Saucne, and that libations be performed for the godsŚuriand Letham as well as for the gods Saulasie and Fulinusne. Furthermore, that a giftedrizilebe accepted in [the period of?] Iana. And that, the libation to Letham having been properly completed, amarzabe consecrated.
+
+Second section (starting on line 8): APRIL =apirase
+
+
+### Second section (starting on line 8): APRIL =apirase
+
+
+The second section seems to be devoted to rituals to be held in April.
+
+iśveitule ilucve apiraseleθamsul ilucu cuiesχu perpricipen apires /9racvanies huθ zuslerithnaitulteisnuza in te hamaiθiciveis caθnis fan/10irimarza in te hamaiθiital sacriutus ecunzaiiti alχuscuvse riθnaitu/11lteici zusle acun siricima nunθerieθ iśuma zuslevai apire nunθer/12iavθleθ aiumvacil ia leθamsul nunθerivacil ia riθnaitaeθ aθene/13ica perpricelutule apirase unialθi turza esχaθceei iśum unialθ ara/14epnicei nunθcu ciiei turzairiθnaita eiti ia halχapertule aφes ilucu vacil zuχn/15e...elφa riθnaitultraisvanec calus zusleva atu[unis]neinpa vinaiθ acasaφ/16esci tartiria ci turza riθnaitulasnenaziulastravaiuser hivus niθusc riθnaitulahivustravaiuser snenaziulas
+
+Notes: Line 8 shows the formisveiwhich occurs frequently in theLiber Linteuswhere it appears to mean "festival" or "ides". If the formiśumin line 13 is related, it may mean "festive" or (more likely) "appropriate for a sacred festival" > "sacred." The formtul(e)(8, 9, 10) in some contexts means "stone", perhaps related totular"border" (< "stone marking a border"?),itself probably related to (or the origin of?) Umbriantuder"boundary"; also the origin of the Umbrian town name Todi.Here it seems to mean "(on or after) the ides (of a particular month)."According to van der Meer,iluc-ve/u(twice in line 8) means "feast."Of course,iśveiandtulecan't both mean "ides", and in any case, the Latinidesoriginally fell on the full moon and was sacred to Jupiter, but since the deities recognizable here are underworld (leθamsandcaθ),tulmay instead refer to the dark phase of the moon, or the new moon (Latinkalends). As van der Meer points out elaborately elsewhere, the contrast between light and dark gods was very important for the Etruscan calendar and for how they divided up the heavens.
+
+apirasemay mean "(in the) month of April."See above forLeθam-sul. Van der Meer translatespep-rias "must be held."cipenseems to be a priestly title (with variantscepa(r),cepe(n)).
+
+huθin line 9 means "six",  andciin line 11 means "three."zusle(-vai)(9, 11) means "sacrificial victims" perhaps specifically "piglets."
+
+At the end of line 9,caθ-nismay be a form ofCatha, an Etruscan goddess, with an ending-nis/-nesalso seen above in other theonymns:savc-nes(lines 2 and 6) andfuli/nuś-nes(lines 5-6). Rarely depicted in art, she is number 8 (among celestial gods) and number 23 on thePiacenza Liver.
+
+sacri(10) is certainly connected to  words meaning "sacred; victim for sacrifice"—Latinsacer, Umbriansacrasakra, Oscansakri-, and to 'saca' in line 7 above.
+
+nunθe-ri(11 twice) seems to be a verb "invoke" or "offer", with the necessitive ending-rialso seen inpep-ri(8),picas-ri(5),mulu-ri(4/5), and perhapsśu-ri(3) andsac-ri(10).eθ(11, 12) means "thus."avθ-leθ(12) may be related toavθa"northwind; eagle."
+
+The wordacunin line 11 may be from Greekagon(ἀγών) originally "struggle", which came to be used as a term for festivals involving competitive sports; compare LatinAgonaliafestivals in honor of Janus in Rome held in January, March, May and December. Later forms show syncope (loss of word-internal vowels):acn-es-emon theLiber Linteus(10.5)) andacn-s . priumn-es"theagonof Priam" on the left side of the Volterna urn.
+
+The tentative partial translation by van der Meer, building on the work of many others, suggests this part of the ritual calendar calls: for a Cuieschu Feast to be performed for the god Letham on the Feast of April [which is] on the Ides; that Racvanies be the Priest of April; that six piglets be offered for the ritual ; that asnuza, which [is] in the [area of?] Hamai, be declared by Cive [and] by Cathni; and that a statuette ofMariś, which is in the [area of?] Hamai, be consecrated for Ita (? or "for this (festival)"?); thatutube given withecunand withscuvsaby theItapriest in the ritual; that three piglets and anacun siricimabe offered, and further thatiśuma(sanctified items?) be offered with the April piglets in theavθla, but (in this case) for Aiu; that a libation be offered to Letham here (="at this point"?); that a libation be made here (as part of?) the ritual; furthermore that the (sacrifice to?)aθenabe held; concerning the love gifts placed in Uni's sanctuary on Earth Day (celitule) in April, take away (any that are not)iśum(sanctified?) in Uni's sanctuary; that three gifts be offered inepn-(and?) a vase (halχ) here in theeit(of the?) ritual; that a libation (be performed) on the Aperta day for the Festival of Aphe inzuchn-; that an offering be made ofelfaby the people involved in the ritual, and of young Adonis (?) boars forCaluwithvanain the vineyard; that the people of the cult of the servant girl, and thevaiuserpriest (?) of Hivu and of Nithu, and the people of Hivu, and thevaiuserof the cult of the servant girl (make an offering of) threetartiria(and) three love gifts for Aphe during the ritual.
+
+Third section (lines 18-20): MAY =an/mpile
+
+
+### Third section (lines 18-20): MAY =an/mpile
+
+
+iśvei tule ilucve anp[ili]e laruns ilucu huχśanti huri alχu esχaθ canulismulu/19rizile zizriinpa [...] an acasritiniantule leθamsul ilucu perpriśanti arvus/20ta aius nunθeri
+
+Larun, Canuli, Tinia, andAiuare names of Etruscan gods;huχmay mean "celebrate",alχu"given,"esχaθ"bring, place";arvusta"(produce of the) field"  (compare Umbrianarvam"field";arvia"fruits of the field, grain").
+
+Again, in van der Meer's tentative translation, in summary, the text calls: for a Festival forLarunto be celebrated on the Feast Day of May (namely) on the ides; that Canulis should bring the giftedhuri(wild fruits?) vase; that the giftedrizilethat must be offered (during ...?) must beziz-ed; that the feast for Lethams must be held on the day ofTinia; and the vase of the fruits of the field be offered to Aiu.
+
+Fourth section (lines 21-24): June =acalva
+
+
+### Fourth section (lines 21-24): June =acalva
+
+
+acalve apertule saiuvie leθamsul ilucu perpriśanti ma(c)vilutuleiti/22r śverfalal [...] husilitulevelθur t[....]sc lavtun icni seri. turza esχaθcep/23acusnausie θanurari turza esχa[θce]nis[c l]avtun icni zusle [ś]ilaciiul esessalχe/24i calaieiclen[..]ai stizaiteiz[a]l rapa z[al..........][..]niiac [l]avtun icni seril turza e/25sχaθcelaχuθ nunθe[ri...]ei[tu] acasrilaχθ turzais . esχa[θce][ecl..]θ[u] acas θezusleva/26stizaitei acasripacus[naśi]eθu[r]laθiumia[i zusle]i[ś]iχaiei t[ar]tiriiaizanusei pepθiaira/27tu ceχiniaitei turza esχaθce eθ[.......]
+
+Notes: in line 23, the deityThanur(Thanr) is a goddess frequently present at the birth of other Etruscan deities and is part of the circle ofTuran.But in theLead Plaque of Magliano, she appears amongst mostly underworld deities, suggesting she is both a goddess of birth and of death.The formlaχ(u)-"basin" (twice in line 25) may be akin to Latinlacus"basin, water, lake."
+
+Summarizing van der Meer, the text calls: for a feast for Lethams to be prepared in June on the day of Aperta Saiuvia; for the priest of Ita and of Sva to (present) a dish on the fifth day, and afalal(gift of heaven?) on the day of Husiluta; thatserigifts will have been brought by Velthur and by the T... family; that gifts will have been brought for Thanur by the Pacusnausia (family?); and that some piglets (will have been brought) by the Nis family for Shilaciia Esa, withsalchaand withcalaia, withlen..aand withstizaita, (and) two cups and two...; that the ..nia family will also have brought someserigifts; that the offerings be made in a basin (laχuθ); thateitumust be made (as an offering); that (those gifts placed) in the basin be those gifts that were brought; that herebyelthube made; (and) that an offering of piglets be made in thestiza; the Pacusnasia family will have brought gifts ritually in thecachinathus--withlathiumaand with a piglet, withśiχaiaand witht[ar]tiriia, withzanuseand withpepθia...
+
+Fifth section: probably July (=parθum?)
+
+
+### Fifth section: probably July (=parθum?)
+
+
+Taking up lines 28-30. According to a glossTLE854, the name of July in Etruscan should beTraneus, but the names of the Etruscan months may have varied from place to place, as they did in Greece.
+
+parθumi ilucve iśveitule tinunus seθumsal ilucu perpricipen tartiria vaci / fulinuśn[es.....]/[..]etulanatinusnal . ilucuituna fulinuśnai . θenunteθu[...]
+
+Summarizing van der Meer, the text calls: for a festival to be held in July on  the Feast of the Ides for Tinun (and) for Sethums; that a priest pour a libation (over?)tartiriagifts for Fulinushnai; [here follows illegible material ending with] of...eta; that a feast (be prepared) for Natinushna; that Fulinushnai hold this (?); [and the rest is illegible, except for an initial]eθu...
+
+Sixth section: probably August (=papu?)
+
+
+### Sixth section: probably August (=papu?)
+
+
+Taking up lines 31-35. From this point on, the tablet is badly damaged and almost no coherent translations can even be attempted beyond the first line below. Again, glossTLE854 indicates that the name of August in Etruscan should be[H]ermius, but the names of the Etruscan months may have varied from place to place.
+
+macvilutule papui[....]se ilu[cve...]θasχra turza esχa[θ...]e[s] rapa
+
+Tentative translation of first line: On the fifth day of August, on the (day) of the feast (of ?), bring ...-θasχragifts and cups. [The rest is mostly obscure.]
+
+The tablet was uncovered in 1898 in the burial ground ofSanta Maria Capua Vetere.
+
+References
+
+
+## References
+
+
+Cristofani, M. (1995)Tabula Capuana: Un calendario festivo di età arcaicaFirenze.Rendeli, M (200) "Tabula Capuana" in A. Carandini and R. Cappelli (eds.)Roma, Romolo, Remo et la fondazione della città. Milano. pp. 360-361.Grünwedel, A. (1922)Tusca. 1. Die Agramer mumienbinden. 2. Die inschrift des cippus von Perugia. 3. Die Pulena-rolle. 4. Das bleitäfelchen von Magliano. 5. Die leber von Piacenza. 6. Golini-grab I. 7. Die inschrift von Capua.Leipzig : K. W. Hiersemann.https://catalog.hathitrust.org/Record/001724165van der Meer, L. B. "Some comments on the Tabula Capuana", in: Studi Etruschi 77, 2014 [2015], 149-175.Wylin, K. (1997) Review of Cristofani, M. (1995). inRevue belge de Philologie et d'Histoire 75-1pp. 191-192.
+
+External links
+
+
+## External links
+
+
+Basic information, adopted for this entry; photograph(Italian)Curtun (Modern Cortona)Full Etruscan text and proposed translation into Italian

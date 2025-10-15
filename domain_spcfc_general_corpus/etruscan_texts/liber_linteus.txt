@@ -1,95 +1,53 @@
 # Liber Linteus
 
-This article includes a list ofgeneral references, butit lacks sufficient correspondinginline citations.Please help toimprovethis article byintroducingmore precise citations.(February 2013)(Learn how and when to remove this message)
-
-TheLiber Linteus Zagrabiensis(Latinfor "Linen Book of Zagreb",  also known rarely asLiber Agramensis, "Book ofAgram") is the longestEtruscantext and the only extantlinenbook (libri lintei), dated to the 3rd century BC, making it arguably the oldest extant European book. (The second longest Etruscan text,Tabula Capuana, also seems to be a ritual calendar.) Much of it is untranslated because of the lack of knowledge about the Etruscan language, though the words and phrases which can be understood indicate that the text is most likely a ritualcalendar. Miles Beckwith (2008) states with regard to this text that "in the last thirty or forty years, our understanding of Etruscan has increased substantially," andL. B. van der Meerhas published a word-by-word analysis of the entire text.
-
-The fabric of the book was preserved when it was used formummywrappings inPtolemaic Egypt. The mummy was bought in Alexandria in 1848 and since 1867 both the mummy and the manuscript have been kept inZagreb,Croatia, now in a refrigerated room at theArchaeological Museum.
-
-History of discovery
-
-
-## History of discovery
-
-
-In 1848, Mihajlo Barić (1791–1859), a low rankingCroatianofficial in theHungarianRoyal Chancellery, resigned his post and embarked upon a tour of several countries, includingEgypt. While inAlexandria, he purchased asarcophaguscontaining a female mummy, as a souvenir of his travels. Barić displayed the mummy at his home inVienna, standing it upright in the corner of his sitting room. At some point he removed the linen wrappings and put them on display in a separate glass case, though it seems he had never noticed the inscriptions or their importance.
-
-The mummy remained on display at his home until his death in 1859, when it passed into possession of his brother Ilija, a priest inSlavonia. As he took no interest in the mummy, he donated it in 1867 to the State Institute of Croatia, Slavonia, and Dalmatia inZagreb(the present-dayArchaeological Museum in Zagreb). Their catalogue described it as follows:
-
-Mummy of a young woman (with wrappings removed) standing in a glass case and held upright by an iron rod. Another glass case contains the mummy's bandages which are completely covered with writing in an unknown and hitherto undeciphered language, representing an outstanding treasure of the National Museum.
-
-The mummy and its wrappings were examined the same year by the GermanEgyptologistHeinrich Brugsch, who noticed the text, but believed them to beEgyptian hieroglyphs. He did not undertake any further research on the text, until 1877, when a chance conversation withRichard Burtonaboutrunesmade him realise that the writing was not Egyptian. They realised the text was potentially important, but wrongly concluded that it was a transliteration of the EgyptianBook of the Deadin theArabic script.
-
-In 1891, the wrappings were transported to Vienna, where they were thoroughly examined byJakob Krall, an expert on theCoptic language, who expected the writing to be either Coptic,LibyanorCarian. In 1892, Krall was the first to identify the language as Etruscan and reassemble the strips. It was his work that established that the linen wrappings constituted a manuscript written in Etruscan.
-
-At first, the provenance and identity of the mummy were unknown, due to the irregular nature of its excavation and sale. This resulted in speculation that the mummy may have had some association with either theLiber Linteusor theEtruscans. A papyrus found within her sarcophagus was identified as an EgyptianBook of the Dead, which included the details of an Egyptian woman named Nesi-hensu, the wife of Paher-hensu, a tailor fromThebes. This discovery has been used as evidence to suggest that the mummy is the Nesi-hensu mentioned on the papyrus.However, later analysis of the papyrus has suggested that it postdates the mummy by nearly a century, which could suggest that the mummy is not Nesi-hensu.
-
-She was 30–40 years old at the time of her death, and wore a necklace, with traces of flowers and gold in her hair. Among the fragments of the accompanying wreath, there was a cat skull.
-
-Date and origin
-
-
-### Date and origin
-
-
-On paleographic grounds, the manuscript is dated to approximately 250 BC (though carbon dating put manufacture of the linen textile itself at 390 BC +/- 45 years).Certain local gods mentioned within the text allow theLiber Linteus's place of production to be narrowed to a small area in the southeast ofTuscanynearLake Trasimeno, where four major Etruscan cities were located: modern dayArezzo,Perugia,ChiusiandCortona.
-
-The book is laid out in twelve columns from right to left, each one representing a "page". Much of the first three columns is missing, and it is not known where the book begins. Closer to the end of the book the text is almost complete (there is a strip missing that runs the entire length of the book). By the end of the last page the cloth is blank and theselvageis intact, showing the definite end of the book.
-
-There are 230 lines of text, with 1330 legible words, but only about 500 distinct words or roots.Only about 60% of the text is thought to have been preserved. Black ink has been used for the main text, and red ink for lines anddiacritics.
-
-In use, it would have been folded so that one page lay on top of another like acodex, rather than being wound along like ascroll. Julius Caesar is said to have folded scrolls in similaraccordionfashion while on campaigns.
-
-Though the Etruscan language is not fully understood, many words and phrases can be deciphered, enough to give us an indication of the subject matter. Both dates and the names of gods are found throughout the text, giving the impression that the book is a religious calendar. Such calendars are known from the Roman world, giving not only the dates of ceremonies and processions, but also the rituals and liturgies involved. The lostEtrusca disciplinaare referred to by several Roman antiquarians.
-
-The theory that this is a religious text is strengthened by recurring words and phrases that are surmised to have liturgical or dedicatory meanings. Some notable formulae on the Liber Linteus include a hymn-like repetition ofceia hiain column 7, and variations on the phraseśacnicstreś cilθś śpureśtreśc enaś, which is translated by van der Meer as  "by the sacred fraternity/priesthood ofcilθ,  and by thecivitasofenaś".
-
-Though many of the specific details of the rituals are unclear, they seem to have been performed outside cities, sometimes near specific rivers, sometimes on (or at least for) hilltops/citadels, sometimes apparently in cemeteries. Based on the two unambiguous dates that survive — June 18 in 6.14 and September 24 in 8.2 — it is supposed that roughly columns 1-5 deal with rituals occurring in the months before June (probably starting in March, and perhaps there was introductory or other material here as well), column 6 with June rituals, column 7 may refer to rituals in July and possibly August, column 8 September rituals, and 9-12 concerning rites to be performed from October through February. Other numbers are mentioned which are probably also dates, but as the months are not indicated, we cannot be sure where exactly they fall in the year.
-
-Throughout this calendar there is also a fairly clear progression of which kinds of deities are to be propitiated in which months and seasons. Only two individual gods are set off by being preceded by the termfarθan fleres, probably "the Genius (or Father?) of the spirit of/in..." These areCrap-andNeθuns, the first probably equivalent toTin, the EtruscanJupiter, and the second roughly equivalent to LatinNeptune. It is notable thatCrap-/Jupiter is mentioned in the first half of the text (in columns 3, 4, and 6), that is, up to June (specifically before thesummer solsticeon June 21), but he is not ever mentioned later in the calendar (as far as we can see in the text that is legible). On the other hand,Neθuns/Neptune does not occur (again, as far as we can see) in these earlier passages/months/seasons, but only after theautumnal equinoxon September 21 (specifically just after September 24, mentioned in 8.3, then also 8.11, 9.18 and 9.22).
-
-Similarly, on the one hand, other deities of light, such asθesan"Dawn" andLusaare only mentioned in the earlier part of the calendar:θesanat 5.19-20θesan tini θesan eiseraś śeuśprobably "Dawn of (bright) Jupiter (and) Dawn of the Dark Deities," (probably referring toVenusas morning and evening star) andLusaat 6.9; while, on the other hand, various terms thought or known to refer to specifically underworld deities exclusively appear later in the calendar:Satrs"Saturn/Cronos" (11.f4),Caθ-(in columns 10 and 12),Ceu-(at 7.8),Velθa(7, 10, and 11), andVeive-/Vetis= LatinVeiovis/Vedius,(described by van der Meer as an "underworld Jupiter") in 10 and 11.
-
-But some of the apparent underworld deities, such asZer, show up in both halves (4, 5, 9), whileLur, also thought to bechthonic, only appears in columns 5 and 6. van der Meer claims that many of the locations in the year of these deities' rituals correspond to the same deities' locations on theLiver of Piacenzaand in other Etruscan sources that hint at how they divided the heavens or the divine realm.On the other hand, Belfiore considersCrapto be an underworld deity.
-
-There are a variety of types of ritual (the general term for which seems to beeis-na/ ais-naliterally "for the gods, divine (act)") described in the text. The most frequently mentioned includevacl, probably "libation", usually ofvinum"wine" (sometimes specifically "new wine") but also of oilfaśand other liquids whose identities are unclear;nunθen"invoke" or possibly "offer (with an invokation)";θez-probably "sacrifice" but possibly "to present" sacrifice(s) or offering(s) (fler(χva)) often ofzusle(va)"piglet(s)" (or perhaps some other animal). Offerings and sacrifices were placed: on the right and/or lefthamΦeś leiveś(and variations thereof); on fireraχθ; on a stone (altar?)luθt(i); on the groundcel-i; or with/on a decorated (?) littercletram śrenχveamong others. They were often performed three timesci-s-um/ci-zand often happened or were concluded during the morningcla θesan(a term that seems to mark the end of rituals in this text, since blank lines follow it, followed by a new (partial or complete) date). Column 7 (July and/or August?) may be devoted to describing a series of funereal rites connected to theAdoniafestival ritually mourning the death ofAphrodite's loverAdonis.
-
-A variety of types of priest,cepen, (but notably not civil authorities) are mentioned, but the exact distinctions between them are not completely clear:tutin"of the village"(?);ceren,θaurχboth "of the tomb";cilθ-l/cva"of the citadel(s)/hiltop(s)". Less clear are the kinds of priest indicated by the following (if they refer to priests at all):zec, zac, sve, θe, cluctra, flanaχ, χuru("arch-"?),snuiuΦ("permanent"?),cnticn-('"ad hoc"?),truθur("omen interpreter from lightening"?),peθereni("of the god Peθan"?),saucsaθ([priest] or [holy area]"of the god Saucne") at 3.15 (3.15-3.17):vacl . an . ścanince . saucsaθ . persin / cletram . śrenχve . iχ . ścanince . ciz . vacl / araroughly "The libation which was poured toSauc- Pers-(should be performed) with the decorated litter just as it had been poured (before); perform the libation three times."
-
-This seems to present a notable connection between the Liber Linteus and the second longest Etruscan text which happens to also be a ritual calendar, theTabula Capuana(line 2), since the rootsauc-seems to occur in both with the rootvacl"libation" and also in a part of each text that probably corresponds to March (though that month is not directly named in any obvious way in either text).
-
-Short sample of the text and partial translation
-
-
-### Short sample of the text and partial translation
-
-
-Column 3, strip C (There are no punctuation marks in the original beyond interpuncts between most words. Those provided here are to make it easier to match the original with the translation.)
-
-12 [fl]er, etnam tesim, etnam c[elucn],13 cletram śren-χve. trin:  θezi-ne χim fler14 tarc. mutin um anancveś; nac cal tarc15 θezi. vacl an ścanince saucsaθ . persin16 cletram śrenχve iχ ścanince. clt vacl17 ar-a. nunθene śaθ-aś, naχve heχz,  male.
-
-A tentative partial translation: "The sacrifice, be it funerary, [or] be it chthonic [is to be put] on the decorated litter. [Then] say: 'The sacrifice and the dog(?) are presented as the offering.' And collect the goblets; and then present the puppy(?) and the dog(?).  The libation that was poured in the [sacred area] ofSaucne Persi[should be poured] just as it was poured on the decorated litter. Make the libation three times. Make the offering [as it has been] established, carry [it] out as is appropriate, [and] observe [the appropriate rituals](?)."
-
-Notes:Persimay refer toPerugiawhose ancient name wasPerusia. The last word,maleis related to the well-attested Etruscan words for "mirror":mal(e)naandmalstria.
-
-References
-
-
-## References
-
-
-Bibliography
-
-
-### Bibliography
-
-
-Krall, J. (1892-01-07). Tempsky, F. (ed.).Die etruskischen Mumienbinden des Agramer National-museums[The Etruscan mummy wrappings from the Zagreb national museum]. Denkschriften der K. Akademie der wissenschaften in Wien. Philosophisch-historische classe; bd. XLI (in German). Wien.{{cite book}}:  CS1 maint: location missing publisher (link)Rosenberg, A. (1912) "Zu den Agramer Mumienbinden" Göttingen: Vandenhoeck und RuprechtGlotta(Göttingen), 1912, Vol.4 (1), p.51Grünwedel, A. (1922)Tusca. 1. Die Agramer mumienbinden. 2. Die inschrift des cippus von Perugia. 3. Die Pulena-rolle. 4. Das bleitäfelchen von Magliano. 5. Die leber von Piacenza. 6. Golini-grab I. 7. Die inschrift von Capua.Leipzig : K. W. Hiersemann.https://babel.hathitrust.org/cgi/pt?id=mdp.39015080335576&seq=92(includesfull text, pp. 69-91)Olzscha, K. (1934) "Aufbau und Gliederung in den Parallelstellen der Agramer Mumienbinden" I and II inStudi EtruschiVIIIpp. 247 ff. andIX1935 pp. 191 ff.Runes, M. and S. P. Corsten (1935)Der etruskische Text der Agramer Mumienbinden. Mit einem Glossar von S. P. CorsenGöttingen, Vandenhoeck & Ruprecht ("Forschungen zur griechischen und lateinischen Grammatik" volume 11).Olzscha, K. (1939) "Interpretation der Agramer Mumienbinden" inKlioBeiheft40Leipzig.Olzscha, K. (1959). "Die Kalendardaten der Agramer Mumienbinden" [The calendar data from the Zagreb mummy wrappings].Aegyptus(in German).39(3/4):340–355.ISSN0001-9046.JSTOR41215687.Pfiffig, A. J. (1963) "Studien zu den Agramer Mumienbinden" inDenkschriften der Österreichen Akademie der Wissenschaften, philosophisch-historische KlasseBd.81Österreichische Akademie der Wissenschaften, Wien.Fowler, M and R. G. Wolfe (preparers) (1965)Materials for the Study of the Etruscan LanguageUniversity of Wisconsin Press. pp. 108-112.[2]Roncalli, F. (1978-1980) "Osservazioni suilibri linteietruschi" inRendiconti. Pontificia Accademia51-52 [1982], pp. 3-21.Rix, H. (1985) "Illiber linteusdi Zagabria"  inScrivere etruscopp. 17-52.Pallottino, M. (1986) "Il libro etrusco della uimmia di Zagabria. Significato e valore storico e linguistico del documento" inVjesnik Arheološkog Muzeja u Zagrebu19, pp. 1-5.Pfiffig, A. J. (1986) "Zur Heuristik desLiber linteus zagrabiensis"Vjesnik Arheološkog Muzeja u Zagrebu19, pp. 9–13.Flury-Lemberg, M. (1986) "Die Rekonstruktion desliber linteus Zagrabiensisoder die Mumienbinden von Zagreb,"Vjesnik Arheološkog Muzeja u Zagrebu19, pp. 73–79Mirnik, I., Rendić-Miočević, A. (1996) "Liber linteus Zagrbiensis I"Vjesnik Arheološkog Muzeja u Zagrebu19, pp. 41–71.Mirnik, I., Rendić-Miočević, A. (1997) "Liber linteus Zagrbiensis II"Vjesnik Arheološkog Muzeja u Zagrebu20, pp. 31–48.Rix, H. (1991)Etruskische Texte: Editio minor.I-II, Tübingen.Steinbauer, D.H. (1999)Neues Handbuch des Etruskischen(Studia Classica, Band 1) St. Katharinen.Wylin, Koen (2000).Il verbo etrusco : ricerca morfosintattica delle forme usate in funzione verbale(in Italian). Roma: L'Erma di Bretschneider.ISBN978-88-8265-084-1.OCLC44098559.van der Meer, L. B.  (2007)Liber linteus zagrabiensis. The Linen Book of Zagreb. A Comment on the Longest Etruscan Text. Louvain/Dudley, MAISBN978-90-429-2024-8.Turfa, J. M. (2008) Review of van der Meer, L. B.  (2007)Liber linteus zagrabiensis. The Linen Book of Zagreb. A Comment on the Longest Etruscan Text. Louvain/Dudley, MAWoudhuizen, F. C. (2008)."Ritual prescriptions in the Etruscan Liber linteus".Res Antiquae.5. Bruxelles: Safran:281–296.ISSN1781-1317.Belfiore, V.  (2010)Il liber linteus di Zagabria: testualità e  contenuto. Biblioteca diStudi Etruschi50Pisa-Roma.ISBN978-88-6227-194-3.van der Meer, L. B.  (2011) Review of V. Belfiore'sIl liber linteus di Zagabria(2010) inBryn Mawr Classical Review1.36[3]Meiser, G. (2012) "Umbrische Kulte im Liber Linteus?", inKulte, Riten, religise Vorstellung bei den Etruskern, a cura di P.Amman, Wien, 163-172.[4]Woudhuizen, F. C. (2013)The Liber linteus: A Word for Word Commentary to and Translation of the Longest Etruscan Text. Innsbrucker Beiträge zur Kulturwissenschaft, Neue Folge, Bd 5.Innsbruck: Institut für Sprachen und Literaturen der Universität Innsbruck Bereich Sprachwissenschaft. ISBN 9783851242317.Tikkanen, K. W. (2014) Review of Woudhuizen, F. C. (2013) inBryn Mawr Classical Review11.16[5]Belfiore, V (2016) "Sacrifici cruenti e incruenti nei 'testi paralleli' del Liber Linteus," in: A.Ancillotti – A.Calderini – R.Massarelli (eds.),Forme e strutture della religione nell’Italia mediana antica / Forms and Structures of Religion in Ancient Central Italy, Atti del III Convegno dell’Istituto di Ricerche e Documentazione sugli antichi Umbri (IRDAU), Perugia – Gubbio, 21-25 settembre 2011, Roma. pp. 35-46.Belfiore, V. (2018) "La nozione di sacer in etrusco: dai riti del liber linteus a ritroso," in: T.Lanfranchi (ed.).Autour de la notion de sacer, Actes de la journée d’étude, Rome, 4 avril 2014, Roma. pp. 39-59.Dupraz, E. (2019)Tables Eugubines ombriennes et Livre de lin étrusque: Pour une reprise de la comparaisonHerman: ParisISBN979-1037000903.
-
-External links
-
-
-## External links
-
-
-Media related toLiber linteusat Wikimedia Commons
+Manuscript in Etruscan language
+Liber Linteus
+Material
+Linen
+Created
+3rd century BC
+Discovered
+1867
+Zagreb
+,
+Croatia
+Present location
+Zagreb
+,
+Croatia
+Language
+Etruscan
+This article includes a list of
+general references
+, but
+it lacks sufficient corresponding
+inline citations
+.
+Please help to
+improve
+this article by
+introducing
+more precise citations.
+(
+February 2013
+)
+(
+Learn how and when to remove this message
+)
+The
+Liber Linteus Zagrabiensis
+(
+Latin
+for "Linen Book of Zagreb",  also known rarely as
+Liber Agramensis
+, "Book of
+Agram
+") is the longest
+Etruscan
+text and the only extant
+linen
+book (
+libri lintei
+), dated to the 3rd century BC, making it arguably the oldest extant European book. (The second longest Etruscan text,
+Tabula Capuana
+, also seems to be a ritual calendar.) Much of

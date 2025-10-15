@@ -137,7 +137,18 @@ logs
 uv.lock
 python_files.txt
 .DS_Store
+
+# Node/Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/.cache/
+frontend/dist/
+frontend/out/
+frontend/build/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Generated outputs and large data dumps
 output/
 docs_to_eval/output/
-domain_spcfc_general_corpus/etruscan_texts/
-package-lock.json

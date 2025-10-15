@@ -101,6 +101,47 @@ class GenerationConfig(BaseModel):
     finetune_random_seed: int = Field(ge=0, default=42, description="Random seed for reproducible train/test splits")
 
 
+class ChunkingConfig(BaseModel):
+    """Configuration for intelligent text chunking (with optional chonkie).
+
+    Supports both legacy and current field names used across demos/tests.
+    """
+    # Core sizing
+    target_chunk_size: int = Field(gt=100, default=1500)
+    max_chunk_size: int = Field(gt=200, default=2500)
+    min_chunk_size: int = Field(gt=50, default=800)
+
+    # Overlap configuration (support bytes and percent style)
+    overlap_size: int = Field(ge=0, default=200)
+    overlap_percent: float = Field(ge=0.0, le=50.0, default=15.0)
+
+    # Strategy selection (support both names used in code)
+    chunking_strategy: str = Field(default="semantic")
+    force_chunker: Optional[str] = Field(default=None)
+
+    # Advanced toggles
+    enable_chonkie: bool = Field(default=False)
+    adaptive_sizing: bool = Field(default=True)
+    preserve_code_blocks: bool = Field(default=False)
+    preserve_math_expressions: bool = Field(default=False)
+
+    @validator('max_chunk_size')
+    def validate_max_gt_min(cls, v, values):
+        min_size = values.get('min_chunk_size', 800)
+        if v <= min_size:
+            raise ValueError('max_chunk_size must be greater than min_chunk_size')
+        return v
+
+    @validator('target_chunk_size')
+    def validate_target_between_min_max(cls, v, values):
+        min_size = values.get('min_chunk_size', 800)
+        max_size = values.get('max_chunk_size', 2500)
+        if not (min_size <= v <= max_size):
+            # Clamp into range rather than hard-fail for robustness
+            return max(min_size, min(v, max_size))
+        return v
+
+
 class VerificationConfig(BaseModel):
     """Configuration for response verification"""
     method: VerificationMethod = VerificationMethod.EXACT_MATCH

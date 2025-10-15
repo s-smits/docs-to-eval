@@ -1,0 +1,90 @@
+{
+  "timestamp": "2025-08-05T02:16:26.527492",
+  "results": {
+    "test_results": {
+      "API Connectivity": true,
+      "Keyword Extraction": false,
+      "Classification Accuracy": true,
+      "Agentic Generation": true,
+      "Context Fix (CRITICAL)": true,
+      "Concurrent Processing": false,
+      "Verification Accuracy": false,
+      "UI API Integration": false,
+      "End-to-End Pipeline": false,
+      "Production Readiness": true
+    },
+    "success_rate": 0.5,
+    "total_time": 28.496046781539917,
+    "performance_metrics": {
+      "api_response_time": 1.1894609928131104,
+      "generation_results": {
+        "etruscan_mythology": {
+          "items_count": 2,
+          "has_context": true,
+          "question_quality": true,
+          "answer_quality": true,
+          "generation_time": 2.0369467735290527
+        },
+        "mathematics": {
+          "items_count": 2,
+          "has_context": true,
+          "question_quality": true,
+          "answer_quality": true,
+          "generation_time": 0.8680939674377441
+        },
+        "computer_science": {
+          "items_count": 2,
+          "has_context": true,
+          "question_quality": true,
+          "answer_quality": true,
+          "generation_time": 0.9906909465789795
+        },
+        "physics": {
+          "items_count": 2,
+          "has_context": true,
+          "question_quality": true,
+          "answer_quality": true,
+          "generation_time": 0.8536620140075684
+        },
+        "finance": {
+          "items_count": 2,
+          "has_context": true,
+          "question_quality": true,
+          "answer_quality": true,
+          "generation_time": 1.0711441040039062
+        }
+      },
+      "concurrent_throughput": 0.6300339731034348,
+      "concurrent_success_rate": 1.0,
+      "average_response_time": 1.586991786956787,
+      "speedup_factor": 0.9998709364432283,
+      "end_to_end_mean_score": 0.0,
+      "end_to_end_results": [
+        {
+          "question": "Given the context, if what is the significance of etruscan in the given context, what would be the implications?",
+          "expected": "If Based on the context, etruscan is significant because..., then the implications would include...",
+          "predicted": "The significance of \"Etruscan\" in the given context is that Maris is identified as an Etruscan deity.  This implies that:\n\n* **Maris's worship and mythology are rooted in Etruscan culture and religion.**  The information about the cista (a type of Etruscan container often used for funerary purposes) depicting Maris's immersion further supports this.  The depiction provides visual evidence of how the deity was understood and represented within the Etruscan belief system.\n\n* **Understanding Maris requires studying Etruscan religion and art.** To learn more about Maris, researchers must delve into Etruscan sources, including archaeological finds like the cista mentioned, and attempt to interpret their religious beliefs and practices.\n\n* **Maris is not a deity from other major pantheons (Greek, Roman, etc.).** The explicit mention of \"Etruscan deity\" distinguishes Maris from deities with similar names or roles in other cultures.  This highlights the unique character of Etruscan mythology.\n",
+          "score": 0.0,
+          "method": "exact_match"
+        },
+        {
+          "question": "Given the context, if what is the significance of piacenza in the given context, what would be the implications?",
+          "expected": "If Based on the context, piacenza is significant because..., then the implications would include...",
+          "predicted": "The provided text gives the location \"Castenaso in the Metropolitan City of...\".  It is missing the name of the Metropolitan City.  However, the most likely candidate is the Metropolitan City of Bologna, Italy.  Piacenza is a different province entirely, in the Emilia-Romagna region of Italy, but *not* within the Metropolitan City of Bologna.\n\nTherefore, the significance of Piacenza in this context is **none**.  There are no implications because Piacenza is geographically and administratively separate from Castenaso.  The mention of haruspicy is irrelevant to this geographical question.\n",
+          "score": 0.0,
+          "method": "exact_match"
+        },
+        {
+          "question": "Given the context, if what is the significance of culture in the given context, what would be the implications?",
+          "expected": "If Based on the context, culture is significant because..., then the implications would include...",
+          "predicted": "The significance of Etruscan culture in the given context is its obscurity due to a lack of bilingual texts (texts in both Etruscan and a better-understood language). This obscurity makes it difficult to understand their religious system.\n\nThe implications are:\n\n* **Limited understanding of Etruscan beliefs and practices:**  The absence of easily translatable texts severely hinders our ability to reconstruct their religious beliefs, rituals, mythology, and the role of religion in their daily lives.  We have fragmented knowledge based on archaeological findings and limited decipherment of Etruscan inscriptions.\n\n* **Incomplete picture of ancient Italian civilization:**  The Etruscans were a significant civilization in ancient Italy, influencing the Romans and other groups.  A fuller understanding of their culture, including their religion, is crucial for a more complete understanding of ancient Italian history and the development of Roman culture.\n\n* **Ongoing research and interpretation challenges:** Scholars must rely on indirect evidence, comparing similar elements in other cultures and painstakingly analyzing the few deciphered texts and archaeological evidence to piece together information about Etruscan religion. This process is slow, complex, and prone to varying interpretations.\n\nIn short, the lack of bilingual texts profoundly impacts our understanding of Etruscan culture, particularly their religious system, leaving many aspects shrouded in mystery and requiring continuous scholarly effort to unveil.\n",
+          "score": 0.0,
+          "method": "exact_match"
+        }
+      ]
+    },
+    "production_ready": false
+  },
+  "git_info": "Context fix implementation complete",
+  "validation_version": "1.0.0"
+}
