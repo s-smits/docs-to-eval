@@ -4,13 +4,12 @@ Implements deterministic/non-deterministic guardrails and quality control
 """
 
 import asyncio
-from typing import List, Dict, Any, Optional, Tuple
-from collections import defaultdict, Counter
+from typing import List, Dict, Any, Tuple
+from collections import defaultdict
 import logging
 
 from .models import (
     EnhancedBenchmarkItem,
-    ValidationResult,
     AnswerType,
     DifficultyLevel,
     validate_deterministic_answer_type
@@ -558,9 +557,10 @@ class ComprehensiveValidator:
         
         det_items = {item['index']: item for item in validation_report['deterministic_validation']['deterministic_items']}
         non_det_items = {item['index']: item for item in validation_report['deterministic_validation']['non_deterministic_items']}
-        quality_items = {item['index']: item for item in validation_report['quality_assessment']['high_quality_items'] + 
-                         [item for item in validation_report['quality_assessment'].get('quality_scores', []) 
-                          if isinstance(item, dict) and item.get('meets_threshold', False)]}
+        # Build map of items meeting quality threshold (kept for potential future filtering logic)
+        _ = {item['index']: item for item in validation_report['quality_assessment']['high_quality_items'] + 
+             [item for item in validation_report['quality_assessment'].get('quality_scores', []) 
+              if isinstance(item, dict) and item.get('meets_threshold', False)]}
         
         for i, item in enumerate(items):
             should_include = True

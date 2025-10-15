@@ -5,8 +5,8 @@ Determines the best evaluation methodology for a given corpus using an LLM
 
 import json
 import re
-from typing import Dict, List, Any, Optional
-from ..core.evaluation import EvaluationType, EVAL_TYPES, analyze_corpus_content
+from typing import Dict, List, Any
+from docs_to_eval.utils.config import EvaluationType, EVAL_TYPES, analyze_corpus_content
 from ..utils.logging import get_logger
 
 
@@ -154,7 +154,7 @@ Reasoning: [Detailed explanation for your choice, focusing on why this evaluatio
 is most appropriate for measuring LLM performance on this content type]
 """
     
-    def classify_corpus(self, corpus_text: str, max_length: int = 2000) -> ClassificationResult:
+    def classify_corpus(self, corpus_text: str, max_length: int = 128000) -> ClassificationResult:
         """Classify corpus and return structured result"""
         # Truncate corpus if too long for LLM context
         if len(corpus_text) > max_length:

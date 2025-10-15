@@ -6,12 +6,11 @@ Analyzes and improves agent prompts for better performance
 import asyncio
 import json
 import re
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
-from pathlib import Path
 import logging
 
-from ...llm.openrouter_interface import QwenInterface, OpenRouterConfig
+from ...llm.openrouter_interface import OpenRouterInterface, OpenRouterConfig
 
 
 logger = logging.getLogger(__name__)
@@ -61,7 +60,7 @@ class PromptOptimizer:
     Uses Qwen3 30B to analyze and improve agent prompts
     """
     
-    def __init__(self, qwen_interface: Optional[QwenInterface] = None):
+    def __init__(self, qwen_interface: Optional[OpenRouterInterface] = None):
         """
         Initialize prompt optimizer
         
@@ -70,7 +69,8 @@ class PromptOptimizer:
         """
         if qwen_interface is None:
             try:
-                self.qwen = QwenInterface()
+                config = OpenRouterConfig()
+                self.qwen = OpenRouterInterface(config)
             except Exception as e:
                 logger.warning(f"Failed to initialize Qwen interface: {e}")
                 self.qwen = None
@@ -332,7 +332,7 @@ class AgentPromptReviewer:
     Reviews and improves all prompts used by agentic system agents
     """
     
-    def __init__(self, qwen_interface: Optional[QwenInterface] = None):
+    def __init__(self, qwen_interface: Optional[OpenRouterInterface] = None):
         """Initialize with Qwen interface"""
         self.optimizer = PromptOptimizer(qwen_interface)
         self.extracted_prompts = {}
@@ -347,7 +347,6 @@ class AgentPromptReviewer:
         """
         
         # Import agents to extract their prompts
-        from .agents import ConceptMiner, QuestionWriter, Adversary, Refiner, Validator
         
         extracted = {}
         
@@ -356,7 +355,7 @@ class AgentPromptReviewer:
             'concept_extraction': """
 Extract key concepts from this text. Return JSON only.
 
-Text: {chunk[:600]}...
+Text: {chunk}
 
 Return format:
 {"concepts": [{"name": "concept", "importance": 0.8, "snippet": "supporting text"}]}
@@ -401,7 +400,7 @@ Return JSON: {"distractors": ["wrong1", "wrong2", "wrong3"], "rationale": "why t
 Transform this question to require multi-step reasoning while staying grounded in the context.
 
 Original Question: {question}
-Context: {context[:300]}
+Context: {context}
 
 Create a question that requires 2-3 logical steps to answer. Return JSON:
 {"enhanced_question": "...", "enhanced_answer": "...", "reasoning_steps": ["step1", "step2", "step3"]}
@@ -603,7 +602,8 @@ async def quick_prompt_review(api_key: Optional[str] = None) -> Dict[str, Any]:
     """
     
     try:
-        qwen = QwenInterface(api_key) if api_key or os.getenv('OPENROUTER_API_KEY') else None
+        config = OpenRouterConfig(api_key=api_key)
+        qwen = OpenRouterInterface(config) if api_key or os.getenv('OPENROUTER_API_KEY') else None
         reviewer = AgentPromptReviewer(qwen)
         
         # Extract and analyze
@@ -637,7 +637,8 @@ async def improve_low_scoring_prompts(
     """
     
     try:
-        qwen = QwenInterface(api_key) if api_key or os.getenv('OPENROUTER_API_KEY') else None
+        config = OpenRouterConfig(api_key=api_key)
+        qwen = OpenRouterInterface(config) if api_key or os.getenv('OPENROUTER_API_KEY') else None
         reviewer = AgentPromptReviewer(qwen)
         
         # Analyze all prompts
@@ -677,7 +678,7 @@ if __name__ == "__main__":
         report = await quick_prompt_review()
         
         if 'error' not in report:
-            print(f"\\nPrompt Review Summary:")
+            print("\\nPrompt Review Summary:")
             print(f"Total prompts: {report['summary']['total_prompts']}")
             print(f"Average score: {report['summary']['avg_overall_score']:.2f}")
             print(f"Prompts needing improvement: {report['summary']['prompts_needing_improvement']}")

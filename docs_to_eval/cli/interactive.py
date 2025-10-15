@@ -6,7 +6,6 @@ import asyncio
 import json
 import uuid
 from pathlib import Path
-from typing import Optional, Dict, Any
 from datetime import datetime
 
 from rich.console import Console
@@ -14,13 +13,11 @@ from rich.prompt import Prompt, IntPrompt, Confirm
 from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-from rich.text import Text
 
-from ..core.evaluation import EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 from ..core.classification import EvaluationTypeClassifier
 from ..llm.mock_interface import MockLLMInterface
-from ..utils.config import EvaluationConfig, create_default_config
-from ..utils.logging import setup_logging
+from ..utils.config import create_default_config
 
 console = Console()
 
@@ -147,7 +144,7 @@ Let's get started!
                 if not Confirm.ask("Try another file?"):
                     return False
         
-        self.console.print(f"[green]✅ Successfully loaded file[/green]")
+        self.console.print("[green]✅ Successfully loaded file[/green]")
         self.show_corpus_stats()
         return True
     
@@ -251,7 +248,7 @@ leading to significant improvements in training efficiency and performance on la
             TextColumn("[progress.description]{task.description}"),
             console=self.console
         ) as progress:
-            task = progress.add_task("Analyzing corpus content...", total=None)
+            progress.add_task("Analyzing corpus content...", total=None)
             
             classifier = EvaluationTypeClassifier()
             self.classification = classifier.classify_corpus(self.corpus_text)
@@ -266,7 +263,7 @@ leading to significant improvements in training efficiency and performance on la
         # Number of questions
         default_questions = 20
         num_questions = IntPrompt.ask(
-            f"Number of questions to generate",
+            "Number of questions to generate",
             default=default_questions,
             show_default=True
         )
@@ -370,7 +367,8 @@ leading to significant improvements in training efficiency and performance on la
             # LLM evaluation
             task2 = progress.add_task("Evaluating with Mock LLM...", total=len(questions))
             
-            llm = MockLLMInterface(temperature=self.config.llm.temperature)
+            # Instantiate mock LLM (kept for potential future use)
+            MockLLMInterface(temperature=self.config.llm.temperature)
             results = []
             
             for i, question in enumerate(questions):
@@ -396,7 +394,7 @@ leading to significant improvements in training efficiency and performance on la
                     "max_score": max(r["score"] for r in results),
                     "num_samples": len(results)
                 },
-                "individual_results": results[:5],  # First 5 only
+                "individual_results": results,  # Show all results
                 "completed_at": datetime.now().isoformat()
             }
     
@@ -440,7 +438,7 @@ leading to significant improvements in training efficiency and performance on la
             self.save_results()
         
         self.console.print("\n[green]🎉 Evaluation completed successfully![/green]")
-        self.console.print(f"[blue]Thank you for using docs-to-eval![/blue]")
+        self.console.print("[blue]Thank you for using docs-to-eval![/blue]")
     
     def save_results(self):
         """Save results to file"""

@@ -3,37 +3,14 @@ Core evaluation framework for domain-specific LLM benchmarking
 Supports both deterministic and non-deterministic evaluation methods
 """
 
-import json
 import re
 import random
-from functools import reduce
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Union
-from dataclasses import dataclass
-from pydantic import BaseModel, Field, validator
-from enum import Enum
+from pydantic import BaseModel, Field
 
-
-class EvaluationType(str, Enum):
-    """Supported evaluation types"""
-    MATHEMATICAL = "mathematical"
-    CODE_GENERATION = "code_generation"
-    FACTUAL_QA = "factual_qa"
-    MULTIPLE_CHOICE = "multiple_choice"
-    SUMMARIZATION = "summarization"
-    TRANSLATION = "translation"
-    CREATIVE_WRITING = "creative_writing"
-    COMMONSENSE_REASONING = "commonsense_reasoning"
-    READING_COMPREHENSION = "reading_comprehension"
-    DOMAIN_KNOWLEDGE = "domain_knowledge"
-
-
-class VerificationMethod(str, Enum):
-    """Supported verification methods"""
-    EXACT_MATCH = "exact_match"
-    EXECUTION = "execution"
-    SIMILARITY = "similarity"
-    LLM_JUDGE = "llm_judge"
+# Import enums from central config location
+from ..utils.config import EvaluationType, VerificationMethod
 
 
 class EvaluationConfig(BaseModel):
@@ -230,21 +207,107 @@ def sample_corpus_segments(corpus_text: str, num_segments: int = 10, segment_len
 
 
 def extract_key_concepts(corpus_text: str, max_concepts: int = 20) -> List[str]:
-    """Extract key concepts from corpus"""
-    # Simple keyword extraction
-    words = re.findall(r'\b[a-zA-Z]{4,}\b', corpus_text.lower())
+    """Extract meaningful key concepts from corpus with improved filtering"""
+    if not corpus_text or len(corpus_text.strip()) == 0:
+        return []
+    
+    # Extract words (4+ chars, includes proper nouns)
+    words = re.findall(r'\b[A-Za-z]{4,}\b', corpus_text)
     word_freq = defaultdict(int)
     
-    # Common stop words to filter out
-    stop_words = {'this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 'said', 'would', 'could', 'should'}
+    # Comprehensive stop words - generic, low-value terms
+    stop_words = {
+        # Common stop words
+        'this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 
+        'said', 'would', 'could', 'should', 'their', 'there', 'where', 'which',
+        'what', 'when', 'while', 'whom', 'whose', 'your', 'yours', 
+        
+        # Generic/vague terms that make poor concepts
+        'such', 'some', 'many', 'most', 'much', 'more', 'less', 'other', 'another',
+        'different', 'various', 'several', 'certain', 'particular', 'specific',
+        'general', 'common', 'similar', 'related', 'important', 'significant',
+        'major', 'minor', 'large', 'small', 'great', 'good', 'best', 'better',
+        'first', 'last', 'next', 'previous', 'following', 'above', 'below',
+        
+        # Generic question/document words
+        'question', 'answer', 'example', 'instance', 'case', 'situation',
+        'context', 'content', 'text', 'document', 'information', 'data',
+        'approach', 'method', 'technique', 'process', 'system', 'model',
+        'framework', 'concept', 'idea', 'thing', 'things', 'element', 'elements',
+        
+        # Time/sequence words
+        'time', 'times', 'year', 'years', 'century', 'period', 'phase',
+        'moment', 'today', 'tomorrow', 'yesterday', 'recent', 'current',
+        
+        # Generic descriptors
+         'type', 'types', 'kind', 'kinds', 'form', 'forms', 'part', 'parts',
+         'aspect', 'aspects', 'feature', 'features', 'characteristic', 'characteristics',
+         'property', 'properties', 'quality', 'qualities', 'nature', 'basis',
+         
+         # Relationship words (too generic)
+         'between', 'among', 'within', 'through', 'during', 'before', 'after',
+         'relationship', 'relationships', 'connection', 'connections',
+    }
     
     for word in words:
-        if word not in stop_words:
-            word_freq[word] += 1
+        word_lower = word.lower()
+        # Skip stop words and very short words
+        if word_lower not in stop_words and len(word) >= 4:
+            # Prefer proper nouns (capitalized words) - often domain-specific
+            if word[0].isupper():
+                word_freq[word] += 2  # Boost proper nouns
+            else:
+                word_freq[word_lower] += 1
     
-    # Get top concepts
-    concepts = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:max_concepts]
-    return [concept[0] for concept in concepts]
+    # Get top concepts, prioritizing by frequency and proper nouns
+    concepts = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
+    
+    # Additional quality filter - prefer substantial/meaningful words
+    filtered_concepts = []
+    for concept, freq in concepts:
+        # Skip if too generic or low quality
+        if (
+            len(concept) >= 5 or  # Longer words are usually more specific
+            concept[0].isupper() or  # Proper nouns are good
+            freq >= 3  # High frequency words from corpus
+        ):
+            # Final sanity check - avoid purely generic terms
+            generic_patterns = ['thing', 'stuff', 'item', 'object', 'entity']
+            if not any(generic in concept.lower() for generic in generic_patterns):
+                filtered_concepts.append(concept)
+                
+        if len(filtered_concepts) >= max_concepts:
+            break
+    
+    # If we don't have enough concepts, generate some from domain patterns
+    if len(filtered_concepts) < max_concepts // 2:
+        domain_concepts = _extract_domain_concepts(corpus_text)
+        filtered_concepts.extend(domain_concepts[:max_concepts - len(filtered_concepts)])
+    
+    return filtered_concepts[:max_concepts]
+
+def _extract_domain_concepts(corpus_text: str) -> List[str]:
+    """Extract domain-specific concepts using patterns"""
+    concepts = []
+    
+    # Technical terms (CamelCase, hyphenated terms, etc.)
+    tech_patterns = [
+        r'\b[A-Z][a-z]+[A-Z][a-zA-Z]*\b',  # CamelCase
+        r'\b[a-z]+-[a-z]+\b',              # hyphenated-terms
+        r'\b[A-Z]{2,}\b',                  # ACRONYMS
+    ]
+    
+    for pattern in tech_patterns:
+        matches = re.findall(pattern, corpus_text)
+        concepts.extend(matches[:5])  # Limit per pattern
+    
+    # Mathematical/scientific terms
+    if 'mathematical' in corpus_text.lower() or any(op in corpus_text for op in ['+', '-', '*', '/', '=']):
+        math_terms = ['equation', 'function', 'variable', 'algorithm', 'computation']
+        concepts.extend(math_terms)
+    
+    # Remove duplicates and return
+    return list(dict.fromkeys(concepts))  # Preserve order, remove dupes
 
 
 class BenchmarkConfig(BaseModel):

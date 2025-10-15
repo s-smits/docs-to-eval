@@ -9,7 +9,6 @@ import time
 from typing import Dict, Any
 
 from .orchestrator import AgenticBenchmarkOrchestrator
-from .generator import AgenticBenchmarkGenerator
 from .models import PipelineConfig, DifficultyLevel
 from .validation import ComprehensiveValidator
 from ..evaluation import EvaluationType
@@ -50,7 +49,7 @@ class AgenticBenchmarkDemo:
             Complete demonstration report
         """
         
-        print(f"\n🚀 Starting Agentic Benchmark Generation Demo")
+        print("\n🚀 Starting Agentic Benchmark Generation Demo")
         print(f"   Eval Type: {eval_type}")
         print(f"   Target Questions: {num_questions}")
         print(f"   Corpus Length: {len(corpus_text)} characters")
@@ -96,7 +95,7 @@ class AgenticBenchmarkDemo:
         print(f"✅ Generated {len(enhanced_items)} items in {generation_time:.2f}s")
         
         # Step 4: Comprehensive validation
-        print(f"\n🔬 Running comprehensive validation...")
+        print("\n🔬 Running comprehensive validation...")
         validation_start = time.time()
         
         validation_report = await self.validator.validate_benchmark_batch(enhanced_items)
@@ -112,7 +111,7 @@ class AgenticBenchmarkDemo:
             enhanced_items, strict_mode=True
         )
         
-        print(f"\n🎯 Quality filtering:")
+        print("\n🎯 Quality filtering:")
         print(f"   Retained {len(filtered_items)}/{len(enhanced_items)} items")
         print(f"   Retention rate: {filter_report['filtering']['retention_rate']:.3f}")
         
@@ -127,7 +126,7 @@ class AgenticBenchmarkDemo:
         
         # Show recommendations
         if validation_report['actionable_recommendations']:
-            print(f"\n💡 Recommendations:")
+            print("\n💡 Recommendations:")
             for i, rec in enumerate(validation_report['actionable_recommendations'][:3], 1):
                 print(f"   {i}. {rec}")
         
@@ -139,7 +138,7 @@ class AgenticBenchmarkDemo:
     def demonstrate_factory_integration(self, corpus_text: str) -> Dict[str, Any]:
         """Demonstrate integration with existing benchmark factory"""
         
-        print(f"\n🏭 Factory Integration Demo")
+        print("\n🏭 Factory Integration Demo")
         print("="*40)
         
         results = {}
@@ -231,7 +230,7 @@ class AgenticBenchmarkDemo:
         if not items:
             return
         
-        print(f"\n📝 Sample Generated Questions:")
+        print("\n📝 Sample Generated Questions:")
         print("-" * 50)
         
         for i, item in enumerate(items, 1):
@@ -298,7 +297,7 @@ class AgenticBenchmarkDemo:
         all_results['factory_integration'] = factory_results
         
         # Final summary
-        print(f"\n🎊 DEMO SUMMARY")
+        print("\n🎊 DEMO SUMMARY")
         print("="*30)
         
         total_items = sum(
@@ -331,7 +330,7 @@ async def main():
         serializable_results = json.loads(json.dumps(results, default=str))
         json.dump(serializable_results, f, indent=2)
     
-    print(f"\n💾 Results saved to agentic_demo_results.json")
+    print("\n💾 Results saved to agentic_demo_results.json")
 
 
 if __name__ == "__main__":

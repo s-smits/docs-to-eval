@@ -1,17 +1,17 @@
 """
-Concurrent Gemini Flash API Interface
-Provides high-performance concurrent API calls to Gemini Flash via OpenRouter
+Concurrent GPT-5-mini API Interface
+Provides high-performance concurrent API calls to GPT-5-mini via OpenRouter
 """
 
 import asyncio
 import time
 import logging
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Callable, Tuple
 from dataclasses import dataclass, field
 
 from .openrouter_interface import OpenRouterInterface, OpenRouterConfig
-from .base import LLMResponse
 
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class ConcurrentCallResult:
     call_id: str
     question: str
     response: Optional[str] = None
-    model: str = "google/gemini-flash-2.5"
+    model: str = "openai/gpt-5-mini"
     response_time: float = 0.0
     timestamp: float = field(default_factory=time.time)
     status: str = "pending"  # pending, success, error
@@ -46,7 +46,7 @@ class ConcurrentCallStats:
 
 class ConcurrentGeminiInterface:
     """
-    High-performance concurrent interface for Gemini Flash API calls
+    High-performance concurrent interface for GPT-5-mini API calls
     Supports both futures.concurrent and asyncio patterns
     """
     
@@ -54,7 +54,7 @@ class ConcurrentGeminiInterface:
         self, 
         config: Optional[OpenRouterConfig] = None,
         max_workers: int = 5,
-        model: str = "google/gemini-flash-2.5"
+        model: str = "openai/gpt-5-mini"
     ):
         """
         Initialize concurrent Gemini interface
@@ -62,7 +62,7 @@ class ConcurrentGeminiInterface:
         Args:
             config: OpenRouter configuration
             max_workers: Maximum number of concurrent workers
-            model: Gemini model to use (default: gemini-flash-2.5)
+            model: Gemini model to use (default: gemini-2.5-flash)
         """
         self.config = config or OpenRouterConfig(model=model)
         self.max_workers = max_workers
@@ -85,7 +85,7 @@ class ConcurrentGeminiInterface:
     
     async def make_single_call(self, call_id: str, question: str, **kwargs) -> ConcurrentCallResult:
         """
-        Make a single API call to Gemini Flash
+        Make a single API call to GPT-5-mini
         
         Args:
             call_id: Unique identifier for this call
@@ -204,14 +204,14 @@ class ConcurrentGeminiInterface:
             """Wrapper to run async call in sync context"""
             call_id = f"future_call_{i+1}"
             
-            # Run the async call in a new event loop
+            # Run the async call in a new event loop (thread-safe)
+            loop = None
             try:
                 loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+                # DON'T set as thread's default loop to avoid conflicts
                 result = loop.run_until_complete(
                     self.make_single_call(call_id, question, **kwargs)
                 )
-                loop.close()
                 return result
             except Exception as e:
                 # Return error result
@@ -223,8 +223,13 @@ class ConcurrentGeminiInterface:
                     error=str(e),
                     response_time=time.time() - start_time
                 )
+            finally:
+                # Ensure loop is always closed
+                if loop and not loop.is_closed():
+                    loop.close()
         
         results = []
+        results_lock = threading.Lock()  # Thread-safe access to results
         
         # Use ThreadPoolExecutor for concurrent execution
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -238,8 +243,10 @@ class ConcurrentGeminiInterface:
             for future in as_completed(future_to_index):
                 try:
                     result = future.result()
-                    results.append(result)
-                    self._log_progress(f"Completed call {result.call_id}", len(results), len(questions))
+                    with results_lock:  # Thread-safe append
+                        results.append(result)
+                        current_count = len(results)
+                    self._log_progress(f"Completed call {result.call_id}", current_count, len(questions))
                 except Exception as e:
                     # Handle executor exceptions
                     index = future_to_index[future]
@@ -250,7 +257,9 @@ class ConcurrentGeminiInterface:
                         status="error",
                         error=str(e)
                     )
-                    results.append(error_result)
+                    with results_lock:  # Thread-safe append
+                        results.append(error_result)
+                        current_count = len(results)
                     logger.error(f"❌ Future execution error for call {index+1}: {e}")
         
         # Calculate statistics
@@ -313,7 +322,7 @@ class ConcurrentGeminiInterface:
 async def concurrent_gemini_evaluation_async(
     questions: List[str],
     max_workers: int = 5,
-    model: str = "google/gemini-flash-2.5",
+    model: str = "openai/gpt-5-mini",
     **kwargs
 ) -> List[Dict[str, Any]]:
     """
@@ -343,7 +352,7 @@ async def concurrent_gemini_evaluation_async(
 def concurrent_gemini_evaluation_futures(
     questions: List[str],
     max_workers: int = 5,
-    model: str = "google/gemini-flash-2.5",
+    model: str = "openai/gpt-5-mini",
     **kwargs
 ) -> List[Dict[str, Any]]:
     """
@@ -376,7 +385,7 @@ if __name__ == "__main__":
     
     async def demo_async():
         """Demo async concurrent calls"""
-        print("🚀 Testing Async Concurrent Gemini Flash API...")
+        print("🚀 Testing Async Concurrent GPT-5-mini API...")
         
         questions = [
             "What is machine learning?",
@@ -402,7 +411,7 @@ if __name__ == "__main__":
         # Run concurrent calls
         results, stats = await interface.run_concurrent_async(questions)
         
-        print(f"\n📈 Results Summary:")
+        print("\n📈 Results Summary:")
         print(f"  Total calls: {stats.total_calls}")
         print(f"  Successful: {stats.successful_calls}")
         print(f"  Failed: {stats.failed_calls}")
@@ -414,7 +423,7 @@ if __name__ == "__main__":
     
     def demo_futures():
         """Demo futures concurrent calls"""
-        print("\n🔧 Testing Futures Concurrent Gemini Flash API...")
+        print("\n🔧 Testing Futures Concurrent GPT-5-mini API...")
         
         questions = [
             "What is data science?",
@@ -427,7 +436,7 @@ if __name__ == "__main__":
         interface = ConcurrentGeminiInterface(max_workers=3)
         results, stats = interface.run_concurrent_futures(questions)
         
-        print(f"\n📈 Futures Results Summary:")
+        print("\n📈 Futures Results Summary:")
         print(f"  Total calls: {stats.total_calls}")
         print(f"  Successful: {stats.successful_calls}")
         print(f"  Speedup factor: {stats.speedup_factor:.2f}x")
@@ -435,7 +444,7 @@ if __name__ == "__main__":
         return results, stats
     
     # Run demos
-    print("🎯 Concurrent Gemini Flash Demo Starting...")
+    print("🎯 Concurrent GPT-5-mini Demo Starting...")
     
     # Demo async version
     loop = asyncio.new_event_loop()

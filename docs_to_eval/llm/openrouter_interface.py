@@ -1,6 +1,6 @@
 """
 OpenRouter LLM Interface for accessing models via OpenRouter API
-Supports Qwen3 30B and other models through OpenRouter
+Now powered by iRouter for simplified API access
 """
 
 import asyncio
@@ -10,10 +10,10 @@ import logging
 from dataclasses import dataclass
 
 try:
-    from openai import OpenAI
-    OPENAI_AVAILABLE = True
+    from irouter import Call, Chat
+    IROUTER_AVAILABLE = True
 except ImportError:
-    OPENAI_AVAILABLE = False
+    IROUTER_AVAILABLE = False
 
 from .base import BaseLLMInterface, LLMResponse
 
@@ -23,10 +23,9 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class OpenRouterConfig:
-    """Configuration for OpenRouter API"""
+    """Configuration for OpenRouter API using iRouter"""
     api_key: Optional[str] = None
-    base_url: str = "https://openrouter.ai/api/v1"
-    model: str = "qwen/qwen3-30b-a3b-instruct-2507"
+    model: str = "openai/gpt-5-mini"
     site_url: Optional[str] = None
     site_name: Optional[str] = None
     max_retries: int = 3
@@ -37,14 +36,16 @@ class OpenRouterConfig:
         if not self.api_key:
             self.api_key = os.getenv('OPENROUTER_API_KEY')
         
+        # Note: iRouter can work without API key if set as environment variable
+        # but we'll still validate for explicit configuration
         if not self.api_key:
-            raise ValueError("OpenRouter API key is required. Set OPENROUTER_API_KEY environment variable or pass api_key parameter")
+            logger.warning("No OpenRouter API key provided. Ensure OPENROUTER_API_KEY environment variable is set.")
 
 
 class OpenRouterInterface(BaseLLMInterface):
     """
-    LLM interface for OpenRouter API
-    Provides access to Qwen3 30B and other models
+    LLM interface for OpenRouter API using iRouter
+    Provides simplified access to OpenRouter models
     """
     
     def __init__(self, config: Optional[OpenRouterConfig] = None):
@@ -54,24 +55,26 @@ class OpenRouterInterface(BaseLLMInterface):
         Args:
             config: OpenRouter configuration (uses defaults if None)
         """
-        if not OPENAI_AVAILABLE:
-            raise ImportError("OpenAI package is required for OpenRouter interface. Install with: pip install openai")
+        if not IROUTER_AVAILABLE:
+            raise ImportError("iRouter package is required for OpenRouter interface. Install with: uv add irouter")
         
         self.config = config or OpenRouterConfig()
         
-        # Initialize OpenAI client with OpenRouter endpoint
-        self.client = OpenAI(
-            base_url=self.config.base_url,
-            api_key=self.config.api_key,
-            timeout=self.config.timeout,
-            max_retries=self.config.max_retries
-        )
+        # Initialize iRouter Call and Chat instances
+        # iRouter automatically uses OPENROUTER_API_KEY from environment if available
+        if self.config.api_key:
+            self.caller = Call(self.config.model, api_key=self.config.api_key)
+            self.chatter = Chat(self.config.model, api_key=self.config.api_key)
+        else:
+            # iRouter will use environment variable
+            self.caller = Call(self.config.model)
+            self.chatter = Chat(self.config.model)
         
         self.model_name = self.config.model
         self.call_count = 0
         self.total_tokens_used = 0
         
-        logger.info(f"Initialized OpenRouter interface with model: {self.model_name}")
+        logger.info(f"Initialized iRouter OpenRouter interface with model: {self.model_name}")
     
     async def generate_response(
         self,
@@ -82,7 +85,7 @@ class OpenRouterInterface(BaseLLMInterface):
         **kwargs
     ) -> LLMResponse:
         """
-        Generate response using OpenRouter API
+        Generate response using iRouter for OpenRouter API
         
         Args:
             prompt: The prompt to send to the model
@@ -95,79 +98,61 @@ class OpenRouterInterface(BaseLLMInterface):
             LLMResponse with generated text and metadata
         """
         
-        # Prepare messages
-        messages = []
-        
+        # Prepare the full prompt
+        full_prompt = prompt
         if context:
-            messages.append({
-                "role": "system",
-                "content": f"Context: {context}"
-            })
-        
-        messages.append({
-            "role": "user", 
-            "content": prompt
-        })
-        
-        # Prepare headers
-        extra_headers = {}
-        if self.config.site_url:
-            extra_headers["HTTP-Referer"] = self.config.site_url
-        if self.config.site_name:
-            extra_headers["X-Title"] = self.config.site_name
+            full_prompt = f"Context: {context}\n\n{prompt}"
         
         try:
-            # Make API call
-            completion = self.client.chat.completions.create(
-                model=self.config.model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                extra_headers=extra_headers,
-                **kwargs
+            # Use iRouter's simple Call interface for one-off requests
+            # Note: iRouter doesn't directly expose temperature/max_tokens in the simple interface
+            # but we can pass them through kwargs if the underlying API supports them
+            response_text = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: self.caller(full_prompt, **kwargs)
             )
-            
-            # Extract response
-            response_text = completion.choices[0].message.content
             
             # Update usage statistics
             self.call_count += 1
-            if hasattr(completion, 'usage') and completion.usage:
-                self.total_tokens_used += completion.usage.total_tokens
+            # Note: iRouter doesn't provide token usage in the simple interface
+            # We'll estimate based on response length (rough approximation)
+            estimated_tokens = len(response_text.split()) * 1.3  # rough token estimate
+            self.total_tokens_used += int(estimated_tokens)
             
             # Create response object
             return LLMResponse(
                 text=response_text,
-                model_name=self.model_name,
-                tokens_used=completion.usage.total_tokens if hasattr(completion, 'usage') and completion.usage else 0,
                 metadata={
+                    'model_name': self.model_name,
+                    'tokens_used': int(estimated_tokens),
                     'temperature': temperature,
                     'max_tokens': max_tokens,
-                    'finish_reason': completion.choices[0].finish_reason,
-                    'model': completion.model,
-                    'call_count': self.call_count
+                    'call_count': self.call_count,
+                    'provider': 'irouter'
                 }
             )
             
         except Exception as e:
-            logger.error(f"OpenRouter API call failed: {e}")
+            logger.error(f"iRouter OpenRouter API call failed: {e}")
             # Return empty response on failure
             return LLMResponse(
                 text="",
-                model_name=self.model_name,
-                tokens_used=0,
-                metadata={'error': str(e)}
+                metadata={
+                    'model_name': self.model_name,
+                    'tokens_used': 0,
+                    'error': str(e),
+                    'provider': 'irouter'
+                }
             )
     
     def get_model_info(self) -> Dict[str, Any]:
         """Get information about the current model"""
         return {
             'model_name': self.model_name,
-            'provider': 'openrouter',
-            'base_url': self.config.base_url,
+            'provider': 'irouter-openrouter',
             'call_count': self.call_count,
             'total_tokens_used': self.total_tokens_used,
-            'available': OPENAI_AVAILABLE and bool(self.config.api_key)
+            'available': IROUTER_AVAILABLE and (bool(self.config.api_key) or bool(os.getenv('OPENROUTER_API_KEY')))
         }
     
     def reset_usage_stats(self):
@@ -181,71 +166,12 @@ class OpenRouterInterface(BaseLLMInterface):
             'total_calls': self.call_count,
             'total_tokens_used': self.total_tokens_used,
             'model_name': self.model_name,
-            'provider': 'openrouter',
-            'base_url': self.config.base_url,
-            'available': OPENAI_AVAILABLE and bool(self.config.api_key)
+            'provider': 'irouter-openrouter',
+            'available': IROUTER_AVAILABLE and (bool(self.config.api_key) or bool(os.getenv('OPENROUTER_API_KEY')))
         }
 
 
-class QwenInterface(OpenRouterInterface):
-    """Specialized interface for Qwen3 30B model"""
-    
-    def __init__(self, api_key: Optional[str] = None, site_url: Optional[str] = None, site_name: Optional[str] = None):
-        """
-        Initialize Qwen3 30B interface
-        
-        Args:
-            api_key: OpenRouter API key (uses environment variable if None)
-            site_url: Site URL for OpenRouter rankings
-            site_name: Site name for OpenRouter rankings
-        """
-        config = OpenRouterConfig(
-            api_key=api_key,
-            model="qwen/qwen3-30b-a3b-instruct-2507",
-            site_url=site_url,
-            site_name=site_name
-        )
-        super().__init__(config)
-    
-    async def generate_response(
-        self,
-        prompt: str,
-        context: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 512,
-        **kwargs
-    ) -> LLMResponse:
-        """
-        Generate response optimized for Qwen3 30B
-        
-        Qwen models work well with structured prompts and specific instructions
-        """
-        
-        # Optimize prompt for Qwen
-        if context:
-            optimized_prompt = f"""Based on the following context, please provide a comprehensive and accurate response:
-
-Context:
-{context}
-
-Question/Task:
-{prompt}
-
-Please provide a detailed, well-structured response:"""
-        else:
-            optimized_prompt = f"""Please provide a comprehensive and accurate response to the following:
-
-{prompt}
-
-Response:"""
-        
-        return await super().generate_response(
-            optimized_prompt,
-            context=None,  # We've already incorporated context
-            temperature=temperature,
-            max_tokens=max_tokens,
-            **kwargs
-        )
+# QwenInterface class removed - use OpenRouterInterface directly with appropriate model configuration
 
 
 def create_openrouter_llm_pool(
@@ -265,16 +191,15 @@ def create_openrouter_llm_pool(
         Dictionary of LLM interfaces for different roles
     """
     
-    # Create base Qwen interface
-    base_qwen = QwenInterface(api_key, site_url, site_name)
+    # Create base OpenRouter interface
+    base_config = OpenRouterConfig(api_key=api_key, site_url=site_url, site_name=site_name)
     
     # Create specialized interfaces for different roles
-    # For now, we'll use the same model but could use different models/configs for each role
     llm_pool = {
-        'retriever': QwenInterface(api_key, site_url, site_name),    # For concept mining
-        'creator': QwenInterface(api_key, site_url, site_name),      # For question writing
-        'adversary': QwenInterface(api_key, site_url, site_name),    # For adversarial enhancement
-        'refiner': QwenInterface(api_key, site_url, site_name)       # For refinement
+        'retriever': OpenRouterInterface(base_config),    # For concept mining
+        'creator': OpenRouterInterface(base_config),      # For question writing
+        'adversary': OpenRouterInterface(base_config),    # For adversarial enhancement
+        'refiner': OpenRouterInterface(base_config)       # For refinement
     }
     
     logger.info(f"Created OpenRouter LLM pool with {len(llm_pool)} interfaces")
@@ -285,7 +210,7 @@ def create_openrouter_llm_pool(
 
 async def test_openrouter_connection(api_key: Optional[str] = None) -> Dict[str, Any]:
     """
-    Test OpenRouter connection and model availability
+    Test OpenRouter connection and model availability using iRouter
     
     Args:
         api_key: API key to test (uses environment variable if None)
@@ -305,12 +230,13 @@ async def test_openrouter_connection(api_key: Optional[str] = None) -> Dict[str,
     
     try:
         # Create interface
-        qwen = QwenInterface(api_key)
-        test_results['model_info'] = qwen.get_model_info()
+        config = OpenRouterConfig(api_key=api_key)
+        interface = OpenRouterInterface(config)
+        test_results['model_info'] = interface.get_model_info()
         test_results['connection_successful'] = True
         
         # Test simple generation
-        response = await qwen.generate_response(
+        response = await interface.generate_response(
             "What is the capital of France? Respond in one sentence.",
             temperature=0.1,
             max_tokens=50
@@ -323,27 +249,26 @@ async def test_openrouter_connection(api_key: Optional[str] = None) -> Dict[str,
         
     except Exception as e:
         test_results['error'] = str(e)
-        logger.error(f"OpenRouter connection test failed: {e}")
+        logger.error(f"iRouter OpenRouter connection test failed: {e}")
     
     return test_results
 
 
 def get_available_models(api_key: Optional[str] = None) -> List[str]:
     """
-    Get list of available models from OpenRouter
-    Note: This is a placeholder - OpenRouter doesn't provide a direct API for listing models
+    Get list of popular OpenRouter models compatible with iRouter
+    Note: iRouter works with any OpenRouter model - this is just a selection of popular ones
     """
     
-    # Common OpenRouter models that support chat completion
+    # Popular OpenRouter models that work well with iRouter
     return [
-        "qwen/qwen3-30b-a3b-instruct-2507",
-        "anthropic/claude-3-sonnet",
-        "anthropic/claude-3-haiku",
+        "anthropic/claude-sonnet-4",
+        "openai/gpt-5-mini",
         "openai/gpt-4o",
-        "openai/gpt-4o-mini",
+        "anthropic/claude-3.5-sonnet",
         "google/gemini-pro",
-        "mistralai/mixtral-8x7b-instruct",
-        "meta-llama/llama-3-70b-instruct"
+        "meta-llama/llama-3.2-90b-vision-instruct",
+        "qwen/qwen-2.5-72b-instruct"
     ]
 
 
@@ -352,9 +277,9 @@ if __name__ == "__main__":
     import asyncio
     
     async def main():
-        """Test the OpenRouter interface"""
+        """Test the iRouter OpenRouter interface"""
         
-        print("Testing OpenRouter Interface...")
+        print("Testing iRouter OpenRouter Interface...")
         
         # Test connection
         test_results = await test_openrouter_connection()

@@ -4,37 +4,42 @@ WebSocket manager for real-time progress updates
 
 import json
 import asyncio
+import threading
 from typing import Dict, List, Any, Optional
 from fastapi import WebSocket, WebSocketDisconnect
 from ..utils.logging import get_logger
 
 
 class ConnectionManager:
-    """Manage WebSocket connections"""
+    """Manage WebSocket connections with thread safety"""
     
     def __init__(self):
         self.active_connections: Dict[str, List[WebSocket]] = {}
         self.logger = get_logger(self.__class__.__name__)
+        self._lock = threading.Lock()  # Protect concurrent access
     
     async def connect(self, websocket: WebSocket, run_id: str):
         """Accept new WebSocket connection"""
         await websocket.accept()
         
-        if run_id not in self.active_connections:
-            self.active_connections[run_id] = []
+        with self._lock:  # Thread-safe connection management
+            if run_id not in self.active_connections:
+                self.active_connections[run_id] = []
+            
+            self.active_connections[run_id].append(websocket)
         
-        self.active_connections[run_id].append(websocket)
         self.logger.info(f"WebSocket connected for run {run_id}")
     
     def disconnect(self, websocket: WebSocket, run_id: str):
         """Remove WebSocket connection"""
-        if run_id in self.active_connections:
-            if websocket in self.active_connections[run_id]:
-                self.active_connections[run_id].remove(websocket)
-            
-            # Clean up empty run_id entries
-            if not self.active_connections[run_id]:
-                del self.active_connections[run_id]
+        with self._lock:  # Thread-safe connection management
+            if run_id in self.active_connections:
+                if websocket in self.active_connections[run_id]:
+                    self.active_connections[run_id].remove(websocket)
+                
+                # Clean up empty run_id entries
+                if not self.active_connections[run_id]:
+                    del self.active_connections[run_id]
         
         self.logger.info(f"WebSocket disconnected for run {run_id}")
     
@@ -47,11 +52,12 @@ class ConnectionManager:
     
     async def broadcast_to_run(self, message: Dict[str, Any], run_id: str):
         """Broadcast message to all connections for a specific run"""
-        if run_id not in self.active_connections:
-            return
-        
-        # Create a copy of the connection list to avoid modification during iteration
-        connections = self.active_connections[run_id].copy()
+        # Get a thread-safe copy of connections
+        with self._lock:
+            if run_id not in self.active_connections:
+                return
+            # Create a copy of the connection list to avoid modification during iteration
+            connections = self.active_connections[run_id].copy()
         
         for connection in connections:
             try:
@@ -63,11 +69,13 @@ class ConnectionManager:
     
     def get_connection_count(self, run_id: str) -> int:
         """Get number of active connections for a run"""
-        return len(self.active_connections.get(run_id, []))
+        with self._lock:
+            return len(self.active_connections.get(run_id, []))
     
     def get_all_runs(self) -> List[str]:
         """Get list of all active run IDs"""
-        return list(self.active_connections.keys())
+        with self._lock:
+            return list(self.active_connections.keys())
 
 
 class ProgressNotifier:
@@ -257,6 +265,11 @@ def get_progress_tracker(run_id: str) -> EvaluationProgressTracker:
     """Get progress tracker for a run"""
     notifier = get_progress_notifier(run_id)
     return EvaluationProgressTracker(notifier)
+
+# Backward compatibility exports expected by tests
+# Alias names to match older API
+ProgressTracker = EvaluationProgressTracker
+ProgressManager = ConnectionManager
 
 
 async def handle_websocket_connection(websocket: WebSocket, run_id: str):

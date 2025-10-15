@@ -3,15 +3,12 @@ Benchmark generators for different evaluation types
 Creates domain-specific questions and answers from corpus text
 """
 
-import json
 import re
 import random
-from functools import reduce
-from collections import defaultdict
 from typing import List, Dict, Any, Optional
 from abc import ABC, abstractmethod
 
-from .evaluation import EvaluationType, BenchmarkItem, extract_key_concepts, sample_corpus_segments
+from .evaluation import EvaluationType, extract_key_concepts, sample_corpus_segments
 
 # Expose AgenticBenchmarkGenerator as a module attribute for test patching
 try:
@@ -165,7 +162,7 @@ class AgenticGeneratorWrapper(BenchmarkGenerator):
     
     async def _generate_async(self, corpus_text: str, num_questions: int):
         """Internal async generation method."""
-        return await self.agentic_generator.generate_async(
+        return await self.agentic_generator.generate_benchmark_async(
             corpus_text=corpus_text,
             num_questions=num_questions
         )
@@ -204,12 +201,13 @@ class MathematicalBenchmarkGenerator(BenchmarkGenerator):
                     result = eval(f"{num1} {operation} {num2}")
                     question = f"Calculate: {num1} {operation} {num2}"
                     answer = str(result)
-                except:
-                    question = f"What is the mathematical relationship in the corpus?"
+                except (SyntaxError, NameError, ZeroDivisionError, ArithmeticError):
+                    # Handle evaluation errors gracefully
+                    question = "What is the mathematical relationship in the corpus?"
                     answer = "Mathematical concepts are discussed in the context"
             else:
-                question = f"Solve the mathematical problem presented in the corpus"
-                answer = f"The solution involves mathematical reasoning based on the given information"
+                question = "Solve the mathematical problem presented in the corpus"
+                answer = "The solution involves mathematical reasoning based on the given information"
             
             items.append(self.create_item(question, answer))
         
@@ -235,7 +233,7 @@ class FactualQABenchmarkGenerator(BenchmarkGenerator):
             concept = key_concepts[i % len(key_concepts)] if key_concepts else f"concept_{i+1}"
             question_template = random.choice(question_types)
             question = question_template.format(concept=concept)
-            answer = f"Based on the corpus, {concept} is an important concept that..."
+            answer = f"{concept} is an important concept that..."
             
             items.append(self.create_item(question, answer))
         
@@ -258,7 +256,7 @@ class CodeGenerationBenchmarkGenerator(BenchmarkGenerator):
         
         for i in range(num_questions):
             question = random.choice(code_tasks)
-            answer = f"""def solution():
+            answer = """def solution():
     # Implementation based on corpus content
     return "processed_result"
 """
@@ -280,7 +278,7 @@ class DomainKnowledgeBenchmarkGenerator(BenchmarkGenerator):
             items.append(self.create_item(
                 mock_q['question'],
                 mock_q['answer'],
-                context=corpus_text[:500] if len(corpus_text) > 500 else corpus_text
+                context=corpus_text
             ))
         
         return items
@@ -294,11 +292,11 @@ class ReadingComprehensionBenchmarkGenerator(BenchmarkGenerator):
         segments = sample_corpus_segments(corpus_text, num_segments=num_questions, segment_length=300)
         
         question_types = [
-            "What is the main idea of this passage?",
-            "According to the text, what is the significance of {concept}?",
-            "How does the passage describe {concept}?",
-            "What conclusion can be drawn from this text?",
-            "Summarize the key points of this passage."
+            "What is the main idea?",
+            "What is the significance of {concept}?",
+            "How is {concept} described?",
+            "What conclusion can be drawn?",
+            "What are the key points?"
         ]
         
         for i, segment in enumerate(segments):
@@ -307,7 +305,7 @@ class ReadingComprehensionBenchmarkGenerator(BenchmarkGenerator):
             
             question_template = random.choice(question_types)
             question = question_template.format(concept=concept)
-            answer = f"Based on the passage, the main point is about {concept} and its implications."
+            answer = f"The main point is about {concept} and its implications."
             
             items.append(self.create_item(question, answer, context=segment))
         
@@ -379,10 +377,14 @@ class BenchmarkGeneratorFactory:
                 agentic_cfg = agentic_config if agentic_config is not None else None
                 
                 # Create agentic generator with proper configuration
+                pipeline_config = agentic_cfg
+                if config and pipeline_config is None:
+                    pipeline_config = cls._convert_to_pipeline_config(config, eval_type)
+
                 agentic_gen = AgenticCls(
                     eval_type=eval_type,
                     llm_pool=llm_pool,
-                    config=agentic_cfg
+                    config=pipeline_config
                 )
                 
                 # Wrap to provide consistent interface
@@ -398,12 +400,93 @@ class BenchmarkGeneratorFactory:
         generator_class = cls._generators.get(eval_type, DomainKnowledgeBenchmarkGenerator)
         return generator_class(eval_type)
     
+    @classmethod
+    def _convert_to_pipeline_config(cls, config, eval_type):
+        """Convert EvaluationConfig to PipelineConfig for agentic generation"""
+        try:
+            from .agentic.models import PipelineConfig, DifficultyLevel
+            
+            # Map evaluation types to difficulty levels
+            difficulty_map = {
+                EvaluationType.MATHEMATICAL: DifficultyLevel.HARD,
+                EvaluationType.CODE_GENERATION: DifficultyLevel.HARD,
+                EvaluationType.FACTUAL_QA: DifficultyLevel.INTERMEDIATE,
+                EvaluationType.DOMAIN_KNOWLEDGE: DifficultyLevel.HARD,
+                EvaluationType.MULTIPLE_CHOICE: DifficultyLevel.INTERMEDIATE,
+                EvaluationType.READING_COMPREHENSION: DifficultyLevel.INTERMEDIATE
+            }
+            
+            difficulty = difficulty_map.get(eval_type, DifficultyLevel.HARD)
+            
+            # Create PipelineConfig from EvaluationConfig
+            return PipelineConfig(
+                difficulty=difficulty,
+                num_questions=config.generation.num_questions,
+                min_validation_score=0.6,
+                oversample_factor=2.5,
+                parallel_batch_size=3,
+                max_retry_cycles=2,
+                enforce_deterministic_split=True
+            )
+        except ImportError:
+            # Return None if agentic models not available
+            return None
+    
     @classmethod 
     def _create_llm_pool_from_config(cls, config):
-        """Create LLM pool from configuration (future enhancement)."""
-        # This will be implemented when we add dynamic LLM pool configuration
-        # For now, return None to use default pool creation
-        return None
+        """Create LLM pool from configuration."""
+        from ..llm.mock_interface import MockLLMInterface
+        
+        # Check if we should use mock mode (no API key configured)
+        if getattr(config.llm, 'mock_mode', False) or not config.llm.api_key:
+            # Use mock LLMs for all agents
+            mock_llm = MockLLMInterface(model_name="MockLLM-Demo", temperature=config.llm.temperature)
+            
+            return {
+                'retriever': mock_llm,    # For concept mining
+                'creator': mock_llm,      # For question writing
+                'adversary': mock_llm,    # For adversarial enhancement
+                'refiner': mock_llm       # For refinement and formatting
+            }
+        
+        # Use real LLM interfaces when API key is available
+        try:
+            from ..llm.openrouter_interface import OpenRouterInterface, OpenRouterConfig
+            
+            # Map system LLMConfig to OpenRouterConfig
+            llm_config = OpenRouterConfig(
+                api_key=config.llm.api_key,
+                model=config.llm.model_name if getattr(config.llm, 'model_name', None) else "openai/gpt-5-mini",
+                site_url=getattr(config.llm, 'site_url', None),
+                site_name=getattr(config.llm, 'app_name', None),
+                max_retries=getattr(config.llm, 'max_retries', 3),
+                timeout=float(getattr(config.llm, 'timeout', 60))
+            )
+            
+            # Create specialized LLM instances for different agents
+            # In a production setup, you might want different models for different roles
+            retriever_llm = OpenRouterInterface(llm_config)
+            creator_llm = OpenRouterInterface(llm_config) 
+            adversary_llm = OpenRouterInterface(llm_config)
+            refiner_llm = OpenRouterInterface(llm_config)
+            
+            return {
+                'retriever': retriever_llm,
+                'creator': creator_llm,
+                'adversary': adversary_llm, 
+                'refiner': refiner_llm
+            }
+            
+        except ImportError:
+            # Fall back to mock LLMs if OpenRouter interface is not available
+            mock_llm = MockLLMInterface(model_name="Fallback-MockLLM", temperature=config.llm.temperature)
+            
+            return {
+                'retriever': mock_llm,
+                'creator': mock_llm,
+                'adversary': mock_llm,
+                'refiner': mock_llm
+            }
     
     @classmethod
     def get_available_types(cls) -> List[EvaluationType]:
@@ -447,7 +530,8 @@ def generate_domain_benchmark(corpus_text: str, eval_type: EvaluationType, num_q
         try:
             agentic_report = generator.get_generation_report()
             metadata['agentic_report'] = agentic_report
-        except:
+        except (AttributeError, Exception):
+            # Generator might not have report method or it might fail
             pass
     
     return {

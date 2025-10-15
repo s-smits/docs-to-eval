@@ -6,30 +6,20 @@ import asyncio
 import json
 import uuid
 from pathlib import Path
-from typing import Optional, List, Annotated
-from datetime import datetime
+from typing import Optional, Annotated
 
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich.table import Table
 from rich.panel import Panel
-from rich.tree import Tree
-from rich.text import Text
-from rich import print as rprint
 
-from ..core.evaluation import EvaluationFramework, EvaluationType
+from docs_to_eval.utils.config import EvaluationType
 from ..core.classification import EvaluationTypeClassifier
-from ..core.pipeline import EvaluationPipeline, PipelineFactory
-from ..core.exceptions import (
-    DocsToEvalError,
-    EmptyCorpusError,
-    ConfigurationError,
-    PipelineError
-)
-from ..llm.mock_interface import MockLLMInterface, MockLLMEvaluator
+from ..core.pipeline import PipelineFactory
+from ..core.exceptions import DocsToEvalError
 from ..utils.config import EvaluationConfig, ConfigManager, create_default_config
-from ..utils.logging import setup_logging, evaluation_context
+from ..utils.logging import setup_logging
 
 app = typer.Typer(
     name="docs-to-eval",
@@ -92,7 +82,7 @@ def evaluate(
     
     try:
         asyncio.run(run_evaluation_async(corpus_text, config, run_id, output_path))
-        console.print(f"\n[green]✅ Evaluation completed successfully![/green]")
+        console.print("\n[green]✅ Evaluation completed successfully![/green]")
         console.print(f"[blue]Results saved to: {output_path}/[/blue]")
         
     except Exception as e:
@@ -119,8 +109,6 @@ async def run_evaluation_async(corpus_text: str, config: EvaluationConfig, run_i
         task = progress.add_task("Running evaluation pipeline...", total=4)
         
         # Add progress callback for pipeline phases
-        original_start_phase = None
-        original_end_phase = None
         
         def update_progress_callback(phase_name: str):
             phase_mapping = {
@@ -240,26 +228,27 @@ def show_classification_results(classification):
 
 def show_results_summary(results: dict):
     """Display evaluation results summary"""
-    metrics = results["aggregate_metrics"]
+    metrics = results.get("aggregate_metrics", {})
     
     # Create results table
     table = Table(title="📊 Evaluation Results")
     table.add_column("Metric", style="cyan")
     table.add_column("Value", style="magenta")
     
-    table.add_row("Mean Score", f"{metrics['mean_score']:.3f}")
-    table.add_row("Min Score", f"{metrics['min_score']:.3f}")
-    table.add_row("Max Score", f"{metrics['max_score']:.3f}")
-    table.add_row("Questions Evaluated", str(metrics['num_samples']))
+    table.add_row("Mean Score", f"{metrics.get('mean_score', 0.0):.3f}")
+    table.add_row("Min Score", f"{metrics.get('min_score', 0.0):.3f}")
+    table.add_row("Max Score", f"{metrics.get('max_score', 0.0):.3f}")
+    table.add_row("Questions Evaluated", str(metrics.get('num_samples', 0)))
     
     console.print(table)
     
     # Performance level
-    if metrics['mean_score'] >= 0.8:
+    mean_score = metrics.get('mean_score', 0.0)
+    if mean_score >= 0.8:
         level = "[green]Excellent[/green]"
-    elif metrics['mean_score'] >= 0.6:
+    elif mean_score >= 0.6:
         level = "[yellow]Good[/yellow]"
-    elif metrics['mean_score'] >= 0.4:
+    elif mean_score >= 0.4:
         level = "[orange3]Fair[/orange3]"
     else:
         level = "[red]Poor[/red]"
@@ -288,11 +277,14 @@ def classify(
     
     if verbose:
         # Show sample questions
-        if 'sample_questions' in classification:
+        sample_questions = classification.get('sample_questions', [])
+        if sample_questions:
             console.print("\n[cyan]Sample Questions:[/cyan]")
-            for i, example in enumerate(classification['sample_questions'], 1):
-                console.print(f"  {i}. {example['question']}")
-                console.print(f"     Answer: {example['answer']}")
+            for i, example in enumerate(sample_questions, 1):
+                question = example.get('question', 'N/A')
+                answer = example.get('answer', 'N/A')
+                console.print(f"  {i}. {question}")
+                console.print(f"     Answer: {answer}")
 
 
 @app.command(name="config", help="⚙️  Manage configuration files")
@@ -338,7 +330,6 @@ def server(
     
     try:
         import uvicorn
-        from ..ui_api.main import app
         
         console.print(f"[green]🚀 Starting docs-to-eval server on {host}:{port}[/green]")
         console.print(f"[blue]📚 API docs available at: http://{host}:{port}/docs[/blue]")

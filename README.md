@@ -30,55 +30,64 @@
 
 ```
 📁 docs-to-eval/
-├── core_evaluation.py          # Core framework and data structures
-├── eval_classifier.py          # LLM-based evaluation type classification
-├── benchmark_generators.py     # Benchmark generation for different types
-├── agentic_generator.py        # Advanced agentic question generation
-├── verification_systems.py     # Deterministic & non-deterministic verification
-├── mock_llm_interface.py       # Mock LLM for testing pipeline
-├── reporting_system.py         # Comprehensive reporting and visualization
-├── main_interface.py           # Interactive user interface
-└── demo.py                     # Quick demonstration script
+├── run_server.py               # FastAPI server entry point
+├── docs_to_eval/
+│   ├── core/                   # Core evaluation framework
+│   │   ├── classification.py   # LLM-based evaluation type classification
+│   │   ├── evaluation.py       # Core evaluation framework
+│   │   ├── verification.py     # Verification systems
+│   │   ├── benchmarks.py       # Benchmark generation
+│   │   └── agentic/            # Advanced agentic generation
+│   │       ├── generator.py    # Agentic question generation
+│   │       └── orchestrator.py # Generation orchestration
+│   ├── llm/                    # LLM interfaces
+│   │   ├── openrouter_interface.py # OpenRouter API integration
+│   │   └── mock_interface.py   # Mock LLM for testing
+│   ├── ui_api/                 # Web API and interface
+│   │   ├── main.py            # FastAPI application
+│   │   ├── routes.py          # API routes
+│   │   └── websockets.py      # Real-time updates
+│   └── utils/                  # Utilities and helpers
+└── frontend/                   # Web interface assets
 ```
 
 ## 🚀 Quick Start
 
-### Basic Usage
+### Web Interface
 
-```python
-python main_interface.py
+```bash
+python run_server.py
 ```
 
-Follow the interactive prompts to:
-1. **Input your corpus** (text entry, file upload, or sample)
-2. **Configure parameters** (number of questions, evaluation type)
+Then open your browser to: **http://localhost:8080**
+
+The web interface allows you to:
+1. **Upload your corpus** (text entry, file upload, or sample datasets)
+2. **Configure parameters** (number of questions, evaluation type, model selection)
 3. **Generate benchmark** (standard or advanced agentic generation)
-4. **Run evaluation** (with mock LLM)
-5. **View results** (comprehensive analysis and recommendations)
+4. **Run evaluation** (with multiple LLM options)
+5. **View results** (comprehensive analysis and interactive reports)
 
 ### Programmatic Usage
 
 ```python
-from main_interface import docs-to-evalSystem
+# Use individual core components
+from docs_to_eval.core.classification import classify_evaluation_type
+from docs_to_eval.core.agentic.generator import AgenticQuestionGenerator
+from docs_to_eval.core.verification import VerificationOrchestrator
 
-# Initialize system
-system = docs-to-evalSystem()
-
-# Or use individual components
-from eval_classifier import classify_and_configure
-from benchmark_generators import generate_domain_benchmark
-from verification_systems import VerificationOrchestrator
-
-# Classify corpus and generate config
+# Classify corpus and determine evaluation type
 corpus = "Your domain-specific text here..."
-config = classify_and_configure(corpus, num_questions=50)
+classification = classify_evaluation_type(corpus)
+eval_type = classification['primary_type']
 
-# Generate benchmark
-benchmark = generate_domain_benchmark(corpus, config['eval_type'], 50)
+# Generate benchmark using agentic approach
+generator = AgenticQuestionGenerator()
+benchmark = generator.generate_comprehensive_benchmark(corpus, eval_type, 50)
 
-# Verify responses (example)
+# Verify responses
 verifier = VerificationOrchestrator()
-result = verifier.verify("prediction", "ground_truth", config['eval_type'])
+result = verifier.verify("prediction", "ground_truth", eval_type)
 ```
 
 ## 📋 Supported Evaluation Types
@@ -231,11 +240,40 @@ result = orchestrator.verify("${1,2,3,4}$", "${1,3} \\cup {2,4}$", "mathematical
 - **Domain adaptation assessment** for specialized applications
 - **Comparative studies** with standardized benchmarks
 
-## 🛠️ Technical Requirements
+## 🛠️ Installation & Requirements
 
-- **Python 3.7+**
-- **Functional programming approach** (no explicit type annotations)
-- **Mock LLM interface** for testing (easily replaceable with real LLMs)
+### Prerequisites
+- **Python 3.8+**
+- **uv package manager** (recommended) or pip
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd docs-to-eval
+
+# Install dependencies with uv (recommended)
+uv sync
+
+# Or with pip
+pip install -r requirements.txt
+```
+
+### Running the Application
+
+```bash
+# Start the web server
+python run_server.py
+
+# Open browser to http://localhost:8080
+```
+
+### Technical Features
+- **FastAPI web interface** with real-time updates
+- **Multiple LLM providers** (OpenRouter, local models, mock interface)
+- **WebSocket support** for live progress updates
+- **File upload and corpus management**
 - **JSON-based configuration** and result storage
 - **Modular architecture** for easy extension
 
@@ -266,24 +304,34 @@ def custom_verification(prediction, ground_truth):
 VerificationOrchestrator.verify_methods['custom'] = custom_verification
 ```
 
-## 📝 Future Enhancements
+## 📝 Recent Enhancements
 
-- **Real LLM integration** (OpenAI, Anthropic, Hugging Face APIs)
+### ✅ Implemented
+- **Web interface** with FastAPI and real-time updates
+- **Real LLM integration** via OpenRouter (GPT, Claude, Gemini, etc.)
+- **File upload and corpus management**
+- **WebSocket support** for live progress tracking
+- **Advanced agentic question generation**
+- **Mathematical verification** with math-verify library
+
+### 🚧 Future Enhancements
 - **Semantic embedding models** for improved similarity metrics
 - **Multi-language support** for international corpora
 - **Batch processing** for large-scale evaluations
-- **Web interface** for non-technical users
+- **Advanced visualization dashboards**
+- **API rate limiting and caching**
 - **Integration plugins** for popular ML frameworks
+- **Export to common benchmark formats** (JSON, CSV, HuggingFace datasets)
 
 ## 🤝 Contributing
 
-This system demonstrates a complete automated evaluation pipeline. Key areas for enhancement:
+This system provides a complete automated evaluation pipeline with web interface and real LLM integration. Key areas for enhancement:
 
-1. **Real LLM Integration**: Replace mock interfaces with actual model APIs
-2. **Advanced Similarity Metrics**: Implement semantic embedding similarity
-3. **Expanded Evaluation Types**: Add more domain-specific evaluation methods
-4. **Performance Optimization**: Batch processing and caching improvements
-5. **UI/UX Enhancement**: Web interface and visualization improvements
+1. **Advanced Similarity Metrics**: Implement semantic embedding similarity
+2. **Expanded Evaluation Types**: Add more domain-specific evaluation methods  
+3. **Performance Optimization**: Batch processing and caching improvements
+4. **UI/UX Enhancement**: Advanced visualization and dashboard features
+5. **Integration Ecosystem**: Plugins for popular ML frameworks and platforms
 
 ---
 

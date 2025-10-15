@@ -5,11 +5,10 @@ Defines strict schemas for inter-agent communication and validation
 Updated for Pydantic V2 best practices with field_validator, model_validator, and ConfigDict
 """
 
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional
 from typing_extensions import Self
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from enum import Enum
-import json
 from datetime import datetime
 
 from ..evaluation import EvaluationType
@@ -187,9 +186,12 @@ class EnhancedBenchmarkItem(BaseModel):
             raise ValueError("Question is too short (minimum 5 characters)")
         if len(v) > 150:
             v = v[:150]
-        # Ensure proper punctuation
-        if not v.endswith('?') and not v.endswith('.'):
-            v += '?'
+        lowercase = v.lower()
+        if not v.endswith('?'):
+            interrogative_cues = {'what', 'how', 'why', 'when', 'where', 'which'}
+            auxiliary_cues = {'is', 'are', 'can', 'could', 'would', 'should'}
+            if any(word in lowercase for word in interrogative_cues | auxiliary_cues):
+                v += '?'
         return v
 
 
@@ -218,9 +220,9 @@ class AgentConfig(BaseModel):
     model_config = ConfigDict(validate_assignment=True)
     
     temperature: float = Field(default=0.7, ge=0, le=2)
-    max_tokens: int = Field(default=512, gt=0, le=4096)
+    max_tokens: int = Field(default=2000, gt=0, le=4096)
     timeout_seconds: float = Field(default=30.0, gt=0)
-    retry_attempts: int = Field(default=3, ge=0, le=10)
+    retry_attempts: int = Field(default=2, ge=0, le=10)
     model_name: Optional[str] = None
     
     # Agent-specific configs

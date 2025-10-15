@@ -31,18 +31,22 @@ dependencies = [
     "pyyaml>=6.0.2",
     "python-multipart>=0.0.20",
     "httpx>=0.25.0",
-    "math-verify>=0.1.0",
+    "math-verify[antlr4-13-2]>=0.1.0",
     "numpy>=1.21.0",
-    "chonkie>=1.1.1",
+    "chonkie[all]>=1.1.1",
     "sentence-transformers>=5.0.0",
     "python-dotenv>=1.1.1",
     "openai>=1.98.0",
-    "pytest==8.3.2",
+    "mlx>=0.27.1",
+    "tiktoken>=0.8.0",
+    "pytest>=8.4.1",
+    "irouter>=0.1.5",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=6.0",
+    "pytest-asyncio>=0.23",
     "black>=21.0",
     "flake8>=3.8",
 ]
@@ -73,4 +77,12 @@ include = [
     "*.py",
     "README.md",
     "corpus/**/*",
+]
+
+[dependency-groups]
+dev = [
+    "autoflake>=2.3.1",
+    "pytest-asyncio>=1.1.0",
+    "ruff>=0.12.8",
+    "vulture>=2.14",
 ]

@@ -80,7 +80,7 @@ class AgenticBenchmarkGenerator(BenchmarkGenerator):
             
             return standard_items
             
-        except Exception as e:
+        except Exception:
             # Fallback to basic generation if agentic pipeline fails
             return self._fallback_to_basic_generation(corpus_text, num_questions)
     

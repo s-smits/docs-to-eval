@@ -9,27 +9,28 @@ import re
 import random
 from typing import Dict, List, Any, Optional, Tuple
 from abc import ABC, abstractmethod
-from functools import lru_cache
 import time
+import logging
 
 from .models import (
     BenchmarkDraft,
     BenchmarkCandidate,
-    EnhancedBenchmarkItem,
     ConceptExtractionResult,
     ValidationResult,
     AgentResponse,
     AgentConfig,
     DifficultyLevel,
     AnswerType,
-    BenchmarkMetadata,
     validate_deterministic_answer_type
 )
-from ..evaluation import EvaluationType, is_deterministic
+from ..evaluation import EvaluationType
 from ..verification import VerificationOrchestrator
 from ...llm.base import BaseLLMInterface
 from ...utils.text_processing import extract_named_entities_simple, create_smart_chunks
 from ...utils.config import ChunkingConfig
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAgent(ABC):
@@ -173,23 +174,27 @@ class ConceptMiner(BaseAgent):
             )
             
         except Exception as e:
+            logger.error(f"ConceptMiner failed with error: {str(e)}", exc_info=True)
+            logger.warning("Returning fallback concepts - workflow quality may be degraded")
             return ConceptExtractionResult(
-                key_concepts=[f"concept_{i}" for i in range(min(k, 10))],  # Fallback
-                supporting_snippets={},
-                concept_importance_scores={},
-                chunk_ids=[]
+                key_concepts=[f"fallback_concept_{i}" for i in range(min(k, 10))],  # Fallback with clear naming
+                supporting_snippets={f"fallback_concept_{i}": corpus_text for i in range(min(k, 10))},
+                concept_importance_scores={f"fallback_concept_{i}": 0.1 for i in range(min(k, 10))},
+                chunk_ids=[f"fallback_chunk_{i}" for i in range(min(5, k))]
             )
     
     def _create_windowed_chunks(self, text: str, chunk_size: int = 800, overlap: int = 100) -> List[str]:
-        """Create overlapping text chunks"""
+        """Create overlapping text chunks (robust to small chunk_size)"""
         words = text.split()
-        chunks = []
-        
-        for i in range(0, len(words), chunk_size - overlap):
-            chunk_words = words[i:i + chunk_size]
-            if len(chunk_words) >= 50:  # Minimum viable chunk size
+        if chunk_size <= overlap:
+            # Ensure progress to avoid infinite loop or zero-step
+            overlap = max(0, chunk_size // 2)
+        step = max(1, chunk_size - overlap)
+        chunks: List[str] = []
+        for i in range(0, len(words), step):
+            chunk_words = words[i:i + max(1, chunk_size)]
+            if len(chunk_words) >= max(5, min(50, chunk_size // 4)):
                 chunks.append(' '.join(chunk_words))
-        
         return chunks
     
     async def _extract_concepts_from_chunk(self, chunk: str, chunk_id: str) -> Tuple[Dict[str, Tuple[float, str]], str]:
@@ -198,12 +203,22 @@ class ConceptMiner(BaseAgent):
         if self.llm:
             # Use LLM for concept extraction
             prompt = f"""
-Extract key concepts from this text. Return JSON only.
+Extract DOMAIN-SPECIFIC key concepts, entities, and topics from this text. 
 
-Text: {chunk[:600]}...
+Rules:
+- Extract full noun phrases and proper names, NOT single generic words
+- Include specific entities (e.g., "Tavola Capuana", "Etruscan terracotta slab", "ritual calendar")
+- Include domain-specific terms with context (e.g., "470 BCE inscription" not just "inscription")
+- Include measurements, dates, locations when present
+- Concepts must be specific to THIS domain, not generic terms
 
-Return format:
-{{"concepts": [{{"name": "concept", "importance": 0.8, "snippet": "supporting text"}}]}}
+Text: {chunk}
+
+Return JSON with specific multi-word concepts:
+{{"concepts": [{{"name": "specific domain concept or entity", "importance": 0.8, "snippet": "exact supporting text"}}]}}
+
+Examples of GOOD concepts: "Tavola Capuana terracotta slab", "Etruscan ritual calendar", "470 BCE inscription"
+Examples of BAD concepts: "ancient", "text", "women", "important"
 """
             try:
                 response = await self._call_llm_with_retry(prompt)
@@ -213,52 +228,104 @@ Return format:
                 for item in data.get('concepts', []):
                     concepts[item['name']] = (item['importance'], item['snippet'])
                 return concepts, chunk_id
-            except:
+            except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as e:
+                # Failed to parse LLM response, use fallback
+                logger.warning(f"Failed to parse LLM response in ConceptMiner: {str(e)}")
                 pass
         
         # Fallback: Simple keyword extraction
         return self._simple_concept_extraction(chunk), chunk_id
     
     def _simple_concept_extraction(self, text: str) -> Dict[str, Tuple[float, str]]:
-        """Fallback concept extraction combining keywords and named entities.
+        """Fallback concept extraction combining keyword statistics and domain heuristics."""
 
-        - Prioritize domain-like named entities (capitalized sequences)
-        - Back off to keyword frequency for broader coverage
-        """
-        # Keyword frequency (lowercased)
         words = re.findall(r'\b[a-zA-Z]{4,}\b', text.lower())
         word_freq: Dict[str, int] = {}
         for word in words:
             if word not in {'this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 'which', 'their'}:
                 word_freq[word] = word_freq.get(word, 0) + 1
 
-        # Simple proper noun extraction
         entities = extract_named_entities_simple(text)
-        # Weight entities higher, multi-token entities even more
         entity_scores: Dict[str, float] = {}
         for ent in entities:
             tokens = ent.split()
             base = 1.0 + 0.4 * (len(tokens) - 1)
             entity_scores[ent] = base
 
-        # Compose candidate list
         total_words = max(1, len(words))
         concepts: Dict[str, Tuple[float, str]] = {}
+        sentences = text.split('.')
 
-        # Add entities first
         for ent, escore in sorted(entity_scores.items(), key=lambda x: x[1], reverse=True)[:15]:
-            sentences = text.split('.')
             snippet = next((s.strip() for s in sentences if ent in s), text[:200])
             concepts[ent] = (min(1.0, 0.6 + 0.1 * escore), snippet[:200])
 
-        # Fill with keywords
         for word, freq in sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:15]:
             if word in concepts:
                 continue
             score = min(1.0, (freq / total_words) * 8)
-            sentences = text.split('.')
             snippet = next((s.strip() for s in sentences if word in s.lower()), text[:200])
             concepts[word] = (score, snippet[:200])
+
+        # Additional domain-aware heuristics inspired by main branch implementation
+        domain_phrases: List[str] = []
+        proper_phrases = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b', text)
+        domain_phrases.extend(proper_phrases)
+
+        dates = re.findall(r'\b\d+\s*(?:BCE|CE|BC|AD)\b', text)
+        domain_phrases.extend(dates)
+
+        measurements = re.findall(r'\b\d+\s*(?:by|x)\s*\d+\s*(?:cm|m|in|ft)\b', text)
+        domain_phrases.extend(measurements)
+
+        artifact_patterns = [
+            r'\b(?:ancient|ritual|religious|sacred)\s+[a-z]+\b',
+            r'\b[a-z]+\s+(?:slab|tablet|inscription|calendar|artifact|text)\b',
+            r'\b[a-z]+\s+(?:ceremony|tradition|practice|society)\b'
+        ]
+        for pattern in artifact_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            domain_phrases.extend([m for m in matches if len(m.split()) > 1])
+
+        locations = re.findall(r'\b[A-Z][a-z]+(?:\s+in\s+[A-Z][a-z]+)?\b', text)
+        domain_phrases.extend([loc for loc in locations if ' in ' in loc.lower()])
+
+        seen: set[str] = set()
+        for phrase in domain_phrases:
+            phrase = phrase.strip()
+            normalized = phrase.lower()
+            if normalized in seen or normalized in {'the', 'this', 'that', 'these', 'those', 'ancient', 'text', 'also'}:
+                continue
+            if phrase in concepts:
+                continue
+            if len(phrase.split()) <= 1 and not any(char.isdigit() for char in phrase):
+                continue
+
+            best_snippet = next((s.strip() for s in sentences if normalized in s.lower()), None)
+            if not best_snippet:
+                idx = text.lower().find(normalized)
+                if idx != -1:
+                    start = max(0, idx - 50)
+                    end = min(len(text), idx + len(phrase) + 50)
+                    best_snippet = text[start:end].strip()
+            snippet_value = (best_snippet or text[:120])[:300]
+
+            score = 0.5
+            if any(char.isupper() for char in phrase):
+                score += 0.2
+            if any(char.isdigit() for char in phrase):
+                score += 0.2
+            if len(phrase.split()) > 2:
+                score += 0.1
+
+            concepts[phrase] = (min(score, 1.0), snippet_value)
+            seen.add(normalized)
+
+        if not concepts:
+            caps = re.findall(r'\b[A-Z][a-z]+\b', text)
+            for cap in caps[:5]:
+                snippet = next((s.strip() for s in sentences if cap in s), text[:100])
+                concepts[cap] = (0.3, snippet[:300])
 
         return concepts
 
@@ -296,52 +363,93 @@ class QuestionWriter(BaseAgent):
             self.total_processing_time += processing_time
             
             return BenchmarkDraft(
-                question=question_data['question'][:200],  # Enforce max length
+                question=question_data['question'],
                 answer=question_data['answer'],
                 concept=concept,
-                context_snippet=context_snippet[:800],
+                context_snippet=context_snippet,
                 expected_answer_type=answer_type,
                 reasoning_chain=question_data.get('reasoning_chain', []),
                 difficulty_estimate=DifficultyLevel.INTERMEDIATE
             )
             
-        except Exception as e:
+        except Exception:
             # Fallback question generation
-            return self._create_fallback_draft(concept, context_snippet or corpus_text[:500], eval_type)
+            return self._create_fallback_draft(concept, context_snippet or corpus_text, eval_type)
+    
+    async def produce_with_feedback(self, concept: str, corpus_text: str, eval_type: EvaluationType, 
+                                   context_snippet: Optional[str] = None, validation_context: Optional[Dict] = None) -> BenchmarkDraft:
+        """Generate question draft with validation feedback for improvement"""
+        
+        # Use feedback to improve generation if provided
+        if validation_context and validation_context.get('previous_issues'):
+            # Incorporate feedback into prompt
+            feedback_prompt = f"""
+Previous attempt had issues: {'; '.join(validation_context['previous_issues'][:2])}
+
+Suggestions for improvement:
+{'; '.join(validation_context.get('suggestions', [])[:3])}
+
+Retry #{validation_context.get('retry_count', 1)} - please address these issues.
+"""
+            # Add feedback to context
+            enhanced_snippet = f"{context_snippet}\n\nFeedback: {feedback_prompt}"
+            return await self.produce(concept, corpus_text, eval_type, enhanced_snippet)
+        
+        # If no feedback, use normal generation
+        return await self.produce(concept, corpus_text, eval_type, context_snippet)
     
     async def _generate_question_with_llm(self, concept: str, snippet: str, eval_type: EvaluationType) -> Dict[str, Any]:
         """Generate question using LLM with chain-of-thought"""
         
         system_prompt = """You are an expert question writer. Create challenging, well-grounded, domain-specific questions.
-Requirements:
-- Use domain-specific terminology from the snippet in both question and answer
-- The question must be answerable strictly from the snippet (no outside facts)
-- The answer should be clear and at least 2 sentences for non-deterministic/free-text types
-- Avoid generic phrasing. Be precise and contextual
-Always return JSON only with this exact format:
+
+CRITICAL RULES:
+1. Use domain-specific terminology from the snippet in both the question and answer
+2. ALWAYS include specific domain entities, dates, locations, or measurements drawn from the snippet
+3. Questions must be answerable strictly from the snippet but require understanding and synthesis, not copying
+4. Avoid generic phrasing; keep questions precise and contextual to this domain
+5. For free_text or domain knowledge answers provide 2-3 grounded sentences; for deterministic types give concise, unambiguous responses
+
+Return ONLY JSON with this exact format:
 {"question": "...", "answer": "...", "reasoning_chain": ["step1", "step2", "step3"]}"""
+
+        # Extract candidate domain terms from the snippet to force specificity
+        domain_terms = self._extract_domain_terms(snippet)
+        term_bank = ", ".join(domain_terms[:8]) if domain_terms else ""
+        term_bank_clause = f"\nDomain terms (use ≥2 if appropriate): [{term_bank}]\n" if term_bank else "\n"
         
         task_prompt = f"""
-Given concept: {concept}
+Domain concept: {concept}
 Evaluation type: {eval_type}
-Supporting snippet:
+Domain context:
 {snippet}
+{term_bank_clause}
 
-Create a question that:
-1. Is answerable using ONLY the snippet above
-2. Tests deep understanding of {concept} in this domain
-3. Uses specific terms and entities that occur in the snippet
-4. Fits the {eval_type} evaluation type
+Create a DOMAIN-SPECIFIC question that:
+1. Relies exclusively on the information above while demonstrating deep understanding of {concept}
+2. Mentions concrete entities, dates, measurements, or terminology that appear in the snippet
+3. Cannot be answered using general knowledge alone—unique to this snippet’s content
+4. Matches the expectations of the {eval_type} evaluation type
 
 Answer requirements:
-- If the expected answer type is free_text/domain_knowledge, write 2-3 concise sentences grounded in the snippet
-- If factual/multiple choice, write a precise, unambiguous answer grounded in the snippet
+- For free_text or domain_knowledge answers, write 2-3 concise sentences grounded in the snippet
+- For factual, multiple choice, or other deterministic types, provide a precise, unambiguous answer grounded in the snippet
 
-Think step by step, then return JSON only.
-"""
+Examples of GOOD questions:
+- "What is the size of the Tavola Capuana terracotta slab found in 470 BCE?"
+- "How does the Etruscan ritual calendar from 470 BCE relate to religious practices?"
+- "What specific inscriptions appear on the 50x60 cm terracotta artifact?"
+
+Examples of BAD questions:
+- "What is ancient?"
+- "What factors influence women?"
+- "What is the significance of roman?"
+
+Think step by step and return JSON only."""
         
         response_text = await self._call_llm_with_retry(
             prompt=f"{system_prompt}\n\n{task_prompt}",
+            context=snippet,
             eval_type=str(eval_type)
         )
         
@@ -350,62 +458,119 @@ Think step by step, then return JSON only.
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
-        except:
+        except (json.JSONDecodeError, AttributeError):
+            # Failed to parse JSON, use fallback
             pass
         
-        # Fallback parsing - IMPROVED TEMPLATES based on lm-evaluation-harness standards
+        # Fallback parsing - Extract domain details to make specific questions
+        # Try to extract specific details from the snippet
+        import re
+        dates = re.findall(r'\b\d+\s*(?:BCE|CE|BC|AD)\b', snippet)
+        measurements = re.findall(r'\b\d+\s*(?:cm|m|km|in|by)\s*\d+', snippet)
+        proper_nouns = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', snippet)
+        
+        # Build more specific questions using extracted details
+        domain_details = ""
+        if dates:
+            domain_details = f" from {dates[0]}"
+        elif proper_nouns:
+            domain_details = f" in relation to {proper_nouns[0]}"
+        
         domain_templates = {
-            'factual': f"What is {concept}?",
-            'definition': f"Define {concept} in the context of the given information.",
-            'significance': f"Explain the role and significance of {concept}.",
-            'relationship': f"How does {concept} relate to the main topic discussed?",
-            'characteristics': f"What are the key characteristics of {concept}?"
+            'factual': f"What specific characteristics define {concept}{domain_details}?",
+            'definition': f"How is {concept}{domain_details} described in this context?",
+            'significance': f"What role does {concept}{domain_details} play in the described system?",
+            'relationship': f"How does {concept}{domain_details} connect to the other elements mentioned?",
+            'characteristics': f"What distinguishes {concept}{domain_details} from similar artifacts?"
         }
         
         # Choose appropriate template
         template_key = random.choice(list(domain_templates.keys()))
         question = domain_templates[template_key]
         
-        # Generate proper answer based on context (ensure non-trivial length)
-        answer = (
-            f"Based on the provided snippet, {concept} is presented in a domain-specific context "
-            f"that highlights its role, properties, and relationships. The snippet indicates key "
-            f"details that distinguish {concept} from related ideas."
-        )
+        # Generate grounded answer with fallback if extraction is too short
+        answer = self._extract_concise_answer_from_snippet(snippet, concept)
+        if not answer or len(answer.split()) < 10:
+            answer = (
+                f"Based on the provided snippet, {concept} is situated within a specific domain context that "
+                f"highlights its role, properties, and relationships. The snippet describes concrete details that "
+                f"differentiate {concept} from related ideas within this setting."
+            )
         
         return {
             'question': question,
             'answer': answer,
             'reasoning_chain': ["Analyze context", "Extract relevant information", "Formulate precise answer"]
         }
+
+    def _extract_domain_terms(self, text: str, max_terms: int = 12) -> List[str]:
+        """Extract candidate domain terms (proper nouns and salient keywords) from text.
+        Heuristic: proper nouns (capitalized words), multi-word noun-like phrases, and frequent non-stopwords.
+        """
+        if not text:
+            return []
+        proper_nouns = re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", text)
+        tokens = re.findall(r"\b[a-zA-Z]{5,}\b", text.lower())
+        stop = {
+            'these','those','which','their','there','where','while','after','before','about','would','could','should',
+            'between','within','among','however','therefore','because','since','given','using','based','according',
+            'context','corpus','snippet','text','passage','the','this','that','with','have','will','from','they','been','were','into','other','during','often','common','various'
+        }
+        freq: Dict[str,int] = {}
+        for t in tokens:
+            if t not in stop:
+                freq[t] = freq.get(t, 0) + 1
+        keywords = [w for w, _ in sorted(freq.items(), key=lambda x: x[1], reverse=True)[:max_terms]]
+        combined: List[str] = []
+        seen = set()
+        for term in proper_nouns + keywords:
+            if term not in seen:
+                combined.append(term)
+                seen.add(term)
+            if len(combined) >= max_terms:
+                break
+        return combined
     
     def _generate_question_template(self, concept: str, snippet: str, eval_type: EvaluationType) -> Dict[str, Any]:
-        """Template-based question generation (fallback)"""
+        """Template-based question generation with domain specificity"""
+        
+        # Extract domain-specific details from snippet
+        import re
+        dates = re.findall(r'\b\d+\s*(?:BCE|CE|BC|AD)\b', snippet)
+        measurements = re.findall(r'\b\d+\s*(?:cm|m|km|in|by)\s*\d+', snippet)
+        proper_nouns = [n for n in re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', snippet) if n != concept]
+        
+        # Build context-specific parts
+        time_context = f" from {dates[0]}" if dates else ""
+        size_context = f" measuring {measurements[0]}" if measurements else ""
+        entity_context = f" related to {proper_nouns[0]}" if proper_nouns else ""
         
         templates = {
             EvaluationType.FACTUAL_QA: [
-                "What is the primary function of {concept}?",
-                "How does {concept} relate to the main topic?",
-                "What are the key characteristics of {concept}?"
+                f"What specific function does {concept}{time_context}{entity_context} serve?",
+                f"How is {concept}{size_context}{time_context} described in this context?",
+                f"What distinguishing features characterize {concept}{entity_context}?"
             ],
             EvaluationType.DOMAIN_KNOWLEDGE: [
-                "Explain the significance of {concept} in this domain.",
-                "What role does {concept} play in the described process?",
-                "How would you analyze {concept} based on the given information?"
+                f"What is the significance of {concept}{time_context} in this specific domain?",
+                f"How does {concept}{entity_context} function within the described system?",
+                f"What evidence supports the role of {concept}{size_context}{time_context}?"
             ],
             EvaluationType.MATHEMATICAL: [
-                "Calculate the relationship involving {concept}.",
-                "What is the quantitative impact of {concept}?",
-                "Solve for the value of {concept} in the given scenario."
+                f"Calculate the dimensions involving {concept}{size_context}.",
+                f"What quantitative relationship exists with {concept}{time_context}?",
+                f"Determine the numerical value associated with {concept}."
             ]
         }
         
         template = random.choice(templates.get(eval_type, templates[EvaluationType.DOMAIN_KNOWLEDGE]))
         question = template.format(concept=concept)
-        answer = (
-            f"Within the provided snippet, {concept} is described with specific attributes and context. "
-            f"Synthesizing these details yields a concise explanation grounded in the text."
-        )
+        answer = self._extract_concise_answer_from_snippet(snippet, concept)
+        if not answer or len(answer.split()) < 10:
+            answer = (
+                f"Within the provided snippet, {concept} is described with specific attributes and context. "
+                f"Synthesizing these details yields a concise explanation grounded in the text."
+            )
         
         return {
             'question': question,
@@ -413,8 +578,10 @@ Think step by step, then return JSON only.
             'reasoning_chain': ["Analyze context", "Apply domain knowledge", "Formulate response"]
         }
     
-    def _find_relevant_snippet(self, concept: str, corpus_text: str, max_length: int = 400) -> str:
-        """Find most relevant snippet for concept"""
+    def _find_relevant_snippet(self, concept: str, corpus_text: str, max_length: int = -1) -> str:
+        """Find the most relevant snippet for a concept.
+        If max_length <= 0, treat as unlimited (no truncation) and let upstream chunking control size.
+        """
         sentences = corpus_text.split('.')
         
         # Score sentences by concept relevance
@@ -425,17 +592,20 @@ Think step by step, then return JSON only.
                 scored_sentences.append((score, sentence.strip()))
         
         if scored_sentences:
-            # Get best sentences up to max_length
+            # Get best sentences up to max_length (or unlimited)
             scored_sentences.sort(reverse=True)
             snippet = ""
+            unlimited = (max_length is None) or (max_length <= 0)
             for _, sentence in scored_sentences:
-                if len(snippet + sentence) <= max_length:
+                if unlimited or len(snippet + sentence) <= max_length:
                     snippet += sentence + ". "
                 else:
                     break
             return snippet.strip()
         
-        # Fallback: return first part of corpus
+        # Fallback: return first part of corpus or full text if unlimited
+        if (max_length is None) or (max_length <= 0):
+            return corpus_text
         return corpus_text[:max_length]
     
     def _determine_answer_type(self, answer: str, eval_type: EvaluationType) -> AnswerType:
@@ -457,12 +627,12 @@ Think step by step, then return JSON only.
         if eval_type == EvaluationType.MULTIPLE_CHOICE or re.search(r'\b[ABCD]\b', answer):
             return AnswerType.MULTIPLE_CHOICE
         
-        # Deterministic short answers only for factual QA (not domain knowledge)
-        if eval_type in [EvaluationType.FACTUAL_QA] and len(answer.split()) <= 5:
-            # Heuristic: looks like a name/title or short phrase
-            if re.match(r'^[A-Za-z][A-Za-z\s\-]{0,40}$', answer.strip()):
+        # Detect deterministic factual responses when clearly short and specific
+        if eval_type == EvaluationType.FACTUAL_QA:
+            tokens = answer.split()
+            if 1 <= len(tokens) <= 4 and re.match(r'^[A-Za-z][A-Za-z\s\-]{0,40}$', answer.strip()):
                 return AnswerType.STRING_EXACT
-        
+
         return AnswerType.FREE_TEXT
 
     async def produce_with_feedback(
@@ -511,18 +681,31 @@ Incorporate the following validator feedback:
         )
     
     def _create_fallback_draft(self, concept: str, snippet: str, eval_type: EvaluationType) -> BenchmarkDraft:
-        """Create fallback draft when LLM fails - IMPROVED based on research standards"""
+        """Create fallback draft with domain specificity"""
         
-        # Better question templates aligned with lm-evaluation-harness standards
+        # Extract domain context
+        import re
+        dates = re.findall(r'\b\d+\s*(?:BCE|CE|BC|AD)\b', snippet)
+        proper_nouns = [n for n in re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', snippet) if n != concept]
+        
+        # Create context-aware questions
+        context_suffix = ""
+        if dates and proper_nouns:
+            context_suffix = f" in the {proper_nouns[0]} context from {dates[0]}"
+        elif dates:
+            context_suffix = f" from the period of {dates[0]}"
+        elif proper_nouns:
+            context_suffix = f" as it relates to {proper_nouns[0]}"
+        
         question_templates = [
-            f"What is {concept}?",
-            f"Define {concept}.",
-            f"Explain the role of {concept}.",
-            f"How is {concept} significant in this context?"
+            f"What specific characteristics define {concept}{context_suffix}?",
+            f"How is {concept}{context_suffix} described in this domain?",
+            f"What role does {concept}{context_suffix} serve?",
+            f"What distinguishes {concept}{context_suffix} from similar items?"
         ]
         
         question = random.choice(question_templates)
-        answer = f"{concept} is defined as..."  # Clean, direct answer template
+        answer = self._extract_concise_answer_from_snippet(snippet, concept)
         
         return BenchmarkDraft(
             question=question,
@@ -533,6 +716,29 @@ Incorporate the following validator feedback:
             reasoning_chain=["Extract definition", "Analyze context", "Provide clear explanation"],
             difficulty_estimate=DifficultyLevel.BASIC
         )
+
+    def _extract_concise_answer_from_snippet(self, snippet: str, concept: str, max_chars: int = 220) -> str:
+        """Extract a concise, grounded answer from the supporting snippet.
+        Prefer sentences that contain the concept or definitional cues."""
+        if not snippet:
+            return f"{concept} is defined as ..."
+        sentences = [s.strip() for s in re.split(r'[\.!?]\s+', snippet) if s.strip()]
+        # Prefer sentence containing concept
+        preferred = None
+        concept_lower = concept.lower()
+        definitional_cues = [' is ', ' are ', ' refers to ', ' defined as ', ' known as ', ' consists of ', ' comprises ']
+        for s in sentences:
+            s_lower = s.lower()
+            if concept_lower in s_lower and any(cue in s_lower for cue in definitional_cues):
+                preferred = s
+                break
+        if not preferred:
+            # Next best: any sentence containing the concept
+            preferred = next((s for s in sentences if concept_lower in s.lower()), sentences[0] if sentences else snippet)
+        concise = preferred.strip()
+        if len(concise) > max_chars:
+            concise = concise[:max_chars].rstrip(',;: ') + '...'
+        return concise
 
 
 class Adversary(BaseAgent):
@@ -584,9 +790,9 @@ class Adversary(BaseAgent):
             self.total_processing_time += processing_time
             
             return BenchmarkCandidate(
-                question=enhanced_question[:150],  # Enforce limit
+                question=enhanced_question,
                 answer=enhanced_answer,
-                context=draft.context_snippet[:500],
+                context=draft.context_snippet,
                 options=options,
                 concept=draft.concept,
                 expected_answer_type=draft.expected_answer_type,
@@ -596,7 +802,7 @@ class Adversary(BaseAgent):
                 distractor_rationale=distractor_rationale
             )
             
-        except Exception as e:
+        except Exception:
             # Fallback: return slightly modified draft
             return self._create_fallback_candidate(draft, target_difficulty)
     
@@ -631,35 +837,53 @@ class Adversary(BaseAgent):
         if self.llm:
             try:
                 prompt = f"""
-Create 3 plausible but incorrect options for this multiple choice question.
-Make them believable distractors that test common misconceptions.
+Create 3 DOMAIN-SPECIFIC incorrect options for this multiple choice question.
+Distracters must be from the SAME DOMAIN and plausible within the context.
 
 Question: {question}
 Correct Answer: {answer}
-Concept: {concept}
+Domain Concept: {concept}
 
-Return JSON: {{"distractors": ["wrong1", "wrong2", "wrong3"], "rationale": "why these are good distractors"}}
+Rules:
+1. All options must be specific to this domain (not generic)
+2. Include similar entities, dates, or measurements from the same field
+3. Make them plausible within the domain context
+4. Avoid obviously wrong or nonsensical answers
+
+Return JSON: {{"distractors": ["domain-specific wrong1", "domain-specific wrong2", "domain-specific wrong3"], "rationale": "why these are good domain distractors"}}
 """
                 response = await self._call_llm_with_retry(prompt)
                 data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
                 options.extend(data.get('distractors', []))
                 rationale = data.get('rationale', 'Generated distractors')
-            except:
-                # Fallback distractors
-                options.extend([
-                    f"Alternative interpretation of {concept}",
-                    f"Common misconception about {concept}",
-                    f"Related but incorrect concept"
-                ])
-                rationale = "Generated basic distractors"
+            except (json.JSONDecodeError, AttributeError, TypeError):
+                # Fallback distractors (domain-aware)
+                numeric_like = any(ch.isdigit() for ch in answer)
+                if numeric_like:
+                    import re
+                    nums = re.findall(r'\d+', answer)
+                    if nums:
+                        base = int(nums[0])
+                        options.extend([
+                            answer.replace(str(base), str(base + 5)),
+                            answer.replace(str(base), str(base - 5 if base > 5 else base + 7)),
+                            answer.replace(str(base), str(max(1, base * 2)))
+                        ])
+                else:
+                    options.extend([
+                        f"Earlier dating of {concept}",
+                        f"Later dating related to {concept}",
+                        f"Similar artifact to {concept} from a nearby site"
+                    ])
+                rationale = "Generated domain-aware distractors"
         else:
-            # Simple template distractors
+            # Simple template distractors (domain-aware wording)
             options.extend([
-                f"Not {concept}",
-                f"Opposite of {concept}",
-                f"Similar to {concept} but different"
+                f"Variant attribution of {concept}",
+                f"Alternative interpretation within the same corpus",
+                f"Related but distinct inscription associated with {concept}"
             ])
-            rationale = "Template-based distractors"
+            rationale = "Template-based domain distractors"
         
         # Shuffle options
         random.shuffle(options)
@@ -674,7 +898,7 @@ Return JSON: {{"distractors": ["wrong1", "wrong2", "wrong3"], "rationale": "why 
 Transform this question to require multi-step reasoning while staying grounded in the context.
 
 Original Question: {question}
-Context: {context[:300]}
+Context: {context}
 
 Create a question that requires 2-3 logical steps to answer. Return JSON:
 {{"enhanced_question": "...", "enhanced_answer": "...", "reasoning_steps": ["step1", "step2", "step3"]}}
@@ -682,7 +906,8 @@ Create a question that requires 2-3 logical steps to answer. Return JSON:
                 response = await self._call_llm_with_retry(prompt)
                 data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
                 return data['enhanced_question'], data['enhanced_answer']
-            except:
+            except (json.JSONDecodeError, AttributeError, KeyError, TypeError):
+                # Failed to parse response, use fallback
                 pass
         
         # Fallback: Add conditional reasoning
@@ -715,7 +940,7 @@ Create a question that requires 2-3 logical steps to answer. Return JSON:
         code_question = f"Write a function that would {question.lower().replace('?', '')} based on the given data structure."
         
         code_answer = f"""def analyze_{draft.concept.replace(' ', '_')}(data):
-    # Based on the context: {answer[:50]}...
+    # Based on the context: {answer}
     result = process_data(data)
     return result"""
         
@@ -792,27 +1017,13 @@ class Refiner(BaseAgent):
                 variables=variables
             )
             
-        except Exception as e:
+        except Exception:
             # Return original candidate if refinement fails
             return candidate
     
-    def _enforce_question_length(self, question: str, max_length: int = 150) -> str:
-        """Enforce maximum question length"""
-        if len(question) <= max_length:
-            return question
-        
-        # Try to truncate at sentence boundary
-        truncated = question[:max_length]
-        last_period = truncated.rfind('.')
-        last_question = truncated.rfind('?')
-        
-        if last_period > max_length - 30:
-            return question[:last_period + 1]
-        elif last_question > max_length - 30:
-            return question[:last_question + 1]
-        else:
-            # Hard truncate and add question mark
-            return question[:max_length - 1] + '?'
+    def _enforce_question_length(self, question: str, max_length: int = 10000) -> str:
+        """No hard cap; keep API compatibility. Optionally normalize punctuation."""
+        return question
     
     def _format_question(self, question: str) -> str:
         """Ensure proper question formatting"""
@@ -886,16 +1097,31 @@ Return JSON: {{"options": ["wrong1", "wrong2", "wrong3"]}}
                 response = await self._call_llm_with_retry(prompt)
                 data = json.loads(re.search(r'\{.*\}', response, re.DOTALL).group())
                 options.extend(data.get('options', []))
-            except:
+            except (json.JSONDecodeError, AttributeError, TypeError):
+                # Failed to generate options, use fallback
                 pass
         
-        # Fallback: generate basic distractors
+        # Fallback: generate domain-aware distractors
         if len(options) == 1:
-            options.extend([
-                f"Not related to {concept}",
-                f"Opposite of the correct answer",
-                f"Common misconception"
-            ])
+            # Try to create plausible domain alternatives
+            if any(char.isdigit() for char in answer):
+                # If answer has numbers, create similar numbers
+                import re
+                nums = re.findall(r'\d+', answer)
+                if nums:
+                    base = int(nums[0])
+                    options.extend([
+                        answer.replace(str(base), str(base + 10)),
+                        answer.replace(str(base), str(base - 10)),
+                        answer.replace(str(base), str(base * 2))
+                    ])
+            else:
+                # Create variations using the concept
+                options.extend([
+                    f"Earlier interpretation of {concept}",
+                    f"Alternative form of {concept}",  
+                    f"Related but distinct from {concept}"
+                ])
         
         # Shuffle and return up to 4 options
         random.shuffle(options)
@@ -962,8 +1188,8 @@ class Validator(BaseAgent):
             quality_score = await self._assess_quality(candidate)
             
             # Length and format checks
-            if len(candidate.question) > 150:
-                issues.append("Question exceeds 150 character limit")
+            if len(candidate.question) > 500:
+                issues.append("Question exceeds 500 character limit")
                 quality_score *= 0.9
             
             if not candidate.question.strip():
@@ -1029,7 +1255,8 @@ class Validator(BaseAgent):
             result = self.verifier.verify(mock_prediction, candidate.answer, eval_type, candidate.options)
             
             return result.score >= 0.95  # Should be nearly perfect for deterministic
-        except:
+        except (AttributeError, KeyError, TypeError, Exception):
+            # Verification failed, assume not deterministic
             return False
     
     async def _assess_quality(self, candidate: BenchmarkCandidate) -> float:
@@ -1176,3 +1403,114 @@ class Validator(BaseAgent):
             AnswerType.FREE_TEXT: 'semantic_similarity'
         }
         return method_map.get(answer_type, 'exact_match')
+    
+    async def verify_corpus_accuracy(self, question: str, proposed_answer: str, corpus_text: str, 
+                                   min_complexity: float = 0.4) -> ValidationResult:
+        """
+        Verify that the proposed answer is factually correct according to the corpus
+        and assess question complexity for modern LLMs
+        """
+        if not self.llm:
+            return ValidationResult(
+                accepted=False,
+                score=0.0,
+                issues=["No LLM interface available for corpus verification"],
+                recommendations=["Configure LLM interface for validation"],
+                deterministic_check_passed=False,
+                verification_method_used="no_llm"
+            )
+        
+        verification_prompt = f"""You are a fact-checker and complexity assessor.
+
+CRITICAL: You must respond with ONLY a valid JSON object. No markdown blocks or formatting.
+
+TASK:
+1. Verify if the proposed answer is factually correct according to the source text
+2. Assess the complexity/difficulty of the question for modern LLMs
+
+SOURCE TEXT: {corpus_text}
+
+QUESTION: {question}
+PROPOSED ANSWER: {proposed_answer}
+
+Use this EXACT JSON format:
+{{"is_correct":true,"verified_answer":"...","confidence":0.8,"complexity":0.7,"reasoning":"...","evidence":"...","complexity_analysis":"..."}}
+
+COMPLEXITY SCORING (0.0-1.0):
+- 0.0-0.3: TOO EASY - Simple facts, basic math, obvious answers
+- 0.4-0.6: MODERATE - Requires reasoning, domain knowledge, multi-step thinking  
+- 0.7-1.0: CHALLENGING - Complex reasoning, obscure facts, multi-layered analysis
+
+RULES:
+1. Answer correct ONLY if directly supported by source text
+2. REJECT questions with complexity < {min_complexity} (too easy for modern LLMs)
+3. Prefer questions requiring reasoning, synthesis, or domain expertise
+4. Consider: Would GPT-4/Claude-3.5 find this challenging?
+
+Return raw JSON only."""
+
+        try:
+            response = await self._call_llm_with_retry(verification_prompt, temperature=0.1)
+            
+            # Parse JSON response
+            import json
+            try:
+                verification_result = json.loads(response)
+            except json.JSONDecodeError:
+                # Try to extract JSON from markdown blocks
+                import re
+                json_match = re.search(r'\{.*\}', response, re.DOTALL)
+                if json_match:
+                    verification_result = json.loads(json_match.group())
+                else:
+                    raise json.JSONDecodeError("No valid JSON found", response, 0)
+            
+            # Extract results
+            is_correct = verification_result.get("is_correct", False)
+            complexity = verification_result.get("complexity", 0.0)
+            confidence = verification_result.get("confidence", 0.0)
+            # Capture but do not assign unused fields to avoid linter warnings
+            _ = verification_result.get("reasoning", "No reasoning provided")
+            _ = verification_result.get("evidence", "No evidence provided")
+            _ = verification_result.get("complexity_analysis", "No analysis provided")
+            
+            # Determine acceptance
+            issues = []
+            recommendations = []
+            
+            if not is_correct:
+                issues.append("Answer is factually incorrect according to corpus")
+                recommendations.append("Revise answer to match corpus information")
+            
+            if complexity < min_complexity:
+                issues.append(f"Question complexity ({complexity:.2f}) below threshold ({min_complexity})")
+                recommendations.append("Increase question difficulty to challenge modern LLMs")
+                is_correct = False  # Override - reject easy questions regardless of correctness
+            
+            # Calculate overall score
+            accuracy_score = 1.0 if is_correct else 0.0
+            complexity_score = max(0.0, min(1.0, complexity))
+            overall_score = (accuracy_score * 0.7 + complexity_score * 0.3) * confidence
+            
+            accepted = is_correct and complexity >= min_complexity and len(issues) == 0
+            
+            return ValidationResult(
+                accepted=accepted,
+                score=overall_score,
+                issues=issues,
+                recommendations=recommendations,
+                deterministic_check_passed=is_correct,
+                verification_method_used="llm_corpus_verification",
+                # Store additional verification data in metadata if ValidationResult supports it
+                # Otherwise these will be available through the agent's response
+            )
+            
+        except Exception as e:
+            return ValidationResult(
+                accepted=False,
+                score=0.0,
+                issues=[f"Corpus verification failed: {str(e)}"],
+                recommendations=["Check LLM connectivity and try again"],
+                deterministic_check_passed=False,
+                verification_method_used="verification_error"
+            )
