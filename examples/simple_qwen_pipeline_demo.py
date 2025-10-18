@@ -9,12 +9,10 @@ import os
 import sys
 from pathlib import Path
 
-import pytest
 
-pytestmark = pytest.mark.skip(reason="Manual integration test that requires external services.")
 
 # Add project root to path
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
@@ -22,7 +20,10 @@ if str(ROOT_DIR) not in sys.path:
 from dotenv import load_dotenv
 load_dotenv()
 
-from LM_EVAL_INTEGRATION import LMEvalHarnessIntegrator
+try:
+    from LM_EVAL_INTEGRATION import LMEvalHarnessIntegrator
+except ImportError:  # pragma: no cover - optional dependency for manual tests
+    LMEvalHarnessIntegrator = None
 from docs_to_eval.core.evaluation import EvaluationType
 
 

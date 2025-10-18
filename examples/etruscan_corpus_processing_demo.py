@@ -6,12 +6,14 @@ Uses chonkie for semantic chunking and existing agentic pipeline
 
 import asyncio
 import sys
-from pathlib import Path
-from typing import List, Dict, Any
 import time
+from pathlib import Path
+from typing import Any, Dict, List
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Ensure repository root is importable when running as a script
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import existing abstractions - NO NEW ABSTRACTIONS!
 from docs_to_eval.core.agentic import AgenticBenchmarkGenerator

@@ -1,3 +1,5 @@
+<img width="911" height="911" alt="image" src="https://github.com/user-attachments/assets/d79500c7-55ff-4c5e-8ba4-049ed3617127" />
+
 # docs-to-eval
 
 docs-to-eval builds tailor-made evaluation sets from raw documentation and scores model outputs with the right verification strategy. It combines lightweight FastAPI services, reusable Python components, and optional agentic workflows.
@@ -24,6 +26,13 @@ uv run python -m docs_to_eval.cli.main --help
 ```
 
 The API is available at `http://localhost:8080`; the React UI is served from the same process during development.
+
+## Examples
+- `examples/agentic_pipeline_walkthrough.py` – end-to-end agentic benchmark generation with the FastAPI facade.
+- `examples/etruscan_corpus_agentic_demo.py` – semantic chunking plus concept mining on the Etruscan sample corpus.
+- `examples/mixed_verification_showcase.py` – illustrates numeric, factual, and mixed verification improvements.
+- `examples/local_qwen_pipeline_demo.py` – runs the evaluation pipeline against a local or mock Qwen model.
+- `examples/backend_agent_loop_demo.py` – drives the complete backend agent loop, saving a JSON report for inspection.
 
 ## Programmatic example
 ```python

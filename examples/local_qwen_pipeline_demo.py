@@ -3,15 +3,13 @@
 🏠 LOCAL QWEN TEST: Test evaluation system with local mock LLM
 Demonstrates the complete evaluation pipeline without requiring API calls
 """
-import pytest
-pytestmark = pytest.mark.skip(reason="Demo-only; excluded from CI test suite")
 
 import asyncio
 import sys
 from pathlib import Path
 
 # Add project root to path
-ROOT_DIR = Path(__file__).resolve().parents[2]
+ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 

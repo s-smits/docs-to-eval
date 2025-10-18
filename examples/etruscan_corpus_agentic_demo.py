@@ -6,10 +6,12 @@ Shows how to use existing functions without creating new abstractions
 
 import sys
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Dict, Any, List
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Ensure repository root is on sys.path when running as a script
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import existing abstractions - NO NEW ABSTRACTIONS!
 from docs_to_eval.utils.text_processing import create_smart_chunks

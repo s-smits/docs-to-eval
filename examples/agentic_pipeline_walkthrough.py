@@ -1,19 +1,28 @@
+"""
+Agentic Pipeline Walkthrough
+
+Runs the agentic benchmarking pipeline end-to-end with mock LLM components and the FastAPI interface.
+"""
+
 import asyncio
-import pytest
-pytestmark = pytest.mark.skip(reason="Manual E2E; excluded from CI test suite")
 import json
+import sys
+from pathlib import Path
 from typing import List
 
 from fastapi.testclient import TestClient
 
-from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from docs_to_eval.core.agentic.orchestrator import AgenticBenchmarkOrchestrator
-from docs_to_eval.core.agentic.models import PipelineConfig, DifficultyLevel
+from docs_to_eval.core.agentic.models import DifficultyLevel, PipelineConfig
 from docs_to_eval.core.evaluation import EvaluationType
 from docs_to_eval.core.verification import VerificationOrchestrator
 from docs_to_eval.llm.mock_interface import MockLLMInterface
 from docs_to_eval.ui_api.main import app
-from docs_to_eval.utils.text_processing import create_smart_chunks_from_files, ChunkingConfig
+from docs_to_eval.utils.text_processing import ChunkingConfig, create_smart_chunks_from_files
 
 
 FAKE_CORPUS = (
@@ -198,5 +207,3 @@ if __name__ == "__main__":
         asyncio.run(_run_one())
 
     run_chunking_and_agentic_on_real_files()
-
-

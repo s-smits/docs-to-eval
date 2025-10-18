@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Test Context Fix: Verify that evaluation now includes corpus context
-Tests whether LLM gets domain context during evaluation
+Context Injection Demo
+
+Demonstrates how providing corpus context to the LLM during evaluation improves answer quality.
 """
 
 import asyncio
@@ -9,12 +10,10 @@ import os
 import sys
 from pathlib import Path
 
-import pytest
 
-pytestmark = pytest.mark.skip(reason="Manual integration test that requires external services.")
 
-# Add project root to path
-ROOT_DIR = Path(__file__).resolve().parents[2]
+# Ensure repository root is importable when running as a script
+ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
@@ -28,9 +27,9 @@ from docs_to_eval.core.evaluation import EvaluationType
 from docs_to_eval.llm.concurrent_gemini import ConcurrentGeminiInterface
 
 
-async def test_context_in_evaluation():
-    """Test that evaluation includes context from generation"""
-    print("🔍 Testing Context Fix in Evaluation...")
+async def run_context_in_evaluation():
+    """Demonstrate that evaluation now includes generation context"""
+    print("🔍 Running Context Fix Demonstration...")
     
     # Create rich domain-specific corpus
     etruscan_corpus = """
@@ -131,13 +130,13 @@ Provide a clear, accurate answer. If the question is mathematical, show your wor
         return context_helped
         
     except Exception as e:
-        print(f"   ❌ Test failed: {e}")
+        print(f"   ❌ Demo failed: {e}")
         return False
 
 
 async def main():
-    """Run context fix test"""
-    print("🎯 TESTING CONTEXT FIX FOR EVALUATION")
+    """Entry point for the context injection demo"""
+    print("🎯 CONTEXT INJECTION DEMO")
     print("🔧 Fix: Include corpus context in LLM evaluation prompts")
     print("=" * 60)
     
@@ -145,9 +144,9 @@ async def main():
         print("❌ No OPENROUTER_API_KEY found")
         return
     
-    success = await test_context_in_evaluation()
+    success = await run_context_in_evaluation()
     
-    print(f"\n🎉 CONTEXT FIX TEST RESULT:")
+    print(f"\n🎉 CONTEXT FIX DEMO RESULT:")
     print("=" * 40)
     
     if success:

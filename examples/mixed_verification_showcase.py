@@ -8,9 +8,16 @@ This demonstrates the key improvements made to fix the evaluation issues:
 3. Mixed verification methods with weighted scoring
 """
 
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from docs_to_eval.core.mixed_verification import (
-    FuzzyMatcher, 
-    MixedVerificationOrchestrator
+    FuzzyMatcher,
+    MixedVerificationOrchestrator,
 )
 
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Test Complete Backend Agent Loop with Real API Integration
-Tests the full evaluation pipeline from UI API perspective using existing abstractions
+Backend Agent Loop Demo
+
+Showcases the full evaluation pipeline from the UI API perspective using the existing abstractions.
 """
 
 import asyncio
@@ -12,12 +13,8 @@ import json
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-import pytest
-
-pytestmark = pytest.mark.skip(reason="Manual integration test that requires external services.")
-
-# Add project root to path
-ROOT_DIR = Path(__file__).resolve().parents[2]
+# Ensure repository root is importable when running as a script
+ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
