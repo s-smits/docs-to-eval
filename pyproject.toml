@@ -42,6 +42,7 @@ dependencies = [
     "tiktoken>=0.12.0",
     "pytest>=8.4.2",
     "irouter>=0.3.1",
+    "google-generativeai>=0.8.5",
 ]
 
 [project.optional-dependencies]

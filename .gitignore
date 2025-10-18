@@ -134,7 +134,6 @@ logs
 # Virtual environments
 .env
 .venv
-uv.lock
 python_files.txt
 .DS_Store
 
@@ -149,6 +148,7 @@ frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
 
-# Generated outputs and large data dumps
+# Repo-specific
 output/
 docs_to_eval/output/
+cache

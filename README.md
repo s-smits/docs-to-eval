@@ -1,12 +1,10 @@
-<img width="911" height="911" alt="image" src="https://github.com/user-attachments/assets/d79500c7-55ff-4c5e-8ba4-049ed3617127" />
-
 # docs-to-eval
 
 docs-to-eval builds tailor-made evaluation sets from raw documentation and scores model outputs with the right verification strategy. It combines lightweight FastAPI services, reusable Python components, and optional agentic workflows.
 
 ## Why docs-to-eval
 - Classifies corpora into deterministic vs. generative evaluation modes and picks the right metrics automatically.
-- Generates benchmarks with agentic strategies, quality scoring, and domain-aware difficulty balancing.
+- Builds benchmarks with agentic strategies, nuanced quality scoring, and domain-aware difficulty tuning.
 - Verifies answers with exact matching, execution sandboxes, similarity scoring, or LLM judging depending on the task.
 - Ships a React front-end and REST API so you can run evaluations from a browser or another system.
 
@@ -26,6 +24,15 @@ uv run python -m docs_to_eval.cli.main --help
 ```
 
 The API is available at `http://localhost:8080`; the React UI is served from the same process during development.
+
+## Groq and Gemini in docs-to-eval
+- Install SDKs alongside the core project: `pip install groq google-generativeai`.
+- Provide credentials before running local scripts or the FastAPI app:
+  - `export GROQ_API_KEY=<your key>`
+  - `export GEMINI_API_KEY=<your key>` (or `GOOGLE_API_KEY`)
+- Create an interface on demand with `create_llm_interface('groq', model='llama3-8b-8192')` or `create_llm_interface('gemini', model='gemini-1.5-flash-latest')` and pass it into pipelines, CLI runs, or custom scripts.
+- Batch helpers (`GroqBatchInterface`, `GeminiBatchInterface`) support configurable concurrency; inspect `get_batch_stats()` for throughput data.
+- Use `tests/manual/llm_provider_diagnostics.py` to verify credentials, latency, and error handling before wiring providers into production flows.
 
 ## Examples
 - `examples/agentic_pipeline_walkthrough.py` – end-to-end agentic benchmark generation with the FastAPI facade.
