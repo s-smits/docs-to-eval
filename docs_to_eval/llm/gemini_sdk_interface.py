@@ -13,10 +13,17 @@ import json
 
 try:
     import google.generativeai as genai
-    from google.generativeai.types import GenerateContentResponse, GenerationConfig
+    from google.generativeai.types import GenerateContentResponse
+    try:
+        from google.generativeai.types import GenerationConfig  # type: ignore
+    except (ImportError, AttributeError):  # Older SDK versions
+        GenerationConfig = None  # type: ignore[assignment]
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
+    genai = None  # type: ignore[assignment]
+    GenerateContentResponse = None  # type: ignore[assignment]
+    GenerationConfig = None  # type: ignore[assignment]
 
 from .base import BaseLLMInterface, LLMResponse, RateLimiter
 
@@ -121,17 +128,23 @@ class GeminiSDKInterface(BaseLLMInterface):
 
         logger.info(f"Initialized Gemini SDK interface with model: {self.config.model}")
 
-    def _create_generation_config(self) -> GenerationConfig:
+    def _create_generation_config(self) -> Union[Dict[str, Any], Any]:
         """Create generation config for Gemini"""
-        return GenerationConfig(
-            temperature=self.config.temperature,
-            top_p=self.config.top_p,
-            top_k=self.config.top_k,
-            max_output_tokens=self.config.max_output_tokens,
-            response_mime_type=self.config.response_mime_type,
-            candidate_count=self.config.candidate_count,
-            stop_sequences=self.config.stop_sequences if self.config.stop_sequences else None
-        )
+        config_kwargs = {
+            "temperature": self.config.temperature,
+            "top_p": self.config.top_p,
+            "top_k": self.config.top_k,
+            "max_output_tokens": self.config.max_output_tokens,
+            "response_mime_type": self.config.response_mime_type,
+            "candidate_count": self.config.candidate_count,
+            "stop_sequences": self.config.stop_sequences if self.config.stop_sequences else None
+        }
+
+        if GenerationConfig is None:
+            # Older SDKs accept plain dictionaries
+            return config_kwargs
+
+        return GenerationConfig(**config_kwargs)
 
     def _create_safety_settings(self) -> Optional[Dict[str, str]]:
         """Create safety settings for Gemini"""
@@ -183,14 +196,23 @@ class GeminiSDKInterface(BaseLLMInterface):
 
         # Override config with kwargs if provided
         generation_config = self._create_generation_config()
+
+        def _set_config_attr(cfg, key, value):
+            if GenerationConfig is None or isinstance(cfg, dict):
+                cfg[key] = value
+            else:
+                setattr(cfg, key, value)
+
         if 'temperature' in kwargs:
-            generation_config.temperature = kwargs['temperature']
+            _set_config_attr(generation_config, "temperature", kwargs['temperature'])
         if 'max_tokens' in kwargs or 'max_output_tokens' in kwargs:
-            generation_config.max_output_tokens = kwargs.get('max_tokens', kwargs.get('max_output_tokens', generation_config.max_output_tokens))
+            new_max = kwargs.get('max_tokens', kwargs.get('max_output_tokens'))
+            if new_max is not None:
+                _set_config_attr(generation_config, "max_output_tokens", new_max)
         if 'top_p' in kwargs:
-            generation_config.top_p = kwargs['top_p']
+            _set_config_attr(generation_config, "top_p", kwargs['top_p'])
         if 'top_k' in kwargs:
-            generation_config.top_k = kwargs['top_k']
+            _set_config_attr(generation_config, "top_k", kwargs['top_k'])
 
         try:
             # Generate content using Gemini SDK
