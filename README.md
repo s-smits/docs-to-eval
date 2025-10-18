@@ -30,7 +30,7 @@ The API is available at `http://localhost:8080`; the React UI is served from the
 - Provide credentials before running local scripts or the FastAPI app:
   - `export GROQ_API_KEY=<your key>`
   - `export GEMINI_API_KEY=<your key>` (or `GOOGLE_API_KEY`)
-- Create an interface on demand with `create_llm_interface('groq', model='llama-4-maverick')` or `create_llm_interface('gemini', model='gemini-2.5-flash')` and pass it into pipelines, CLI runs, or custom scripts.
+- Create an interface on demand with `create_llm_interface('groq', model='groq/compound')` or `create_llm_interface('gemini', model='gemini-2.5-flash')` and pass it into pipelines, CLI runs, or custom scripts.
   - **For Groq, you can choose**: `groq/compound`
   - **For Gemini, you can choose**: `gemini-2.5-flash` (fast, cost-effective), `gemini-2.5-pro` (advanced reasoning, 1M token context), `gemini-2.0-flash` (multimodal streaming)
 - Batch helpers (`GroqBatchInterface`, `GeminiBatchInterface`) support configurable concurrency; inspect `get_batch_stats()` for throughput data.
