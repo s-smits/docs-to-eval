@@ -26,7 +26,7 @@ uv run python -m docs_to_eval.cli.main --help
 The API is available at `http://localhost:8080`; the React UI is served from the same process during development.
 
 ## Groq and Gemini in docs-to-eval
-- Install SDKs alongside the core project: `pip install groq google-generativeai`.
+- Install SDKs alongside the core project: `uv add groq google-generativeai`.
 - Provide credentials before running local scripts or the FastAPI app:
   - `export GROQ_API_KEY=<your key>`
   - `export GEMINI_API_KEY=<your key>` (or `GOOGLE_API_KEY`)
