@@ -1,21 +1,49 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react"; // Import useEffect
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { FileText, Upload, FolderOpen, Trash2, Play, Zap, Settings } from "lucide-react";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  FileText,
+  Upload,
+  FolderOpen,
+  Trash2,
+  Play,
+  Zap,
+  Settings,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const evaluationSchema = z.object({
@@ -30,6 +58,8 @@ const evaluationSchema = z.object({
   finetunePercentage: z.number(),
   finetuneSeed: z.number(),
   runName: z.string().optional(),
+  provider: z.string().optional(),
+  modelName: z.string().optional(), // Added modelName field
 });
 
 type EvaluationFormData = z.infer<typeof evaluationSchema>;
@@ -51,6 +81,9 @@ export function EvaluationTab() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
 
+  // State for dynamic model selection
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+
   const form = useForm<EvaluationFormData>({
     resolver: zodResolver(evaluationSchema),
     defaultValues: {
@@ -65,24 +98,74 @@ export function EvaluationTab() {
       finetuneEnabled: true,
       finetunePercentage: 0.2,
       finetuneSeed: 42,
+      provider: "openrouter",
+      modelName: "anthropic/claude-sonnet-4", // Default model
     },
   });
 
+  // Watch for changes in the provider field
+  const selectedProvider = form.watch("provider");
+
+  // Effect to fetch models when provider changes
+  useEffect(() => {
+    const fetchModels = async () => {
+      if (selectedProvider) {
+        try {
+          const response = await fetch(
+            `http://localhost:8000/api/v1/llm/models?provider=${selectedProvider}`,
+          );
+          if (response.ok) {
+            const models = await response.json();
+            setAvailableModels(models);
+
+            // Set a default model if the current one is not in the new list, or if none is set
+            const currentModel = form.getValues("modelName");
+            if (!currentModel || !models.includes(currentModel)) {
+              if (models.length > 0) {
+                form.setValue("modelName", models[0]); // Set first available model as default
+              } else {
+                form.setValue("modelName", ""); // Clear if no models
+              }
+            }
+          } else {
+            setAvailableModels([]);
+            form.setValue("modelName", "");
+            toast.error(
+              `Failed to fetch models for ${selectedProvider}: ${response.statusText}`,
+            );
+          }
+        } catch (error) {
+          console.error("Error fetching models:", error);
+          setAvailableModels([]);
+          form.setValue("modelName", "");
+          toast.error(
+            `Error fetching models for ${selectedProvider}. See console for details.`,
+          );
+        }
+      } else {
+        setAvailableModels([]);
+        form.setValue("modelName", "");
+      }
+    };
+
+    fetchModels();
+  }, [selectedProvider, form]);
+
   const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
-    const newFiles: FileWithPath[] = Array.from(files).map(file => ({
+    const newFiles: FileWithPath[] = Array.from(files).map((file) => ({
       file,
-      path: file.name
+      path: file.name,
     }));
 
     setSelectedFiles(newFiles);
@@ -99,16 +182,18 @@ export function EvaluationTab() {
       form.setValue("corpusText", "");
     }
 
-    toast.success(`Selected ${files.length} file${files.length > 1 ? 's' : ''}`);
+    toast.success(
+      `Selected ${files.length} file${files.length > 1 ? "s" : ""}`,
+    );
   };
 
   const handleFolderSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
-    const newFiles: FileWithPath[] = Array.from(files).map(file => ({
+    const newFiles: FileWithPath[] = Array.from(files).map((file) => ({
       file,
-      path: file.webkitRelativePath || file.name
+      path: file.webkitRelativePath || file.name,
     }));
 
     setSelectedFiles(newFiles);
@@ -118,7 +203,9 @@ export function EvaluationTab() {
       form.setValue("corpusText", "");
     }
 
-    toast.success(`Selected ${files.length} file${files.length > 1 ? 's' : ''} from folder`);
+    toast.success(
+      `Selected ${files.length} file${files.length > 1 ? "s" : ""} from folder`,
+    );
   };
 
   const clearFiles = () => {
@@ -181,7 +268,9 @@ For regression problems:
   const onSubmit = async (data: EvaluationFormData) => {
     // Check if we have either text or files
     if (!data.corpusText?.trim() && selectedFiles.length === 0) {
-      toast.error("Please enter corpus text or select files/folder to evaluate");
+      toast.error(
+        "Please enter corpus text or select files/folder to evaluate",
+      );
       return;
     }
 
@@ -200,18 +289,21 @@ For regression problems:
         // Upload multiple files
         const formData = new FormData();
         selectedFiles.forEach(({ file }) => {
-          formData.append('files', file);
+          formData.append("files", file);
         });
 
         if (data.runName) {
-          formData.append('name', data.runName);
+          formData.append("name", data.runName);
         }
 
         // Upload files first
-        const uploadResponse = await fetch('/api/v1/corpus/upload-multiple', {
-          method: 'POST',
-          body: formData
-        });
+        const uploadResponse = await fetch(
+          "http://localhost:8000/api/v1/corpus/upload-multiple",
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
 
         if (!uploadResponse.ok) {
           throw new Error(`File upload failed: ${uploadResponse.status}`);
@@ -220,7 +312,9 @@ For regression problems:
         const uploadResult = await uploadResponse.json();
         corpusText = uploadResult.corpus_text;
 
-        toast.success(`Uploaded ${uploadResult.files_processed} files successfully`);
+        toast.success(
+          `Uploaded ${uploadResult.files_processed} files successfully`,
+        );
       }
 
       // Start evaluation with corpus text
@@ -235,18 +329,30 @@ For regression problems:
         run_name: data.runName || null,
         finetune_test_set_enabled: data.finetuneEnabled,
         finetune_test_set_percentage: data.finetunePercentage,
-        finetune_random_seed: data.finetuneSeed
+        finetune_random_seed: data.finetuneSeed,
+        provider: data.provider || "openrouter",
+        modelName: data.modelName || null, // Include the selected modelName
       };
 
-      const response = await fetch('/api/v1/evaluation/start', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        "http://localhost:8000/api/v1/evaluation/start",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(evaluationData),
         },
-        body: JSON.stringify(evaluationData)
-      });
+      );
 
       if (!response.ok) {
+        if (response.status === 404) {
+          toast.error(
+            "Evaluation endpoint not found. Please check the API URL.",
+          );
+          setIsEvaluating(false);
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -258,13 +364,17 @@ For regression problems:
 
       // Poll for completion
       pollEvaluationStatus(result.run_id);
-
     } catch (error: any) {
-      console.error('Evaluation error:', error);
+      console.error("Evaluation error:", error);
 
       // Check if it's an API key error
-      if (error.message.includes('API key is required') || error.message.includes('400')) {
-        toast.error('API Key Required: Please set your OpenRouter API key in Settings tab before running agentic evaluation.');
+      if (
+        error.message.includes("API key is required") ||
+        error.message.includes("400")
+      ) {
+        toast.error(
+          "API Key Required: Please set your OpenRouter API key in Settings tab before running agentic evaluation.",
+        );
       } else {
         toast.error(`Evaluation failed: ${error.message}`);
       }
@@ -273,29 +383,29 @@ For regression problems:
   };
 
   const connectWebSocket = (runId: string) => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/v1/ws/${runId}`;
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//localhost:8000/api/v1/ws/${runId}`;
 
     const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      if (data.type === 'progress') {
+      if (data.type === "progress") {
         setProgress(data.progress);
         setStatusMessage(data.message);
-      } else if (data.type === 'status') {
+      } else if (data.type === "status") {
         toast.info(data.message);
-      } else if (data.type === 'complete') {
+      } else if (data.type === "complete") {
         handleEvaluationComplete(runId);
-      } else if (data.type === 'error') {
+      } else if (data.type === "error") {
         toast.error(data.message);
         setIsEvaluating(false);
       }
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
     };
   };
 
@@ -305,10 +415,14 @@ For regression problems:
 
     const poll = async () => {
       try {
-        const response = await fetch(`/api/v1/evaluation/${runId}/status`);
+        const response = await fetch(
+          `http://localhost:8000/api/v1/evaluation/${runId}/status`,
+        );
 
         if (response.status === 404) {
-          toast.error('Evaluation session was lost. Please start a new evaluation.');
+          toast.error(
+            "Evaluation session was lost. Please start a new evaluation.",
+          );
           setIsEvaluating(false);
           return;
         }
@@ -319,11 +433,11 @@ For regression problems:
 
         const status = await response.json();
 
-        if (status.status === 'completed') {
+        if (status.status === "completed") {
           handleEvaluationComplete(runId);
           return;
-        } else if (status.status === 'failed') {
-          toast.error(status.error || 'Evaluation failed');
+        } else if (status.status === "failed") {
+          toast.error(status.error || "Evaluation failed");
           setIsEvaluating(false);
           return;
         }
@@ -332,16 +446,18 @@ For regression problems:
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000); // Poll every 5 seconds
         } else {
-          toast.error('Evaluation timeout');
+          toast.error("Evaluation timeout");
           setIsEvaluating(false);
         }
       } catch (error: any) {
-        console.error('Status polling error:', error);
+        console.error("Status polling error:", error);
         attempts++;
         if (attempts < maxAttempts) {
           setTimeout(poll, 5000);
         } else {
-          toast.error('Failed to get evaluation status after multiple attempts');
+          toast.error(
+            "Failed to get evaluation status after multiple attempts",
+          );
           setIsEvaluating(false);
         }
       }
@@ -352,7 +468,9 @@ For regression problems:
 
   const handleEvaluationComplete = async (runId: string) => {
     try {
-      const response = await fetch(`/api/v1/evaluation/${runId}/results`);
+      const response = await fetch(
+        `http://localhost:8000/api/v1/evaluation/${runId}/results`,
+      );
       const resultWrapper = await response.json();
 
       // Extract the actual results
@@ -361,16 +479,15 @@ For regression problems:
       setResults(results);
       setIsEvaluating(false);
       setEvaluationCompleted(true);
-      
+
       // Check if fine-tuning data is available
       const hasFinetune = results?.finetune_test_set?.enabled || false;
       setHasFineTuneData(hasFinetune);
-      
-      toast.success("Evaluation completed successfully!");
 
+      toast.success("Evaluation completed successfully!");
     } catch (error: any) {
-      console.error('Results fetch error:', error);
-      toast.error('Failed to fetch results');
+      console.error("Results fetch error:", error);
+      toast.error("Failed to fetch results");
       setIsEvaluating(false);
     }
   };
@@ -379,7 +496,7 @@ For regression problems:
     const corpusText = form.getValues("corpusText");
 
     if (!corpusText?.trim() && selectedFiles.length === 0) {
-      toast.error('Please enter corpus text or select files for local testing');
+      toast.error("Please enter corpus text or select files for local testing");
       return;
     }
 
@@ -397,16 +514,19 @@ For regression problems:
         // Upload multiple files first
         const formData = new FormData();
         selectedFiles.forEach(({ file }) => {
-          formData.append('files', file);
+          formData.append("files", file);
         });
 
-        const runName = form.getValues("runName") || 'Qwen Local Test';
-        formData.append('name', runName);
+        const runName = form.getValues("runName") || "Qwen Local Test";
+        formData.append("name", runName);
 
-        const uploadResponse = await fetch('/api/v1/corpus/upload-multiple', {
-          method: 'POST',
-          body: formData
-        });
+        const uploadResponse = await fetch(
+          "http://localhost:8000/api/v1/corpus/upload-multiple",
+          {
+            method: "POST",
+            body: formData,
+          },
+        );
 
         if (!uploadResponse.ok) {
           throw new Error(`File upload failed: ${uploadResponse.status}`);
@@ -415,7 +535,9 @@ For regression problems:
         const uploadResult = await uploadResponse.json();
         finalCorpusText = uploadResult.corpus_text;
 
-        toast.success(`Uploaded ${uploadResult.files_processed} files for local testing`);
+        toast.success(
+          `Uploaded ${uploadResult.files_processed} files for local testing`,
+        );
       }
 
       const qwenData = {
@@ -423,16 +545,19 @@ For regression problems:
         num_questions: form.getValues("numQuestions") || 5,
         use_fictional: true,
         token_threshold: form.getValues("tokenThreshold") || 2000,
-        run_name: form.getValues("runName") || 'Qwen Local Test'
+        run_name: form.getValues("runName") || "Qwen Local Test",
       };
 
-      const response = await fetch('/api/v1/evaluation/qwen-local', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        "http://localhost:8000/api/v1/evaluation/qwen-local",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(qwenData),
         },
-        body: JSON.stringify(qwenData)
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -441,13 +566,12 @@ For regression problems:
       const result = await response.json();
       setCurrentRunId(result.run_id);
 
-      toast.info('🚀 Quick local test started - no API key required!');
+      toast.info("🚀 Quick local test started - no API key required!");
 
       connectWebSocket(result.run_id);
       pollEvaluationStatus(result.run_id);
-
     } catch (error: any) {
-      console.error('Qwen evaluation error:', error);
+      console.error("Qwen evaluation error:", error);
       toast.error(`Qwen evaluation failed: ${error.message}`);
       setIsEvaluating(false);
     }
@@ -455,13 +579,16 @@ For regression problems:
 
   const downloadResults = () => {
     if (currentRunId) {
-      window.open(`/api/v1/evaluation/${currentRunId}/download`, '_blank');
+      window.open(
+        `http://localhost:8000/api/v1/evaluation/${currentRunId}/download`,
+        "_blank",
+      );
     }
   };
 
   const openFinetuningDashboard = (runId: string) => {
-    const url = `/api/v1/evaluation/${runId}/lora-finetune/dashboard?run_id=${runId}`;
-    window.open(url, '_blank');
+    const url = `http://localhost:8000/api/v1/evaluation/${runId}/lora-finetune/dashboard?run_id=${runId}`;
+    window.open(url, "_blank");
   };
 
   const totalSize = selectedFiles.reduce((acc, { file }) => acc + file.size, 0);
@@ -530,7 +657,8 @@ For regression problems:
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Supported formats: txt, md, py, js, json, csv, html, xml, yml, cfg, ini, log
+                    Supported formats: txt, md, py, js, json, csv, html, xml,
+                    yml, cfg, ini, log
                   </p>
 
                   {selectedFiles.length > 0 && (
@@ -549,15 +677,25 @@ For regression problems:
                       </div>
                       <div className="space-y-1 max-h-24 overflow-y-auto">
                         {selectedFiles.map(({ file, path }, index) => (
-                          <div key={index} className="flex items-center justify-between text-sm">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between text-sm"
+                          >
                             <span className="truncate">{path}</span>
-                            <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
+                            <span className="text-muted-foreground">
+                              {formatFileSize(file.size)}
+                            </span>
                           </div>
                         ))}
                       </div>
                       <div className="flex items-center justify-between mt-3 pt-3 border-t text-sm">
-                        <span className="font-medium">{selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected</span>
-                        <span className="font-medium">{formatFileSize(totalSize)} total</span>
+                        <span className="font-medium">
+                          {selectedFiles.length} file
+                          {selectedFiles.length > 1 ? "s" : ""} selected
+                        </span>
+                        <span className="font-medium">
+                          {formatFileSize(totalSize)} total
+                        </span>
                       </div>
                     </Card>
                   )}
@@ -594,30 +732,125 @@ For regression problems:
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* LLM Provider Select Field */}
+                <FormField
+                  control={form.control}
+                  name="provider"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>LLM Provider</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an LLM provider" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="openrouter">OpenRouter</SelectItem>
+                          <SelectItem value="groq">Groq</SelectItem>
+                          <SelectItem value="openai">OpenAI</SelectItem>
+                          <SelectItem value="anthropic">Anthropic</SelectItem>
+                          <SelectItem value="gemini_sdk">Gemini SDK</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Choose the LLM provider for evaluations.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Model Name Select Field */}
+                <FormField
+                  control={form.control}
+                  name="modelName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Model</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value} // Use value prop for controlled component
+                        disabled={availableModels.length === 0} // Disable if no models are available
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a model" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {availableModels.length > 0 ? (
+                            availableModels.map((model) => (
+                              <SelectItem key={model} value={model}>
+                                {model}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            // Render a non-selectable message when no models are available
+                            <div className="p-2 text-center text-muted-foreground">
+                              No models available for this provider.
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Existing Eval Type Field */}
                 <FormField
                   control={form.control}
                   name="evalType"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Evaluation Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Auto-detect" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="auto-detect">Auto-detect</SelectItem>
-                          <SelectItem value="mathematical">Mathematical</SelectItem>
-                          <SelectItem value="code_generation">Code Generation</SelectItem>
-                          <SelectItem value="factual_qa">Factual Q&A</SelectItem>
-                          <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
-                          <SelectItem value="summarization">Summarization</SelectItem>
-                          <SelectItem value="translation">Translation</SelectItem>
-                          <SelectItem value="creative_writing">Creative Writing</SelectItem>
-                          <SelectItem value="commonsense_reasoning">Commonsense Reasoning</SelectItem>
-                          <SelectItem value="reading_comprehension">Reading Comprehension</SelectItem>
-                          <SelectItem value="domain_knowledge">Domain Knowledge</SelectItem>
+                          <SelectItem value="auto-detect">
+                            Auto-detect
+                          </SelectItem>
+                          <SelectItem value="mathematical">
+                            Mathematical
+                          </SelectItem>
+                          <SelectItem value="code_generation">
+                            Code Generation
+                          </SelectItem>
+                          <SelectItem value="factual_qa">
+                            Factual Q&A
+                          </SelectItem>
+                          <SelectItem value="multiple_choice">
+                            Multiple Choice
+                          </SelectItem>
+                          <SelectItem value="summarization">
+                            Summarization
+                          </SelectItem>
+                          <SelectItem value="translation">
+                            Translation
+                          </SelectItem>
+                          <SelectItem value="creative_writing">
+                            Creative Writing
+                          </SelectItem>
+                          <SelectItem value="commonsense_reasoning">
+                            Commonsense Reasoning
+                          </SelectItem>
+                          <SelectItem value="reading_comprehension">
+                            Reading Comprehension
+                          </SelectItem>
+                          <SelectItem value="domain_knowledge">
+                            Domain Knowledge
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -630,7 +863,9 @@ For regression problems:
                   name="tokenThreshold"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Token Threshold ({field.value} tokens)</FormLabel>
+                      <FormLabel>
+                        Token Threshold ({field.value} tokens)
+                      </FormLabel>
                       <FormControl>
                         <Slider
                           min={500}
@@ -642,7 +877,8 @@ For regression problems:
                         />
                       </FormControl>
                       <FormDescription>
-                        Minimum token threshold for chunk concatenation (500-4000 tokens)
+                        Minimum token threshold for chunk concatenation
+                        (500-4000 tokens)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -715,7 +951,8 @@ For regression problems:
                         />
                       </FormControl>
                       <FormDescription>
-                        Number of parallel API requests (1-20). Higher values are faster but may hit rate limits.
+                        Number of parallel API requests (1-20). Higher values
+                        are faster but may hit rate limits.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -730,7 +967,9 @@ For regression problems:
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Use Agentic Generation</FormLabel>
+                        <FormLabel className="text-base">
+                          Use Agentic Generation
+                        </FormLabel>
                         <FormDescription>
                           Enable AI-powered contextual question generation
                         </FormDescription>
@@ -751,7 +990,9 @@ For regression problems:
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Enable fine-tuning</FormLabel>
+                        <FormLabel className="text-base">
+                          Enable fine-tuning
+                        </FormLabel>
                         <FormDescription>
                           Automatically splits questions for LoRA fine-tuning
                         </FormDescription>
@@ -776,7 +1017,12 @@ For regression problems:
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Test Set Percentage</FormLabel>
-                          <Select onValueChange={(value) => field.onChange(parseFloat(value))} defaultValue={field.value.toString()}>
+                          <Select
+                            onValueChange={(value) =>
+                              field.onChange(parseFloat(value))
+                            }
+                            defaultValue={field.value.toString()}
+                          >
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue />
@@ -785,7 +1031,9 @@ For regression problems:
                             <SelectContent>
                               <SelectItem value="0.1">10% (Minimal)</SelectItem>
                               <SelectItem value="0.15">15%</SelectItem>
-                              <SelectItem value="0.2">20% (Recommended)</SelectItem>
+                              <SelectItem value="0.2">
+                                20% (Recommended)
+                              </SelectItem>
                               <SelectItem value="0.25">25%</SelectItem>
                               <SelectItem value="0.3">30% (Maximum)</SelectItem>
                             </SelectContent>
@@ -809,7 +1057,9 @@ For regression problems:
                               {...field}
                               onChange={(e) => {
                                 const value = parseInt(e.target.value);
-                                field.onChange(isNaN(value) ? undefined : value);
+                                field.onChange(
+                                  isNaN(value) ? undefined : value,
+                                );
                               }}
                             />
                           </FormControl>
@@ -870,13 +1120,16 @@ For regression problems:
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <Zap className="h-4 w-4 text-orange-600" />
-                    <span className="font-medium text-gray-900">Quick Local Test</span>
+                    <span className="font-medium text-gray-900">
+                      Quick Local Test
+                    </span>
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                       No API Key Required
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">
-                    Test with local Qwen model (up to 20 questions). Perfect for trying the system without external API costs.
+                    Test with local Qwen model (up to 20 questions). Perfect for
+                    trying the system without external API costs.
                   </p>
                 </div>
               </div>
@@ -905,7 +1158,9 @@ For regression problems:
             <Progress value={progress} className="w-full" />
             <div className="flex items-center gap-2">
               <div className="animate-pulse h-2 w-2 bg-blue-500 rounded-full"></div>
-              <span className="text-sm text-muted-foreground">{statusMessage}</span>
+              <span className="text-sm text-muted-foreground">
+                {statusMessage}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -918,7 +1173,10 @@ For regression problems:
             <div>
               <CardTitle>Evaluation Results</CardTitle>
               <CardDescription>
-                Run ID: <code className="text-xs bg-muted px-1 py-0.5 rounded">{currentRunId}</code>
+                Run ID:{" "}
+                <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                  {currentRunId}
+                </code>
               </CardDescription>
             </div>
             <Button onClick={downloadResults} variant="outline">
@@ -934,20 +1192,35 @@ For regression problems:
                     <div className="text-2xl font-bold text-blue-600">
                       {(results.aggregate_metrics.mean_score || 0).toFixed(3)}
                     </div>
-                    <div className="text-sm text-muted-foreground">Mean Score</div>
+                    <div className="text-sm text-muted-foreground">
+                      Mean Score
+                    </div>
                   </div>
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
                     <div className="text-2xl font-bold text-green-600">
                       {results.aggregate_metrics.num_samples || 0}
                     </div>
-                    <div className="text-sm text-muted-foreground">Questions</div>
+                    <div className="text-sm text-muted-foreground">
+                      Questions
+                    </div>
                   </div>
                   <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <Badge variant={results.aggregate_metrics.statistically_significant ? "default" : "secondary"}>
-                      {results.aggregate_metrics.statistically_significant ? "✓ Significant" : "✗ Not Significant"}
+                    <Badge
+                      variant={
+                        results.aggregate_metrics.statistically_significant
+                          ? "default"
+                          : "secondary"
+                      }
+                    >
+                      {results.aggregate_metrics.statistically_significant
+                        ? "✓ Significant"
+                        : "✗ Not Significant"}
                     </Badge>
                     <div className="text-sm text-muted-foreground mt-1">
-                      p={(results.aggregate_metrics.statistical_significance || 1).toFixed(3)}
+                      p=
+                      {(
+                        results.aggregate_metrics.statistical_significance || 1
+                      ).toFixed(3)}
                     </div>
                   </div>
                 </div>
@@ -955,66 +1228,109 @@ For regression problems:
                 {/* Additional Metrics */}
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="font-medium">95% Confidence Interval:</span>
+                    <span className="font-medium">
+                      95% Confidence Interval:
+                    </span>
                     <span>
-                      [{results.aggregate_metrics.confidence_interval_95 ? 
-                        results.aggregate_metrics.confidence_interval_95.map((v: number) => v.toFixed(3)).join(', ') : 
-                        '0, 0'}]
+                      [
+                      {results.aggregate_metrics.confidence_interval_95
+                        ? results.aggregate_metrics.confidence_interval_95
+                            .map((v: number) => v.toFixed(3))
+                            .join(", ")
+                        : "0, 0"}
+                      ]
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium">Score Range:</span>
                     <span>
-                      {(results.aggregate_metrics.min_score || 0).toFixed(3)} - {(results.aggregate_metrics.max_score || 0).toFixed(3)}
+                      {(results.aggregate_metrics.min_score || 0).toFixed(3)} -{" "}
+                      {(results.aggregate_metrics.max_score || 0).toFixed(3)}
                     </span>
                   </div>
                 </div>
 
                 {/* Mock Response Warning */}
-                {results.individual_results && results.individual_results.some((r: any) => r.prediction && r.prediction.includes('Mock LLM response')) && (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h4 className="font-medium text-yellow-800 mb-2">⚠️ Using Mock Responses</h4>
-                    <p className="text-yellow-700 text-sm">
-                      The system is using mock responses instead of real LLM evaluation.
-                      To get real LLM responses, go to the Settings tab and configure your OpenRouter API key.
-                    </p>
-                  </div>
-                )}
+                {results.individual_results &&
+                  results.individual_results.some(
+                    (r: any) =>
+                      r.prediction &&
+                      r.prediction.includes("Mock LLM response"),
+                  ) && (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <h4 className="font-medium text-yellow-800 mb-2">
+                        ⚠️ Using Mock Responses
+                      </h4>
+                      <p className="text-yellow-700 text-sm">
+                        The system is using mock responses instead of real LLM
+                        evaluation. To get real LLM responses, go to the
+                        Settings tab and configure your OpenRouter API key.
+                      </p>
+                    </div>
+                  )}
 
                 {/* Individual Results Preview */}
-                {results.individual_results && results.individual_results.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-3">All Questions & Responses</h4>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {results.individual_results.map((result: any, index: number) => (
-                        <div key={index} className="p-4 border rounded-lg bg-muted/30">
-                          <div className="font-medium mb-2">Question {index + 1}:</div>
-                          <div className="text-sm mb-3">{result.question}</div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                            <div>
-                              <span className="font-medium text-green-600">Expected:</span>
-                              <div className="mt-1">{result.ground_truth}</div>
-                            </div>
-                            <div>
-                              <span className="font-medium text-blue-600">LLM Response:</span>
-                              <div className="mt-1">{result.prediction}</div>
-                            </div>
-                          </div>
-                          <div className="flex justify-end mt-3">
-                            <Badge 
-                              variant={result.score >= 0.8 ? "default" : result.score >= 0.6 ? "secondary" : "destructive"}
+                {results.individual_results &&
+                  results.individual_results.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-3">
+                        All Questions & Responses
+                      </h4>
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {results.individual_results.map(
+                          (result: any, index: number) => (
+                            <div
+                              key={index}
+                              className="p-4 border rounded-lg bg-muted/30"
                             >
-                              Score: {result.score.toFixed(2)} | Method: {result.method}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
+                              <div className="font-medium mb-2">
+                                Question {index + 1}:
+                              </div>
+                              <div className="text-sm mb-3">
+                                {result.question}
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                <div>
+                                  <span className="font-medium text-green-600">
+                                    Expected:
+                                  </span>
+                                  <div className="mt-1">
+                                    {result.ground_truth}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-blue-600">
+                                    LLM Response:
+                                  </span>
+                                  <div className="mt-1">
+                                    {result.prediction}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex justify-end mt-3">
+                                <Badge
+                                  variant={
+                                    result.score >= 0.8
+                                      ? "default"
+                                      : result.score >= 0.6
+                                        ? "secondary"
+                                        : "destructive"
+                                  }
+                                >
+                                  Score: {result.score.toFixed(2)} | Method:{" "}
+                                  {result.method}
+                                </Badge>
+                              </div>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                      <div className="text-center mt-3 text-sm text-muted-foreground">
+                        Showing all {results.individual_results.length}{" "}
+                        questions
+                      </div>
                     </div>
-                    <div className="text-center mt-3 text-sm text-muted-foreground">
-                      Showing all {results.individual_results.length} questions
-                    </div>
-                  </div>
-                )}
+                  )}
               </div>
             ) : (
               <div className="text-center text-muted-foreground">
@@ -1031,10 +1347,12 @@ For regression problems:
           <CardContent className="p-6">
             <div className="text-center space-y-4">
               <div className="space-y-2">
-                <h3 className="text-xl font-semibold text-blue-800">Ready for Fine-tuning!</h3>
+                <h3 className="text-xl font-semibold text-blue-800">
+                  Ready for Fine-tuning!
+                </h3>
                 <p className="text-muted-foreground">
-                  Your corpus has been evaluated and fine-tuning data has been prepared. 
-                  You can now proceed with LoRA fine-tuning.
+                  Your corpus has been evaluated and fine-tuning data has been
+                  prepared. You can now proceed with LoRA fine-tuning.
                 </p>
               </div>
               <Button

@@ -5,13 +5,44 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Settings, Key, TestTube, Save, RefreshCw, Trash2, Eye, EyeOff, ExternalLink, Info } from "lucide-react";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Settings,
+  Key,
+  TestTube,
+  Save,
+  RefreshCw,
+  Trash2,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Info,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const settingsSchema = z.object({
@@ -46,9 +77,12 @@ export function SettingsTab() {
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [apiKeyStatus, setApiKeyStatus] = useState<{ configured: boolean; message: string }>({
+  const [apiKeyStatus, setApiKeyStatus] = useState<{
+    configured: boolean;
+    message: string;
+  }>({
     configured: false,
-    message: "No API key configured"
+    message: "No API key configured",
   });
 
   const form = useForm<SettingsFormData>({
@@ -62,27 +96,40 @@ export function SettingsTab() {
     },
   });
 
-  const providerHelp: Record<string, { text: string; url: string; credits?: string }> = {
+  const providerHelp: Record<
+    string,
+    { text: string; url: string; credits?: string }
+  > = {
     openrouter: {
       text: "Get your OpenRouter API key from openrouter.ai/keys",
       url: "https://openrouter.ai/keys",
-      credits: "https://openrouter.ai/credits"
+      credits: "https://openrouter.ai/credits",
     },
     openai: {
       text: "Get your OpenAI API key from platform.openai.com/api-keys",
-      url: "https://platform.openai.com/api-keys"
+      url: "https://platform.openai.com/api-keys",
     },
     anthropic: {
       text: "Get your Anthropic API key from console.anthropic.com",
-      url: "https://console.anthropic.com/"
-    }
+      url: "https://console.anthropic.com/",
+    },
+    groq: {
+      text: "Get your Groq API key from console.groq.com",
+      url: "https://console.groq.com/keys",
+    },
+    gemini: {
+      text: "Get your Gemini API key from aistudio.google.com",
+      url: "https://aistudio.google.com/app/apikey",
+    },
   };
 
   const loadCurrentConfig = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/v1/config/current');
-      
+      const response = await fetch(
+        "http://localhost:8000/api/v1/config/current",
+      );
+
       if (!response.ok) {
         // Try to get error details from response
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -95,7 +142,7 @@ export function SettingsTab() {
           // If we can't parse JSON, try to get text
           try {
             const errorText = await response.text();
-            if (errorText && !errorText.includes('<!DOCTYPE html>')) {
+            if (errorText && !errorText.includes("<!DOCTYPE html>")) {
               errorMessage = errorText;
             }
           } catch {
@@ -104,18 +151,24 @@ export function SettingsTab() {
         }
         throw new Error(`Failed to load config: ${errorMessage}`);
       }
-      
+
       const config = await response.json();
       setCurrentConfig(config);
 
       // Update form fields
       form.setValue("provider", config.llm.provider || "openrouter");
-      form.setValue("modelName", config.llm.model_name || "anthropic/claude-sonnet-4");
+      form.setValue(
+        "modelName",
+        config.llm.model_name || "anthropic/claude-sonnet-4",
+      );
       form.setValue("maxTokens", Number(config.llm.max_tokens) || 32768);
-      form.setValue("defaultTemperature", Number(config.llm.temperature) || 0.7);
+      form.setValue(
+        "defaultTemperature",
+        Number(config.llm.temperature) || 0.7,
+      );
 
       // Load API key from sessionStorage if available
-      const storedApiKey = sessionStorage.getItem('docs_to_eval_api_key');
+      const storedApiKey = sessionStorage.getItem("docs_to_eval_api_key");
       if (storedApiKey && !form.getValues("apiKey")) {
         form.setValue("apiKey", storedApiKey);
       }
@@ -127,18 +180,17 @@ export function SettingsTab() {
       if (isConfiguredInBackend || hasStoredKey) {
         setApiKeyStatus({
           configured: true,
-          message: "API key configured ✓"
+          message: "API key configured ✓",
         });
       } else {
         setApiKeyStatus({
           configured: false,
-          message: "No API key configured"
+          message: "No API key configured",
         });
       }
-
     } catch (error: any) {
-      console.error('Failed to load config:', error);
-      toast.error('Failed to load configuration');
+      console.error("Failed to load config:", error);
+      toast.error("Failed to load configuration");
     } finally {
       setIsLoading(false);
     }
@@ -150,7 +202,7 @@ export function SettingsTab() {
     const model = form.getValues("modelName");
 
     if (!apiKey?.trim()) {
-      toast.warning('Please enter an API key first');
+      toast.warning("Please enter an API key first");
       return;
     }
 
@@ -158,31 +210,33 @@ export function SettingsTab() {
     setTestResult(null);
 
     try {
-      const response = await fetch('/api/v1/config/test-api-key', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        "http://localhost:8000/api/v1/config/test-api-key",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            api_key: apiKey,
+            provider: provider,
+            model: model,
+          }),
         },
-        body: JSON.stringify({
-          api_key: apiKey,
-          provider: provider,
-          model: model
-        })
-      });
+      );
 
       const result = await response.json();
       setTestResult(result);
 
-      if (result.status === 'success') {
-        toast.success('API key test successful!');
+      if (result.status === "success") {
+        toast.success("API key test successful!");
       } else {
         toast.error(`API key test failed: ${result.message}`);
       }
-
     } catch (error: any) {
       const errorResult = {
-        status: 'error',
-        message: `Test failed: ${error.message}`
+        status: "error",
+        message: `Test failed: ${error.message}`,
       };
       setTestResult(errorResult);
       toast.error(`API key test failed: ${error.message}`);
@@ -193,10 +247,10 @@ export function SettingsTab() {
 
   const clearApiKey = () => {
     form.setValue("apiKey", "");
-    sessionStorage.removeItem('docs_to_eval_api_key');
+    sessionStorage.removeItem("docs_to_eval_api_key");
     setApiKeyStatus({
       configured: false,
-      message: "No API key configured"
+      message: "No API key configured",
     });
     toast.info("API key cleared");
   };
@@ -208,56 +262,69 @@ export function SettingsTab() {
           provider: data.provider,
           model_name: data.modelName,
           max_tokens: data.maxTokens,
-          temperature: data.defaultTemperature
-        }
+          temperature: data.defaultTemperature,
+        },
       };
 
       if (data.apiKey?.trim()) {
         (configUpdate.llm as any).api_key = data.apiKey;
         // Store API key in sessionStorage for persistence
-        sessionStorage.setItem('docs_to_eval_api_key', data.apiKey);
+        sessionStorage.setItem("docs_to_eval_api_key", data.apiKey);
       }
 
-      const response = await fetch('/api/v1/config/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        "http://localhost:8000/api/v1/config/update",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(configUpdate),
         },
-        body: JSON.stringify(configUpdate)
-      });
+      );
 
       let result;
       try {
         const responseText = await response.text();
-        
+
         // Check if response is HTML (server error page)
-        if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html>')) {
-          throw new Error(`Server returned HTML error page (HTTP ${response.status})`);
+        if (
+          responseText.includes("<!DOCTYPE html>") ||
+          responseText.includes("<html>")
+        ) {
+          throw new Error(
+            `Server returned HTML error page (HTTP ${response.status})`,
+          );
         }
-        
+
         // Try to parse as JSON
         result = JSON.parse(responseText);
       } catch (jsonError: any) {
-        if (jsonError?.message?.includes('HTML error page')) {
+        if (jsonError?.message?.includes("HTML error page")) {
           throw jsonError;
         }
-        throw new Error(`Invalid server response (HTTP ${response.status}): ${jsonError?.message || 'Invalid JSON'}`);
+        throw new Error(
+          `Invalid server response (HTTP ${response.status}): ${jsonError?.message || "Invalid JSON"}`,
+        );
       }
 
       if (!response.ok) {
         // Handle HTTP errors with proper message
-        const errorMessage = result?.detail || result?.message || `HTTP ${response.status}: ${response.statusText}`;
+        const errorMessage =
+          result?.detail ||
+          result?.message ||
+          `HTTP ${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
       }
 
-      if (result.status === 'success') {
-        toast.success('Settings saved successfully!');
+      if (result.status === "success") {
+        toast.success("Settings saved successfully!");
 
         // Update API key status
         if (result.api_key_set) {
           setApiKeyStatus({
             configured: true,
-            message: "API key configured ✓"
+            message: "API key configured ✓",
           });
         }
 
@@ -266,26 +333,80 @@ export function SettingsTab() {
 
         // Reload current config to reflect changes
         loadCurrentConfig();
-
       } else {
-        toast.error(result.message || 'Failed to save settings');
+        toast.error(result.message || "Failed to save settings");
       }
-
     } catch (error: any) {
-      console.error('Settings save error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error("Settings save error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast.error(`Failed to save settings: ${errorMessage}`);
-      
+
       // Reset API key status on error
       setApiKeyStatus({
         configured: false,
-        message: "Failed to save API key"
+        message: "Failed to save API key",
       });
     }
   };
 
   const currentProvider = form.watch("provider");
   const providerInfo = providerHelp[currentProvider];
+
+  // Define models for each provider
+  const modelsByProvider: Record<string, { value: string; label: string }[]> = {
+    openrouter: [
+      {
+        value: "anthropic/claude-sonnet-4",
+        label: "Claude Sonnet 4 (Latest & Best)",
+      },
+      { value: "openai/gpt-5-mini", label: "GPT-5-mini (Fast)" },
+      { value: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro (Balanced)" },
+      { value: "openai/gpt-4.1", label: "GPT-4.1 (Latest OpenAI)" },
+      { value: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
+      { value: "openai/gpt-4o", label: "GPT-4o" },
+    ],
+    openai: [
+      { value: "gpt-4o", label: "GPT-4o (Latest)" },
+      { value: "gpt-4o-mini", label: "GPT-4o Mini (Fast)" },
+      { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
+      { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
+    ],
+    anthropic: [
+      { value: "claude-sonnet-4", label: "Claude 4 Sonnet (Latest)" },
+      { value: "claude-3-7-sonnet", label: "Claude 3.7 (Fast)" },
+    ],
+    groq: [
+      { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B Instant (Fast)" },
+      { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile" },
+      { value: "meta-llama/llama-guard-4-12b", label: "Llama Guard 3 8B" },
+      { value: "openai/gpt-oss-120b", label: "GPT-OSS-120B" },
+      { value: "openai/gpt-oss-20b", label: "GPT-OSS-20B" },
+    ],
+    gemini: [
+      { value: "gemini-2.5-pro-latest", label: "Gemini 2.5 Pro (Best)" },
+      { value: "gemini-2.5-flash-latest", label: "Gemini 2.5 Flash (Fast)" },
+    ],
+  };
+
+  const availableModels =
+    modelsByProvider[currentProvider] || modelsByProvider.openrouter;
+
+  // Update model when provider changes
+  useEffect(() => {
+    const currentModel = form.getValues("modelName");
+    const currentModels = modelsByProvider[currentProvider] || [];
+
+    // Check if current model is valid for the new provider
+    const isValidModel = currentModels.some(
+      (model) => model.value === currentModel,
+    );
+
+    if (!isValidModel && currentModels.length > 0) {
+      // Set to the first available model for this provider
+      form.setValue("modelName", currentModels[0].value);
+    }
+  }, [currentProvider, form]);
 
   useEffect(() => {
     loadCurrentConfig();
@@ -296,7 +417,9 @@ export function SettingsTab() {
       <div className="flex items-center justify-center py-12">
         <div className="flex items-center gap-3">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-          <span className="text-muted-foreground">Loading configuration...</span>
+          <span className="text-muted-foreground">
+            Loading configuration...
+          </span>
         </div>
       </div>
     );
@@ -314,12 +437,23 @@ export function SettingsTab() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
-            <div className={`h-3 w-3 rounded-full ${apiKeyStatus.configured ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-            <span className={apiKeyStatus.configured ? 'text-green-700' : 'text-muted-foreground'}>
+            <div
+              className={`h-3 w-3 rounded-full ${apiKeyStatus.configured ? "bg-green-500" : "bg-gray-400"}`}
+            ></div>
+            <span
+              className={
+                apiKeyStatus.configured
+                  ? "text-green-700"
+                  : "text-muted-foreground"
+              }
+            >
               {apiKeyStatus.message}
             </span>
             {apiKeyStatus.configured && (
-              <Badge variant="outline" className="text-green-700 border-green-200">
+              <Badge
+                variant="outline"
+                className="text-green-700 border-green-200"
+              >
                 Ready
               </Badge>
             )}
@@ -348,16 +482,25 @@ export function SettingsTab() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>LLM Provider</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value} // Changed from defaultValue to value
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="openrouter">OpenRouter (Recommended)</SelectItem>
+                          <SelectItem value="openrouter">
+                            OpenRouter (Recommended)
+                          </SelectItem>
                           <SelectItem value="openai">OpenAI</SelectItem>
                           <SelectItem value="anthropic">Anthropic</SelectItem>
+                          <SelectItem value="groq">
+                            Groq (Fast & Affordable)
+                          </SelectItem>
+                          <SelectItem value="gemini">Google Gemini</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -371,17 +514,21 @@ export function SettingsTab() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Model</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value} // Changed from defaultValue to value
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="anthropic/claude-sonnet-4">Claude Sonnet 4 (Latest & Best)</SelectItem>
-                          <SelectItem value="openai/gpt-5-mini">GPT-5-mini (Fast)</SelectItem>
-                          <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro (Balanced)</SelectItem>
-                          <SelectItem value="openai/gpt-4.1">GPT-4.1 (Latest OpenAI)</SelectItem>
+                          {availableModels.map((model) => (
+                            <SelectItem key={model.value} value={model.value}>
+                              {model.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -429,20 +576,21 @@ export function SettingsTab() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
                           >
-                            {providerInfo.url.replace('https://', '')}
+                            {providerInfo.url.replace("https://", "")}
                             <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
                         {providerInfo.credits && (
                           <div className="text-orange-600">
-                            <strong>Note:</strong> You need credits in your account. Add credits at{" "}
+                            <strong>Note:</strong> You need credits in your
+                            account. Add credits at{" "}
                             <a
                               href={providerInfo.credits}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 hover:text-orange-800"
                             >
-                              {providerInfo.credits.replace('https://', '')}
+                              {providerInfo.credits.replace("https://", "")}
                               <ExternalLink className="h-3 w-3" />
                             </a>
                           </div>
@@ -501,7 +649,8 @@ export function SettingsTab() {
                         />
                       </FormControl>
                       <FormDescription>
-                        Controls randomness (0.0 = deterministic, 2.0 = very random)
+                        Controls randomness (0.0 = deterministic, 2.0 = very
+                        random)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -568,13 +717,15 @@ export function SettingsTab() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`p-4 rounded-lg border ${
-              testResult.status === 'success' 
-                ? 'bg-green-50 border-green-200 text-green-800' 
-                : 'bg-red-50 border-red-200 text-red-800'
-            }`}>
+            <div
+              className={`p-4 rounded-lg border ${
+                testResult.status === "success"
+                  ? "bg-green-50 border-green-200 text-green-800"
+                  : "bg-red-50 border-red-200 text-red-800"
+              }`}
+            >
               <div className="flex items-center gap-2">
-                {testResult.status === 'success' ? (
+                {testResult.status === "success" ? (
                   <div className="h-2 w-2 bg-green-500 rounded-full"></div>
                 ) : (
                   <div className="h-2 w-2 bg-red-500 rounded-full"></div>
@@ -600,11 +751,16 @@ export function SettingsTab() {
         <CardContent>
           <div className="bg-muted p-4 rounded-lg font-mono text-sm space-y-2">
             <div>export OPENROUTER_API_KEY="your-api-key-here"</div>
-            <div>export DOCS_TO_EVAL_MODEL_NAME="anthropic/claude-sonnet-4"</div>
+            <div>export GEMINI_API_KEY="your-gemini-api-key-here"</div>
+            <div>export GROQ_API_KEY="your-groq-api-key-here"</div>
+            <div>
+              export DOCS_TO_EVAL_MODEL_NAME="anthropic/claude-sonnet-4"
+            </div>
             <div>export DOCS_TO_EVAL_PROVIDER="openrouter"</div>
           </div>
           <p className="text-sm text-muted-foreground mt-3">
-            Environment variables take precedence over web interface settings and are more secure for production deployments.
+            Environment variables take precedence over web interface settings
+            and are more secure for production deployments.
           </p>
         </CardContent>
       </Card>
@@ -629,7 +785,8 @@ export function SettingsTab() {
           </ul>
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm text-blue-700">
-              <strong>Note:</strong> Without an API key, the system will use mock/sample questions for demonstration purposes.
+              <strong>Note:</strong> Without an API key, the system will use
+              mock/sample questions for demonstration purposes.
             </p>
           </div>
         </CardContent>
