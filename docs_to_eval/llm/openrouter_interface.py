@@ -103,13 +103,18 @@ class OpenRouterInterface(BaseLLMInterface):
         if context:
             full_prompt = f"Context: {context}\n\n{prompt}"
         
+        # Ensure caller receives the intended sampling parameters
+        call_kwargs = dict(kwargs)
+        call_kwargs.setdefault("temperature", temperature)
+        call_kwargs.setdefault("max_tokens", max_tokens)
+
         try:
             # Use iRouter's simple Call interface for one-off requests
             # Note: iRouter doesn't directly expose temperature/max_tokens in the simple interface
             # but we can pass them through kwargs if the underlying API supports them
             response_text = await asyncio.get_event_loop().run_in_executor(
                 None, 
-                lambda: self.caller(full_prompt, **kwargs)
+                lambda: self.caller(full_prompt, **call_kwargs)
             )
             
             # Update usage statistics

@@ -69,6 +69,41 @@ interface FileWithPath {
   path: string;
 }
 
+const trimTrailingSlash = (value: string) =>
+  value.endsWith("/") ? value.slice(0, -1) : value;
+
+const apiBaseUrl =
+  typeof window === "undefined"
+    ? trimTrailingSlash(process.env.NEXT_PUBLIC_API_BASE_URL || "")
+    : trimTrailingSlash(process.env.NEXT_PUBLIC_API_BASE_URL || "");
+
+const apiUrl = (path: string) => {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  if (apiBaseUrl) {
+    return `${apiBaseUrl}${normalizedPath}`;
+  }
+  return normalizedPath;
+};
+
+const buildWebSocketUrl = (path: string) => {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const envWsBase = trimTrailingSlash(
+    process.env.NEXT_PUBLIC_API_WS_BASE || "",
+  );
+
+  if (envWsBase) {
+    return `${envWsBase}${normalizedPath}`;
+  }
+
+  if (typeof window !== "undefined") {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${window.location.host}${normalizedPath}`;
+  }
+
+  // Fallback when window is not available (e.g., SSR). Caller should avoid WS calls then.
+  return normalizedPath;
+};
+
 export function EvaluationTab() {
   const [selectedFiles, setSelectedFiles] = useState<FileWithPath[]>([]);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -112,7 +147,7 @@ export function EvaluationTab() {
       if (selectedProvider) {
         try {
           const response = await fetch(
-            `http://localhost:8000/api/v1/llm/models?provider=${selectedProvider}`,
+            apiUrl(`/api/v1/llm/models?provider=${selectedProvider}`),
           );
           if (response.ok) {
             const models = await response.json();
@@ -298,7 +333,7 @@ For regression problems:
 
         // Upload files first
         const uploadResponse = await fetch(
-          "http://localhost:8000/api/v1/corpus/upload-multiple",
+          apiUrl("/api/v1/corpus/upload-multiple"),
           {
             method: "POST",
             body: formData,
@@ -334,16 +369,13 @@ For regression problems:
         modelName: data.modelName || null, // Include the selected modelName
       };
 
-      const response = await fetch(
-        "http://localhost:8000/api/v1/evaluation/start",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(evaluationData),
+      const response = await fetch(apiUrl("/api/v1/evaluation/start"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(evaluationData),
+      });
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -383,10 +415,7 @@ For regression problems:
   };
 
   const connectWebSocket = (runId: string) => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//localhost:8000/api/v1/ws/${runId}`;
-
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(buildWebSocketUrl(`/api/v1/ws/${runId}`));
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -416,7 +445,7 @@ For regression problems:
     const poll = async () => {
       try {
         const response = await fetch(
-          `http://localhost:8000/api/v1/evaluation/${runId}/status`,
+          apiUrl(`/api/v1/evaluation/${runId}/status`),
         );
 
         if (response.status === 404) {
@@ -469,7 +498,7 @@ For regression problems:
   const handleEvaluationComplete = async (runId: string) => {
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/evaluation/${runId}/results`,
+        apiUrl(`/api/v1/evaluation/${runId}/results`),
       );
       const resultWrapper = await response.json();
 
@@ -521,7 +550,7 @@ For regression problems:
         formData.append("name", runName);
 
         const uploadResponse = await fetch(
-          "http://localhost:8000/api/v1/corpus/upload-multiple",
+          apiUrl("/api/v1/corpus/upload-multiple"),
           {
             method: "POST",
             body: formData,
@@ -548,16 +577,13 @@ For regression problems:
         run_name: form.getValues("runName") || "Qwen Local Test",
       };
 
-      const response = await fetch(
-        "http://localhost:8000/api/v1/evaluation/qwen-local",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(qwenData),
+      const response = await fetch(apiUrl("/api/v1/evaluation/qwen-local"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(qwenData),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -580,14 +606,16 @@ For regression problems:
   const downloadResults = () => {
     if (currentRunId) {
       window.open(
-        `http://localhost:8000/api/v1/evaluation/${currentRunId}/download`,
+        apiUrl(`/api/v1/evaluation/${currentRunId}/download`),
         "_blank",
       );
     }
   };
 
   const openFinetuningDashboard = (runId: string) => {
-    const url = `http://localhost:8000/api/v1/evaluation/${runId}/lora-finetune/dashboard?run_id=${runId}`;
+    const url = apiUrl(
+      `/api/v1/evaluation/${runId}/lora-finetune/dashboard?run_id=${runId}`,
+    );
     window.open(url, "_blank");
   };
 
