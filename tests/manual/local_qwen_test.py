@@ -11,7 +11,9 @@ import sys
 from pathlib import Path
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from docs_to_eval.core.agentic import AgenticBenchmarkGenerator
 from docs_to_eval.utils.config import EvaluationType

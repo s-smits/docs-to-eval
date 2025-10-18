@@ -9,8 +9,14 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.skip(reason="Manual integration test that calls external APIs.")
+
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 # Load environment variables
 from dotenv import load_dotenv
