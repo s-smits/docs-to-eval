@@ -6,7 +6,7 @@ authors = [
     {name = "docs-to-eval", email = "noreply@example.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 keywords = ["llm", "evaluation", "benchmarking", "nlp", "ai"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -14,41 +14,42 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Testing",
 ]
 dependencies = [
-    "requests>=2.25.0",
-    "beautifulsoup4>=4.9.0",
-    "typer>=0.16.0",
-    "rich>=14.1.0",
-    "fastapi>=0.116.1",
-    "uvicorn>=0.33.0",
-    "websockets>=13.1",
-    "pyyaml>=6.0.2",
+    "requests>=2.32.5",
+    "beautifulsoup4>=4.14.2",
+    "typer>=0.19.2",
+    "rich>=14.2.0",
+    "fastapi>=0.119.0",
+    "uvicorn>=0.37.0",
+    "websockets>=15.0.1",
+    "pyyaml>=6.0.3",
     "python-multipart>=0.0.20",
-    "httpx>=0.25.0",
-    "math-verify[antlr4-13-2]>=0.1.0",
-    "numpy>=1.21.0",
-    "chonkie[all]>=1.1.1",
-    "sentence-transformers>=5.0.0",
-    "python-dotenv>=1.1.1",
-    "openai>=1.98.0",
-    "mlx>=0.27.1",
-    "tiktoken>=0.8.0",
-    "pytest>=8.4.1",
-    "irouter>=0.1.5",
+    "httpx>=0.28.1",
+    "pydantic>=2.12.3",
+    "math-verify[antlr4-13-2]>=0.8.0",
+    "numpy>=2.3.4",
+    "chonkie[all]>=1.4.0",
+    "sentence-transformers>=5.1.1",
+    "python-dotenv>=1.0.1",
+    "openai>=2.5.0",
+    "mlx>=0.29.3",
+    "tiktoken>=0.12.0",
+    "pytest>=8.4.2",
+    "irouter>=0.3.1",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=6.0",
-    "pytest-asyncio>=0.23",
-    "black>=21.0",
-    "flake8>=3.8",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "black>=25.9.0",
+    "flake8>=7.1.1",
 ]
 
 [project.scripts]
@@ -82,7 +83,7 @@ include = [
 [dependency-groups]
 dev = [
     "autoflake>=2.3.1",
-    "pytest-asyncio>=1.1.0",
+    "pytest-asyncio>=1.2.0",
     "ruff>=0.12.8",
     "vulture>=2.14",
 ]

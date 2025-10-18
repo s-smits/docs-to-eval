@@ -7,7 +7,7 @@ import yaml
 import re
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union, Tuple
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, ValidationInfo, ConfigDict, field_validator, model_validator
 from enum import Enum
 from functools import lru_cache
 
@@ -66,15 +66,15 @@ class LLMConfig(BaseModel):
             kwargs['api_key'] = os.getenv('OPENROUTER_API_KEY')
         super().__init__(**kwargs)
     
-    @validator('temperature')
-    def validate_temperature(cls, v):
+    @field_validator('temperature')
+    def validate_temperature(cls, v: float) -> float:
         if not 0 <= v <= 2:
             raise ValueError('Temperature must be between 0 and 2')
         return v
     
-    @validator('base_url')
-    def set_base_url_by_provider(cls, v, values):
-        provider = values.get('provider', 'openrouter')
+    @field_validator('base_url')
+    def set_base_url_by_provider(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        provider = info.data.get('provider', 'openrouter') if info.data else 'openrouter'
         if provider == 'openrouter':
             return "https://openrouter.ai/api/v1"
         elif provider == 'openai':
@@ -102,43 +102,53 @@ class GenerationConfig(BaseModel):
 
 
 class ChunkingConfig(BaseModel):
-    """Configuration for intelligent text chunking (with optional chonkie).
+    """Unified configuration for smart text chunking with chonkie integration."""
 
-    Supports both legacy and current field names used across demos/tests.
-    """
-    # Core sizing
-    target_chunk_size: int = Field(gt=100, default=1500)
-    max_chunk_size: int = Field(gt=200, default=2500)
-    min_chunk_size: int = Field(gt=50, default=800)
+    # Strategy selection
+    enable_chonkie: bool = Field(default=True, description="Toggle advanced chonkie chunking")
+    chunking_strategy: str = Field(default="semantic", description="Preferred chunker strategy")
+    force_chunker: Optional[str] = Field(default=None, description="Force specific chunker implementation")
 
-    # Overlap configuration (support bytes and percent style)
-    overlap_size: int = Field(ge=0, default=200)
-    overlap_percent: float = Field(ge=0.0, le=50.0, default=15.0)
+    # Token-aware chunking (recommended defaults for LLM contexts)
+    use_token_chunking: bool = Field(default=True, description="Prefer token lengths when possible")
+    target_token_size: int = Field(default=3000, gt=0, description="Target chunk size in tokens")
+    min_token_size: int = Field(default=2000, gt=0, description="Minimum chunk size in tokens")
+    max_token_size: int = Field(default=4000, gt=0, description="Maximum chunk size in tokens")
+    overlap_tokens: int = Field(default=300, ge=0, description="Token overlap between adjacent chunks")
 
-    # Strategy selection (support both names used in code)
-    chunking_strategy: str = Field(default="semantic")
-    force_chunker: Optional[str] = Field(default=None)
+    # Character-based fallback settings (used when embeddings/chonkie unavailable)
+    target_chunk_size: int = Field(default=1500, gt=0, description="Fallback chunk size in characters")
+    min_chunk_size: int = Field(default=800, gt=0, description="Minimum fallback chunk size in characters")
+    max_chunk_size: int = Field(default=2500, gt=0, description="Maximum fallback chunk size in characters")
+    overlap_size: int = Field(default=200, ge=0, description="Character overlap between chunks")
+    overlap_percent: float = Field(default=15.0, ge=0.0, le=50.0, description="Percent overlap used by some chunkers")
 
     # Advanced toggles
-    enable_chonkie: bool = Field(default=False)
-    adaptive_sizing: bool = Field(default=True)
-    preserve_code_blocks: bool = Field(default=False)
-    preserve_math_expressions: bool = Field(default=False)
+    adaptive_sizing: bool = Field(default=True, description="Enable adaptive window resizing")
+    preserve_code_blocks: bool = Field(default=False, description="Try to keep fenced code blocks intact")
+    preserve_math_expressions: bool = Field(default=False, description="Try to keep math expressions intact")
+    testing_timestamp: Optional[float] = Field(default=None, description="Testing override to bypass caches")
 
-    @validator('max_chunk_size')
-    def validate_max_gt_min(cls, v, values):
-        min_size = values.get('min_chunk_size', 800)
+    @field_validator('max_chunk_size')
+    def validate_max_gt_min(cls, v: int, info: ValidationInfo) -> int:
+        min_size = info.data.get('min_chunk_size', 800) if info.data else 800
         if v <= min_size:
             raise ValueError('max_chunk_size must be greater than min_chunk_size')
         return v
 
-    @validator('target_chunk_size')
-    def validate_target_between_min_max(cls, v, values):
-        min_size = values.get('min_chunk_size', 800)
-        max_size = values.get('max_chunk_size', 2500)
+    @field_validator('target_chunk_size')
+    def validate_target_between_min_max(cls, v: int, info: ValidationInfo) -> int:
+        min_size = info.data.get('min_chunk_size', 800) if info.data else 800
+        max_size = info.data.get('max_chunk_size', 2500) if info.data else 2500
         if not (min_size <= v <= max_size):
-            # Clamp into range rather than hard-fail for robustness
             return max(min_size, min(v, max_size))
+        return v
+
+    @field_validator('max_token_size')
+    def validate_token_window(cls, v: int, info: ValidationInfo) -> int:
+        min_size = info.data.get('min_token_size', 2000) if info.data else 2000
+        if v <= min_size:
+            raise ValueError('max_token_size must be greater than min_token_size')
         return v
 
 
@@ -155,26 +165,6 @@ class VerificationConfig(BaseModel):
     use_mixed_verification: bool = Field(default=True, description="Enable intelligent mixed verification methods")
     mixed_verification_weights: bool = Field(default=True, description="Use weighted scoring for multiple verification methods")
     fuzzy_match_threshold: float = Field(ge=0, le=1, default=0.7, description="Threshold for fuzzy string matching")
-
-
-class ChunkingConfig(BaseModel):
-    """Configuration for text chunking with chonkie integration"""
-    enable_chonkie: bool = Field(default=True, description="Enable chonkie library for smart chunking")
-    chunking_strategy: str = Field(default="semantic", description="Chunking strategy: semantic, recursive, sentence")
-    force_chunker: Optional[str] = Field(default=None, description="Force specific chunker: semantic, recursive, sentence")
-    
-    # Token-aware chunking (recommended for LLM contexts)
-    use_token_chunking: bool = Field(default=True, description="Use token-aware chunking for LLM contexts")
-    target_token_size: int = Field(default=3000, description="Target chunk size in tokens (~3k for good context)")
-    min_token_size: int = Field(default=2000, description="Minimum chunk size in tokens")
-    max_token_size: int = Field(default=4000, description="Maximum chunk size in tokens")
-    overlap_tokens: int = Field(default=300, description="Overlap between chunks in tokens")
-    
-    # Character-based fallback settings
-    target_chunk_size: int = Field(default=12000, description="Target chunk size in characters (fallback)")
-    min_chunk_size: int = Field(default=8000, description="Minimum chunk size in characters")
-    max_chunk_size: int = Field(default=16000, description="Maximum chunk size in characters")
-    overlap_size: int = Field(default=1200, description="Overlap between chunks in characters")
 
 
 class ReportingConfig(BaseModel):
@@ -195,8 +185,8 @@ class SystemConfig(BaseModel):
     enable_caching: bool = True
     cache_dir: str = "cache"
     
-    @validator('log_level')
-    def validate_log_level(cls, v):
+    @field_validator('log_level')
+    def validate_log_level(cls, v: str) -> str:
         valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
         if v.upper() not in valid_levels:
             raise ValueError(f'Log level must be one of {valid_levels}')
@@ -213,25 +203,29 @@ class EvaluationConfig(BaseModel):
     reporting: ReportingConfig = Field(default_factory=ReportingConfig)
     system: SystemConfig = Field(default_factory=SystemConfig)
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
     
-    @validator('verification')
-    def validate_verification_method(cls, v, values):
-        if 'eval_type' in values:
-            eval_type = values['eval_type']
-            # Automatically set appropriate verification method based on eval type
-            if eval_type in [EvaluationType.MATHEMATICAL, EvaluationType.FACTUAL_QA, 
-                           EvaluationType.MULTIPLE_CHOICE, EvaluationType.DOMAIN_KNOWLEDGE]:
-                v.method = VerificationMethod.EXACT_MATCH
-            elif eval_type == EvaluationType.CODE_GENERATION:
-                v.method = VerificationMethod.EXECUTION
-            elif eval_type in [EvaluationType.SUMMARIZATION, EvaluationType.TRANSLATION,
-                             EvaluationType.READING_COMPREHENSION]:
-                v.method = VerificationMethod.SIMILARITY
-            elif eval_type == EvaluationType.CREATIVE_WRITING:
-                v.method = VerificationMethod.LLM_JUDGE
-        return v
+    @model_validator(mode='after')
+    def apply_verification_defaults(self) -> 'EvaluationConfig':
+        eval_type = self.eval_type
+        if eval_type in {
+            EvaluationType.MATHEMATICAL,
+            EvaluationType.FACTUAL_QA,
+            EvaluationType.MULTIPLE_CHOICE,
+            EvaluationType.DOMAIN_KNOWLEDGE,
+        }:
+            self.verification.method = VerificationMethod.EXACT_MATCH
+        elif eval_type == EvaluationType.CODE_GENERATION:
+            self.verification.method = VerificationMethod.EXECUTION
+        elif eval_type in {
+            EvaluationType.SUMMARIZATION,
+            EvaluationType.TRANSLATION,
+            EvaluationType.READING_COMPREHENSION,
+        }:
+            self.verification.method = VerificationMethod.SIMILARITY
+        elif eval_type == EvaluationType.CREATIVE_WRITING:
+            self.verification.method = VerificationMethod.LLM_JUDGE
+        return self
 
 
 def load_config(config_path: Union[str, Path]) -> EvaluationConfig:

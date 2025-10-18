@@ -7,7 +7,7 @@ import re
 import random
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 # Import enums from central config location
 from ..utils.config import EvaluationType, VerificationMethod
@@ -18,9 +18,7 @@ class EvaluationConfig(BaseModel):
     deterministic: bool
     verification: VerificationMethod
     metrics: List[str]
-    
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class BenchmarkItem(BaseModel):
@@ -31,9 +29,7 @@ class BenchmarkItem(BaseModel):
     options: Optional[List[str]] = None
     eval_type: EvaluationType
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class EvaluationResult(BaseModel):
@@ -44,9 +40,7 @@ class EvaluationResult(BaseModel):
     metrics: Dict[str, float]
     eval_type: EvaluationType
     verified: bool = True
-    
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 # Evaluation Types Configuration
@@ -324,9 +318,7 @@ class BenchmarkConfig(BaseModel):
     finetune_test_set_enabled: bool = Field(default=True)
     finetune_test_set_percentage: float = Field(ge=0.1, le=0.5, default=0.2)
     finetune_random_seed: int = Field(ge=0, default=42)
-    
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class FinetuneTestSet(BaseModel):
@@ -338,17 +330,17 @@ class FinetuneTestSet(BaseModel):
     test_percentage: float = Field(ge=0, le=1, description="Actual percentage of questions in test set")
     random_seed: int = Field(ge=0, description="Random seed used for split")
     split_timestamp: str = Field(description="Timestamp when split was created")
-    
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "test_set_size": 10,
                 "train_set_size": 40,
                 "test_percentage": 0.2,
                 "random_seed": 42,
-                "split_timestamp": "2025-08-05T12:00:00Z"
+                "split_timestamp": "2025-08-05T12:00:00Z",
             }
         }
+    )
 
 
 class BenchmarkWithFinetuneSet(BaseModel):

@@ -16,7 +16,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, WebSocket, Form
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field, ValidationError, validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from .websockets import websocket_manager, handle_websocket_connection, get_progress_tracker
 from ..core.classification import EvaluationTypeClassifier, ClassificationResult
@@ -40,8 +40,8 @@ class CorpusUploadRequest(BaseModel):
     name: Optional[str] = Field("corpus", max_length=100, description="Corpus name")
     description: Optional[str] = Field("", max_length=500, description="Corpus description")
     
-    @validator('text')
-    def validate_text_content(cls, v):
+    @field_validator('text')
+    def validate_text_content(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError("Text content cannot be empty")
         
@@ -62,8 +62,8 @@ class CorpusUploadRequest(BaseModel):
         
         return v.strip()
     
-    @validator('name')
-    def validate_name(cls, v):
+    @field_validator('name')
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
         if v:
             # Sanitize name by removing special characters and keeping only safe ones
             import re
@@ -93,8 +93,8 @@ class EvaluationRequest(BaseModel):
     finetune_test_set_percentage: float = Field(default=0.2, ge=0.1, le=0.5, description="Percentage of questions for test set (e.g., 0.2 = 20%)")
     finetune_random_seed: int = Field(default=42, ge=0, le=999999, description="Random seed for reproducible splits")
     
-    @validator('corpus_text')
-    def validate_corpus_text(cls, v):
+    @field_validator('corpus_text')
+    def validate_corpus_text(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError("Corpus text cannot be empty")
         
@@ -115,8 +115,8 @@ class EvaluationRequest(BaseModel):
         
         return v.strip()
     
-    @validator('eval_type')
-    def validate_eval_type(cls, v):
+    @field_validator('eval_type')
+    def validate_eval_type(cls, v: Optional[str]) -> Optional[str]:
         if v:
             # Only allow known evaluation types
             valid_types = [
@@ -128,8 +128,8 @@ class EvaluationRequest(BaseModel):
                 raise ValueError(f"Invalid evaluation type. Must be one of: {', '.join(valid_types)}")
         return v
     
-    @validator('run_name')
-    def validate_run_name(cls, v):
+    @field_validator('run_name')
+    def validate_run_name(cls, v: Optional[str]) -> Optional[str]:
         if v:
             # Only allow safe characters
             import re
@@ -151,8 +151,8 @@ class QwenEvaluationRequest(BaseModel):
     token_threshold: int = Field(default=2000, ge=500, le=4000, description="Token threshold for chunk concatenation")
     run_name: Optional[str] = Field("Qwen Local Test", max_length=100, description="Name for this evaluation run")
     
-    @validator('corpus_text')
-    def validate_corpus_text(cls, v):
+    @field_validator('corpus_text')
+    def validate_corpus_text(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError("Corpus text cannot be empty")
         
@@ -173,8 +173,8 @@ class QwenEvaluationRequest(BaseModel):
         
         return v.strip()
     
-    @validator('run_name')
-    def validate_run_name(cls, v):
+    @field_validator('run_name')
+    def validate_run_name(cls, v: Optional[str]) -> Optional[str]:
         if v:
             # Only allow safe characters
             import re

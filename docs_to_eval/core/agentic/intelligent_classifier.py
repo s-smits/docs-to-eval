@@ -568,3 +568,4 @@ class IntelligentBenchmarkClassifier:
                 'free_text': 0.7,
                 'string_exact': 0.3
             }
+
