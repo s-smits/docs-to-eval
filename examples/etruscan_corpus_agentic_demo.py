@@ -21,8 +21,8 @@ from docs_to_eval.core.evaluation import EvaluationType
 
 
 def load_etruscan_corpus() -> Dict[str, str]:
-    """Load all Etruscan texts from domain_spcfc_general_corpus"""
-    corpus_dir = Path("domain_spcfc_general_corpus/etruscan_texts")
+    """Load all Etruscan texts from data"""
+    corpus_dir = Path("data/etruscan_texts")
     texts = {}
     
     for txt_file in corpus_dir.glob("*.txt"):
@@ -49,7 +49,7 @@ def demonstrate_existing_abstractions():
     print(f"✅ Loaded {len(etruscan_texts)} Etruscan texts")
     
     if not etruscan_texts:
-        print("❌ No texts found. Check domain_spcfc_general_corpus/etruscan_texts/")
+        print("❌ No texts found. Check data/etruscan_texts/")
         return
     
     # Show sample texts
@@ -145,7 +145,7 @@ def demonstrate_existing_abstractions():
     print(f"   ✓ create_smart_chunks for text processing")
     print(f"   ✓ ConceptMiner for concept extraction")
     print(f"   ✓ EvaluationType enum for classification")
-    print(f"   ✓ domain_spcfc_general_corpus for domain texts")
+    print(f"   ✓ data for domain texts")
     print(f"   ✓ Chonkie integration (fallback demonstrated)")
     
     print(f"\n📊 Processing Results:")

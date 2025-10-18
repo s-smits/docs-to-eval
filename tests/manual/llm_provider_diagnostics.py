@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 # Add the project root to Python path
-project_root = Path(__file__).resolve().parents[1]
+project_root = Path(__file__).resolve().parents[2]
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
@@ -293,7 +293,7 @@ async def main():
         print("\n📖 Example usage after setting API keys:")
         print("  export GROQ_API_KEY=your_groq_key")
         print("  export GEMINI_API_KEY=your_gemini_key")
-        print("  python manual_tests/llm_provider_diagnostics.py")
+        print("  python tests/manual/llm_provider_diagnostics.py")
 
 
 if __name__ == "__main__":

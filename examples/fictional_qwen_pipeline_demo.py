@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 try:
-    from manual_tests.lm_eval_harness_adapter import LMEvalHarnessIntegrator
+    from tests.manual.lm_eval_harness_adapter import LMEvalHarnessIntegrator
 except ImportError:  # pragma: no cover - optional dependency for manual demos
     LMEvalHarnessIntegrator = None
 from docs_to_eval.core.evaluation import EvaluationType

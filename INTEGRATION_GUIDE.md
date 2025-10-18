@@ -33,7 +33,7 @@ export GOOGLE_API_KEY=your_gemini_api_key_here
 ### 3. Test the Integration
 
 ```bash
-python manual_tests/llm_provider_diagnostics.py
+python tests/manual/llm_provider_diagnostics.py
 ```
 
 ## 🔌 Provider Details
@@ -315,7 +315,7 @@ print(f"Current rate: {rate_stats['current_rate']:.2f}/min")
 
 ### Getting Help
 
-1. Check the test script: `python manual_tests/llm_provider_diagnostics.py`
+1. Check the test script: `python tests/manual/llm_provider_diagnostics.py`
 2. Review logs for detailed error messages
 3. Check API documentation:
    - [Groq API Documentation](https://console.groq.com/docs)

@@ -32,14 +32,14 @@ The API is available at `http://localhost:8080`; the React UI is served from the
 - `examples/etruscan_corpus_agentic_demo.py` – semantic chunking plus concept mining on the Etruscan sample corpus.
 - `examples/mixed_verification_showcase.py` – illustrates numeric, factual, and mixed verification improvements.
 - `examples/local_qwen_pipeline_demo.py` – runs the evaluation pipeline against a local or mock Qwen model.
-- `examples/backend_agent_loop_demo.py` – drives the complete backend agent loop and writes reports to `manual_tests/results/`.
+- `examples/backend_agent_loop_demo.py` – drives the complete backend agent loop and writes reports to `tests/manual/results/`.
 
 ## Manual diagnostics
-- `manual_tests/llm_provider_diagnostics.py` – interactive Groq/Gemini connectivity and pipeline sanity checks.
-- `manual_tests/critical_fixes_walkthrough.py` – validates question generation, verification, and context alignment fixes.
-- `manual_tests/lm_eval_harness_adapter.py` – exports dynamic corpora into lm-eval-harness format for leaderboard runs.
+- `tests/manual/llm_provider_diagnostics.py` – interactive Groq/Gemini connectivity and pipeline sanity checks.
+- `tests/manual/critical_fixes_walkthrough.py` – validates question generation, verification, and context alignment fixes.
+- `tests/manual/lm_eval_harness_adapter.py` – exports dynamic corpora into lm-eval-harness format for leaderboard runs.
 
-All manual scripts persist their JSON outputs in `manual_tests/results/` (ignored by git).
+All manual scripts persist their JSON outputs in `tests/manual/results/` (ignored by git).
 
 ## Programmatic example
 ```python
@@ -79,11 +79,23 @@ frontend/               # React UI for browsing corpora and evaluation runs
 
 ## Testing
 
+The test suite is now split between fast automated checks and heavier manual flows:
+
 ```bash
+# Run the automated fast suite (used in CI)
+uv run pytest tests/automated
+
+# Run the full automated suite, mirroring CI
 uv run pytest
 ```
 
-Use `DOCS_TO_EVAL_TESTING_MODE=true` to force deterministic chunking and disable caches when running tests locally.
+Manual walk-through scripts live in `tests/manual/`; they are intentionally excluded from
+the default pytest discovery because they hit external services or require API keys. Run
+those directly via `uv run python tests/manual/<script>.py` when you need the longer
+scenarios.
+
+Use `DOCS_TO_EVAL_TESTING_MODE=true` to force deterministic chunking and disable caches
+when running tests locally.
 
 ## Contributing
 - Keep dependencies in sync with `uv lock` and `uv sync`.

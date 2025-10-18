@@ -134,7 +134,7 @@ if __name__ == "__main__":
     # Chunk directory and run agentic on a selected chunk
     def run_chunking_and_agentic_on_real_files() -> None:
         print("\n=== Chunking Directory then Agentic on One Chunk ===")
-        corpus_dir = Path("/Users/air/Developer/docs-to-eval/domain_spcfc_general_corpus")
+        corpus_dir = Path("/Users/air/Developer/docs-to-eval/data")
         files = []
         for p in sorted(corpus_dir.glob("**/*")):
             if p.is_file() and p.suffix.lower() in {".txt", ".md", ".json"}:

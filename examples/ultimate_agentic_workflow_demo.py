@@ -34,7 +34,7 @@ if str(ROOT_DIR) not in sys.path:
 from dotenv import load_dotenv
 load_dotenv()
 
-from manual_tests import RESULTS_DIR
+from tests.manual import RESULTS_DIR
 
 # Import EVERYTHING
 from docs_to_eval.core.agentic import AgenticBenchmarkGenerator

@@ -23,8 +23,8 @@ from docs_to_eval.utils.config import ChunkingConfig
 
 
 def load_etruscan_corpus() -> Dict[str, str]:
-    """Load all Etruscan texts from domain_spcfc_general_corpus"""
-    corpus_dir = Path("domain_spcfc_general_corpus/etruscan_texts")
+    """Load all Etruscan texts from data"""
+    corpus_dir = Path("data/etruscan_texts")
     texts = {}
     
     for txt_file in corpus_dir.glob("*.txt"):
@@ -155,7 +155,7 @@ async def main():
     print(f"✅ Loaded {len(etruscan_texts)} Etruscan texts")
     
     if not etruscan_texts:
-        print("❌ No texts found. Check domain_spcfc_general_corpus/etruscan_texts/")
+        print("❌ No texts found. Check data/etruscan_texts/")
         return
     
     # Display corpus sample

@@ -62,10 +62,11 @@ class LLMConfig(BaseModel):
 
     def __init__(self, **kwargs):
         # Auto-load from environment if not provided in kwargs
-        if 'provider' not in kwargs:
-            env_provider = os.getenv('DOCS_TO_EVAL_PROVIDER')
-            if env_provider:
-                kwargs['provider'] = env_provider
+        env_provider = os.getenv('DOCS_TO_EVAL_PROVIDER')
+        if 'provider' not in kwargs and env_provider:
+            kwargs['provider'] = env_provider
+
+        provider_for_lookup = kwargs.get('provider') or env_provider or "openrouter"
 
         if 'model_name' not in kwargs:
             env_model_name = os.getenv('DOCS_TO_EVAL_MODEL_NAME')
@@ -77,14 +78,12 @@ class LLMConfig(BaseModel):
             if env_api_key:
                 kwargs['api_key'] = env_api_key
             else: # Fallback to provider-specific API keys if general one not set
-                # Use current kwargs provider or default 'openrouter' for API key lookup
-                provider = kwargs.get('provider', self.provider)
-                if provider == "openrouter":
+                if provider_for_lookup == "openrouter":
                     kwargs['api_key'] = os.getenv('OPENROUTER_API_KEY')
-                elif provider == "groq":
+                elif provider_for_lookup == "groq":
                     kwargs['api_key'] = os.getenv('GROQ_API_KEY')
-                elif provider == "gemini":
-                    kwargs['api_key'] = os.getenv('GEMINI_API_KEY')
+                elif provider_for_lookup in ("gemini", "gemini_sdk"):
+                    kwargs['api_key'] = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
                 # Add other providers as needed
 
         if 'base_url' not in kwargs:
@@ -166,6 +165,20 @@ class ChunkingConfig(BaseModel):
     min_chunk_size: int = Field(default=8000, description="Minimum chunk size in characters")
     max_chunk_size: int = Field(default=16000, description="Maximum chunk size in characters")
     overlap_size: int = Field(default=1200, description="Overlap between chunks in characters")
+
+    @validator('max_chunk_size')
+    def validate_max_chunk_size(cls, v, values):
+        min_size = values.get('min_chunk_size')
+        if min_size is not None and v <= min_size:
+            raise ValueError('max_chunk_size must be greater than min_chunk_size')
+        return v
+
+    @validator('max_token_size')
+    def validate_max_token_size(cls, v, values):
+        min_size = values.get('min_token_size')
+        if min_size is not None and v <= min_size:
+            raise ValueError('max_token_size must be greater than min_token_size')
+        return v
 
 
 class ReportingConfig(BaseModel):

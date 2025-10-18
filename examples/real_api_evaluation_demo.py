@@ -45,7 +45,7 @@ def check_api_key():
 
 def load_etruscan_sample() -> str:
     """Load a smaller sample of Etruscan corpus for API testing"""
-    corpus_dir = Path("domain_spcfc_general_corpus/etruscan_texts")
+    corpus_dir = Path("data/etruscan_texts")
     
     # Load just a few files for testing
     sample_files = [

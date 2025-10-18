@@ -16,7 +16,7 @@ import shutil
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from manual_tests import RESULTS_DIR
+from tests.manual import RESULTS_DIR
 
 from docs_to_eval.core.agentic.generator import AgenticBenchmarkGenerator
 from docs_to_eval.core.agentic.lm_eval_exporter import (
