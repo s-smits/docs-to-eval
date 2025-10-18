@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-Test script for Groq and Gemini SDK integrations with docs-to-eval
+Manual diagnostics for Groq and Gemini SDK integrations with docs-to-eval.
+
+Run when you want to validate provider connectivity or inspect sample
+responses outside of the automated pytest suite.
 """
 
 import asyncio
@@ -9,8 +12,9 @@ import sys
 from pathlib import Path
 
 # Add the project root to Python path
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
+project_root = Path(__file__).resolve().parents[1]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 from docs_to_eval.llm import (
     list_available_providers, 
@@ -289,7 +293,7 @@ async def main():
         print("\n📖 Example usage after setting API keys:")
         print("  export GROQ_API_KEY=your_groq_key")
         print("  export GEMINI_API_KEY=your_gemini_key")
-        print("  python test_integrations.py")
+        print("  python manual_tests/llm_provider_diagnostics.py")
 
 
 if __name__ == "__main__":

@@ -16,6 +16,8 @@ import shutil
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from manual_tests import RESULTS_DIR
+
 from docs_to_eval.core.agentic.generator import AgenticBenchmarkGenerator
 from docs_to_eval.core.agentic.lm_eval_exporter import (
     export_agentic_benchmark_to_lm_eval,
@@ -459,7 +461,7 @@ class SystemValidator:
         print(f"Overall:      {self.results['overall_status']}")
         
         # Save results
-        results_file = Path("validation_results.json")
+        results_file = RESULTS_DIR / "validation_results.json"
         with open(results_file, 'w', encoding='utf-8') as f:
             json.dump(self.results, f, indent=2, default=str)
         

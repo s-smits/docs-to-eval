@@ -34,6 +34,8 @@ if str(ROOT_DIR) not in sys.path:
 from dotenv import load_dotenv
 load_dotenv()
 
+from manual_tests import RESULTS_DIR
+
 # Import EVERYTHING
 from docs_to_eval.core.agentic import AgenticBenchmarkGenerator
 from docs_to_eval.core.evaluation import EvaluationType
@@ -68,7 +70,7 @@ class UltimateAgentValidator:
         
         # Load actual Etruscan corpus if available
         etruscan_corpus = ""
-        corpus_dir = Path("domain_spcfc_general_corpus/etruscan_texts")
+        corpus_dir = Path("data/etruscan_texts")
         if corpus_dir.exists():
             for file_path in corpus_dir.glob("*.txt"):
                 try:
@@ -763,7 +765,7 @@ async def main():
     final_results = await validator.run_ultimate_validation()
     
     # Save comprehensive results
-    results_file = Path("ULTIMATE_VALIDATION_RESULTS.json")
+    results_file = RESULTS_DIR / "ultimate_validation_results.json"
     with open(results_file, 'w') as f:
         json.dump({
             "timestamp": datetime.now().isoformat(),

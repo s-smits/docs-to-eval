@@ -22,6 +22,8 @@ if str(ROOT_DIR) not in sys.path:
 from dotenv import load_dotenv
 load_dotenv()
 
+from manual_tests import RESULTS_DIR
+
 # Import existing backend abstractions
 from docs_to_eval.core.agentic import AgenticBenchmarkGenerator
 from docs_to_eval.core.evaluation import EvaluationType, EvaluationResult
@@ -49,7 +51,7 @@ class BackendAgentTester:
         
     def _load_etruscan_corpus(self) -> str:
         """Load sample Etruscan corpus for testing"""
-        corpus_dir = Path("domain_spcfc_general_corpus/etruscan_texts")
+        corpus_dir = Path("data/etruscan_texts")
         
         sample_files = [
             "etruscan_mythology.txt",
@@ -377,7 +379,7 @@ async def main():
     results = await tester.run_complete_agent_loop()
     
     # Save results for analysis
-    results_file = Path("backend_agent_test_results.json")
+    results_file = RESULTS_DIR / "backend_agent_test_results.json"
     with open(results_file, 'w') as f:
         json.dump({
             "timestamp": time.time(),

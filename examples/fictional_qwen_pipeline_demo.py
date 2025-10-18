@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 try:
-    from LM_EVAL_INTEGRATION import LMEvalHarnessIntegrator
+    from manual_tests.lm_eval_harness_adapter import LMEvalHarnessIntegrator
 except ImportError:  # pragma: no cover - optional dependency for manual demos
     LMEvalHarnessIntegrator = None
 from docs_to_eval.core.evaluation import EvaluationType
@@ -40,7 +40,7 @@ async def test_qwen_on_fictional_world():
     print("=" * 80)
 
     if LMEvalHarnessIntegrator is None:
-        print("⚠️ LM_EVAL_INTEGRATION module not available. Skipping harness demo.")
+        print("⚠️ LM eval harness adapter not available. Skipping harness demo.")
         return
     
     if not os.getenv('OPENROUTER_API_KEY'):
@@ -192,7 +192,7 @@ async def compare_models_on_fiction():
     print("=" * 80)
 
     if LMEvalHarnessIntegrator is None:
-        print("⚠️ LM_EVAL_INTEGRATION module not available. Skipping comparison demo.")
+        print("⚠️ LM eval harness adapter not available. Skipping comparison demo.")
         return
     
     models_to_test = [

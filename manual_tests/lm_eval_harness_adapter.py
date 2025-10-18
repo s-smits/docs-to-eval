@@ -18,7 +18,9 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+project_root = Path(__file__).resolve().parents[1]
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
 # Load environment variables
 from dotenv import load_dotenv
