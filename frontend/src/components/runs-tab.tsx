@@ -50,11 +50,20 @@ export function RunsTab() {
       const runsList = Array.isArray(data) ? data : (data.runs || []);
 
       setRuns(runsList);
-      toast.success(`Loaded ${runsList.length} evaluation runs`);
+      if (runsList.length > 0) {
+        toast.success(`Loaded ${runsList.length} evaluation runs`);
+      }
 
     } catch (error: any) {
       console.error('Failed to load runs:', error);
-      toast.error(`Failed to load runs: ${error.message}`);
+      // Don't show error toast if it's just a connection refused (backend not running)
+      // This is expected for first-time users or when server is not started
+      if (error.message?.includes("Failed to fetch") || error.message?.includes("ERR_CONNECTION_REFUSED")) {
+        console.info("Backend server not available, no runs to display");
+      } else {
+        // Only show error for unexpected issues
+        toast.error(`Failed to load runs: ${error.message}`);
+      }
       setRuns([]);
     } finally {
       setIsLoading(false);

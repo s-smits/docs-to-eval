@@ -16,14 +16,25 @@ Prerequisites: Python 3.11+, [uv](https://github.com/astral-sh/uv), Node.js 20+ 
 uv venv .venv
 uv sync
 
-# Start the API + UI
-uv run python run_server.py
+# Start the FastAPI backend
+uv run uvicorn docs_to_eval.app:app --host 0.0.0.0 --port 8080 --reload
 
-# Or invoke the CLI
+# In a second terminal, start the React frontend
+cd frontend
+npm install
+npm run dev
+
+# CLI entry point (optional)
 uv run python -m docs_to_eval.cli.main --help
 ```
 
-The API is available at `http://localhost:8080`; the React UI is served from the same process during development.
+The API is available at `http://localhost:8080`. Point the Next.js app at it by creating
+`frontend/.env.local`:
+
+```
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_API_WS_BASE=ws://localhost:8080
+```
 
 ## Groq and Gemini in docs-to-eval
 - Install SDKs alongside the core project: `uv add groq google-generativeai`.
@@ -80,7 +91,7 @@ print(result.score, result.metadata)
 docs_to_eval/
 ├── core/               # classification, agentic generation, verification
 ├── llm/                # OpenRouter & mock interfaces
-├── ui_api/             # FastAPI routes + websocket notifications
+├── ui_api/             # FastAPI router (exposed as docs_to_eval.ui_api.routes:app)
 ├── utils/              # config, text processing, caching helpers
 └── cli/                # Typer-based command-line tools
 frontend/               # React UI for browsing corpora and evaluation runs
@@ -96,6 +107,10 @@ uv run pytest tests/automated
 
 # Run the full automated suite, mirroring CI
 uv run pytest
+
+# Run frontend unit tests (Vitest + Testing Library)
+cd frontend
+npm test -- --run
 ```
 
 Manual walk-through scripts live in `tests/manual/`; they are intentionally excluded from

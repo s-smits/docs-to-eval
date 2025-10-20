@@ -16,10 +16,12 @@ from .llm.mock_interface import MockLLMInterface
 # Optional FastAPI components
 try:
     from .ui_api.main import create_app
+    from .app import app  # FastAPI ASGI app
     _HAS_FASTAPI = True
 except ImportError:
     _HAS_FASTAPI = False
     create_app = None
+    app = None
 
 __all__ = [
     "EvaluationFramework",
@@ -29,4 +31,4 @@ __all__ = [
 ]
 
 if _HAS_FASTAPI:
-    __all__.append("create_app")
+    __all__.extend(["create_app", "app"])
