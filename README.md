@@ -2,6 +2,8 @@
 
 docs-to-eval builds tailor-made evaluation sets from raw documentation and scores model outputs with the right verification strategy. It combines lightweight FastAPI services, reusable Python components, and optional agentic workflows.
 
+<img width="1428" height="744" alt="image" src="https://github.com/user-attachments/assets/fba0bcc2-d6da-48ea-9c7c-03f61451e4c1" />
+
 ## Why docs-to-eval
 - Classifies corpora into deterministic vs. generative evaluation modes and picks the right metrics automatically.
 - Builds benchmarks with agentic strategies, nuanced quality scoring, and domain-aware difficulty tuning.
