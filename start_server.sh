@@ -87,4 +87,4 @@ echo "Press Ctrl+C to stop the server"
 echo "==============================="
 
 # Start the server
-python run_server.py
+uv run python run_server.py
