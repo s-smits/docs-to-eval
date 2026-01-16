@@ -48,7 +48,7 @@ from docs_to_eval.llm.concurrent_gemini import ConcurrentGeminiInterface
 from docs_to_eval.llm.openrouter_interface import OpenRouterInterface, OpenRouterConfig
 
 # UI API Components
-from docs_to_eval.ui_api.routes import router
+from docs_to_eval.ui_api.router import router
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 

@@ -7,7 +7,7 @@ import yaml
 import re
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Union, Tuple
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from enum import Enum
 from functools import lru_cache
 import os # Import os for environment variable access
@@ -93,26 +93,26 @@ class LLMConfig(BaseModel):
 
         super().__init__(**kwargs)
 
-    @validator('temperature')
+    @field_validator('temperature')
+    @classmethod
     def validate_temperature(cls, v):
         if not 0 <= v <= 2:
             raise ValueError('Temperature must be between 0 and 2')
         return v
 
-    @validator('base_url', always=True) # always=True ensures this validator runs even if base_url is None
-    def set_base_url_by_provider(cls, v, values):
-        if v: # If base_url is already explicitly set (e.g., by env var or kwargs), respect it
-            return v
+    @model_validator(mode='after')
+    def set_base_url_by_provider(self):
+        if self.base_url: # If base_url is already explicitly set (e.g., by env var or kwargs), respect it
+            return self
 
-        provider = values.get('provider', 'openrouter')
+        provider = self.provider or 'openrouter'
         if provider == 'openrouter':
-            return "https://openrouter.ai/api/v1"
+            self.base_url = "https://openrouter.ai/api/v1"
         elif provider == 'openai':
-            return "https://api.openai.com/v1"
+            self.base_url = "https://api.openai.com/v1"
         elif provider == 'anthropic':
-            return "https://api.anthropic.com"
-        # If no specific base_url is set and provider is unknown, it will remain None or whatever default it has
-        return v
+            self.base_url = "https://api.anthropic.com"
+        return self
 
 
 class GenerationConfig(BaseModel):
@@ -166,16 +166,18 @@ class ChunkingConfig(BaseModel):
     max_chunk_size: int = Field(default=16000, description="Maximum chunk size in characters")
     overlap_size: int = Field(default=1200, description="Overlap between chunks in characters")
 
-    @validator('max_chunk_size')
-    def validate_max_chunk_size(cls, v, values):
-        min_size = values.get('min_chunk_size')
+    @field_validator('max_chunk_size')
+    @classmethod
+    def validate_max_chunk_size(cls, v, info):
+        min_size = info.data.get('min_chunk_size')
         if min_size is not None and v <= min_size:
             raise ValueError('max_chunk_size must be greater than min_chunk_size')
         return v
 
-    @validator('max_token_size')
-    def validate_max_token_size(cls, v, values):
-        min_size = values.get('min_token_size')
+    @field_validator('max_token_size')
+    @classmethod
+    def validate_max_token_size(cls, v, info):
+        min_size = info.data.get('min_token_size')
         if min_size is not None and v <= min_size:
             raise ValueError('max_token_size must be greater than min_token_size')
         return v
@@ -199,7 +201,8 @@ class SystemConfig(BaseModel):
     enable_caching: bool = True
     cache_dir: str = "cache"
 
-    @validator('log_level')
+    @field_validator('log_level')
+    @classmethod
     def validate_log_level(cls, v):
         valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
         if v.upper() not in valid_levels:
@@ -217,25 +220,24 @@ class EvaluationConfig(BaseModel):
     reporting: ReportingConfig = Field(default_factory=ReportingConfig)
     system: SystemConfig = Field(default_factory=SystemConfig)
 
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
-    @validator('verification')
-    def validate_verification_method(cls, v, values):
-        if 'eval_type' in values:
-            eval_type = values['eval_type']
+    @model_validator(mode='after')
+    def validate_verification_method(self):
+        if hasattr(self, 'eval_type'):
+            eval_type = self.eval_type
             # Automatically set appropriate verification method based on eval type
             if eval_type in [EvaluationType.MATHEMATICAL, EvaluationType.FACTUAL_QA,
                            EvaluationType.MULTIPLE_CHOICE, EvaluationType.DOMAIN_KNOWLEDGE]:
-                v.method = VerificationMethod.EXACT_MATCH
+                self.verification.method = VerificationMethod.EXACT_MATCH
             elif eval_type == EvaluationType.CODE_GENERATION:
-                v.method = VerificationMethod.EXECUTION
+                self.verification.method = VerificationMethod.EXECUTION
             elif eval_type in [EvaluationType.SUMMARIZATION, EvaluationType.TRANSLATION,
                              EvaluationType.READING_COMPREHENSION]:
-                v.method = VerificationMethod.SIMILARITY
+                self.verification.method = VerificationMethod.SIMILARITY
             elif eval_type == EvaluationType.CREATIVE_WRITING:
-                v.method = VerificationMethod.LLM_JUDGE
-        return v
+                self.verification.method = VerificationMethod.LLM_JUDGE
+        return self
 
 
 def load_config(config_path: Union[str, Path]) -> EvaluationConfig:
@@ -433,7 +435,7 @@ class BasicEvaluationConfig:
         self.verification = verification
         self.metrics = metrics
 
-    def dict(self):
+    def model_dump(self):
         return {
             'deterministic': self.deterministic,
             'verification': self.verification,

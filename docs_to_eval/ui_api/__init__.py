@@ -1,7 +1,7 @@
 """FastAPI web interface"""
 
 from .main import create_app
-from .routes import router
+from .router import router
 from .websockets import websocket_manager
 
 __all__ = [
