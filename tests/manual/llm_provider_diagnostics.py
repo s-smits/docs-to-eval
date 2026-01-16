@@ -286,8 +286,8 @@ async def main():
         print("🎉 All integration tests completed!")
         print("\n💡 Next steps:")
         print("  - Set API keys for other providers to test more integrations")
-        print("  - Run the full docs-to-eval pipeline with: python -m docs_to_eval.cli.main")
-        print("  - Start the web interface with: python run_server.py")
+        print("  - Run the full docs-to-eval pipeline with: uv run docs-to-eval")
+        print("  - Start the web interface with: ./start_server.sh")
     else:
         print("⚠️  No API keys detected. Set GROQ_API_KEY or GEMINI_API_KEY to run full tests.")
         print("\n📖 Example usage after setting API keys:")
