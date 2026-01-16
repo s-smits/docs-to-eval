@@ -27,7 +27,7 @@ npm install
 npm run dev
 
 # CLI entry point (optional)
-uv run python -m docs_to_eval.cli.main --help
+uv run docs-to-eval evaluate --help
 ```
 
 The API is available at `http://localhost:8080`. Point the Next.js app at it by creating
@@ -53,7 +53,7 @@ NEXT_PUBLIC_API_WS_BASE=ws://localhost:8080
 - `examples/agentic_pipeline_walkthrough.py` – end-to-end agentic benchmark generation with the FastAPI facade.
 - `examples/etruscan_corpus_agentic_demo.py` – semantic chunking plus concept mining on the Etruscan sample corpus.
 - `examples/mixed_verification_showcase.py` – illustrates numeric, factual, and mixed verification improvements.
-- `examples/local_qwen_pipeline_demo.py` – runs the evaluation pipeline against a local or mock Qwen model.
+- `examples/mixed_verification_showcase.py` – illustrates numeric, factual, and mixed verification improvements.
 - `examples/backend_agent_loop_demo.py` – drives the complete backend agent loop and writes reports to `tests/manual/results/`.
 
 ## Manual diagnostics
@@ -92,8 +92,8 @@ print(result.score, result.metadata)
 ```
 docs_to_eval/
 ├── core/               # classification, agentic generation, verification
-├── llm/                # OpenRouter & mock interfaces
-├── ui_api/             # FastAPI router (exposed as docs_to_eval.ui_api.routes:app)
+├── llm/                # MLX, OpenRouter, Qwen & mock interfaces
+├── ui_api/             # Modular routers (corpus, config, evaluation, status)
 ├── utils/              # config, text processing, caching helpers
 └── cli/                # Typer-based command-line tools
 frontend/               # React UI for browsing corpora and evaluation runs
