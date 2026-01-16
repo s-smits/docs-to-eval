@@ -37,7 +37,7 @@ class AgenticBenchmarkGenerator(BenchmarkGenerator):
         
         # Configure pipeline based on eval type
         self.config = config or self._create_default_config(eval_type)
-        
+
         # Initialize orchestrator
         self.orchestrator = AgenticBenchmarkOrchestrator(self.llm_pool, self.config)
         
@@ -46,7 +46,7 @@ class AgenticBenchmarkGenerator(BenchmarkGenerator):
             'source': 'agentic_v2',
             'eval_type': eval_type,
             'agent_versions': {},
-            'pipeline_config': self.config.dict()
+            'pipeline_config': self.config.model_dump()
         }
     
     def generate_benchmark(self, corpus_text: str, num_questions: int = 50) -> List[Dict[str, Any]]:
@@ -223,7 +223,7 @@ class AgenticBenchmarkGenerator(BenchmarkGenerator):
         return {
             'generator_type': 'agentic',
             'eval_type': self.eval_type,
-            'configuration': self.config.dict(),
+            'configuration': self.config.model_dump(),
             'generation_metadata': self.generation_metadata,
             'pipeline_metrics': pipeline_metrics,
             'agent_performance': pipeline_metrics.get('agent_stats', {}),

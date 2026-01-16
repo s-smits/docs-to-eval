@@ -46,6 +46,7 @@ def test_qwen_local_endpoint_end_to_end(api_test_client, clear_evaluation_runs):
     r = api_test_client.get(f"/api/v1/evaluation/{run_id}/results")
     assert r.status_code == 200
     result_payload = r.json()
+    result_payload = r.json()
 
     # Validate top-level structure
     assert result_payload.get("status") == "completed"
@@ -54,7 +55,7 @@ def test_qwen_local_endpoint_end_to_end(api_test_client, clear_evaluation_runs):
     # Validate final results payload
     results = result_payload["results"]
     assert results.get("evaluation_type") == "qwen_local"
-    assert results.get("model") == "Simulated Qwen (Local)"
+    assert results.get("model") == "Qwen3-0.6B (Local)"
 
     # System capabilities should indicate no API required
     caps = results.get("system_capabilities", {})

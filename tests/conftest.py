@@ -125,7 +125,7 @@ def setup_test_environment():
 @pytest.fixture
 def clear_evaluation_runs():
     """Clear evaluation runs before and after tests"""
-    from docs_to_eval.ui_api.routes import evaluation_runs
+    from docs_to_eval.ui_api.router.evaluation import evaluation_runs
     
     # Clear before test
     evaluation_runs._runs.clear()

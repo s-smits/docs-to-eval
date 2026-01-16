@@ -97,7 +97,7 @@ class ClassificationResult:
         if eval_type not in EVAL_TYPES:
             eval_type = EvaluationType.DOMAIN_KNOWLEDGE
         
-        config = EVAL_TYPES[eval_type].dict()
+        config = EVAL_TYPES[eval_type].model_dump()
         config['eval_type'] = eval_type
         return config
     
@@ -124,7 +124,7 @@ class EvaluationTypeClassifier:
     
     def _get_classification_prompt(self) -> str:
         """Get the classification prompt template"""
-        available_types = json.dumps({k.value: v.dict() for k, v in EVAL_TYPES.items()}, indent=2)
+        available_types = json.dumps({k.value: v.model_dump() for k, v in EVAL_TYPES.items()}, indent=2)
         
         return f"""
 You are an expert in LLM evaluation methodologies. Your task is to analyze a text corpus and determine 

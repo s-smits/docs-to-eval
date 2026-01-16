@@ -148,7 +148,7 @@ class EvaluationPipeline:
             )
         
         # Create sanitized config for logging (mask sensitive information)
-        safe_config = self.config.dict()
+        safe_config = self.config.model_dump()
         if 'llm' in safe_config and 'api_key' in safe_config['llm']:
             safe_config['llm']['api_key'] = '***masked***'
         logger.log_benchmark_generation(len(questions), safe_config)
@@ -213,7 +213,7 @@ class EvaluationPipeline:
 
         return {
             "run_id": self.run_id,
-            "config": self.config.dict(),
+            "config": self.config.model_dump(),
             "classification": classification.to_dict() if hasattr(classification, 'to_dict') else str(classification),
             "aggregate_metrics": {
                 "mean_score": mean_value,

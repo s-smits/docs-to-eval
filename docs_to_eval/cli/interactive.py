@@ -386,7 +386,7 @@ leading to significant improvements in training efficiency and performance on la
             # Store results
             self.results = {
                 "run_id": self.run_id,
-                "config": self.config.dict(),
+                "config": self.config.model_dump(),
                 "classification": self.classification.to_dict(),
                 "aggregate_metrics": {
                     "mean_score": sum(r["score"] for r in results) / len(results),

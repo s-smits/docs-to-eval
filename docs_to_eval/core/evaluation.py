@@ -574,7 +574,7 @@ class EvaluationFramework:
     def get_benchmark_report(self) -> Dict[str, Any]:
         """Generate comprehensive benchmark report"""
         return {
-            'config': self.config.dict() if self.config else {},
+            'config': self.config.model_dump() if self.config else {},
             'num_benchmarks': len(self.benchmarks),
             'num_results': len(self.results),
             'aggregate_metrics': self.compute_aggregate_metrics(),

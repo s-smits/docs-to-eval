@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from .routes import router
+from .router import router as api_router
 from ..utils.logging import setup_logging, get_logger
 
 
@@ -71,7 +71,7 @@ def create_app() -> FastAPI:
     )
     
     # Include routers
-    app.include_router(router, prefix="/api/v1")
+    app.include_router(api_router, prefix="/api/v1")
     
     # Mount static files (for serving the frontend)
     static_path = Path(__file__).parent.parent.parent / "frontend" / ".next" / "static"

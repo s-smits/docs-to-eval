@@ -376,7 +376,7 @@ class AgenticBenchmarkOrchestrator:
             if len(selected_items) >= target_count:
                 break
             
-            concept = getattr(item, 'concept', item.metadata.dict().get('concept', 'unknown'))
+            concept = getattr(item, 'concept', item.metadata.model_dump().get('concept', 'unknown'))
             if concept not in used_concepts:
                 selected_items.append(item)
                 used_concepts.add(concept)

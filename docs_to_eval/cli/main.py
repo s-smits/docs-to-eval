@@ -310,7 +310,7 @@ def config(
             from ..utils.config import load_config
             config = load_config(file)
             console.print("[cyan]Current Configuration:[/cyan]")
-            console.print(json.dumps(config.dict(), indent=2, default=str))
+            console.print(json.dumps(config.model_dump(), indent=2, default=str))
         else:
             console.print(f"[yellow]Configuration file not found: {file}[/yellow]")
             console.print("Use --create to create a default configuration")

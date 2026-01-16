@@ -263,9 +263,9 @@ def save_config(config: EvaluationConfig, config_path: Union[str, Path]) -> None
 
     with open(config_path, 'w', encoding='utf-8') as f:
         if config_path.suffix.lower() == '.yaml' or config_path.suffix.lower() == '.yml':
-            yaml.dump(config.dict(), f, default_flow_style=False, indent=2)
+            yaml.dump(config.model_dump(), f, default_flow_style=False, indent=2)
         elif config_path.suffix.lower() == '.json':
-            json.dump(config.dict(), f, indent=2)
+            json.dump(config.model_dump(), f, indent=2)
         else:
             raise ValueError(f"Unsupported configuration file format: {config_path.suffix}")
 
@@ -303,7 +303,7 @@ def validate_config(config: EvaluationConfig) -> List[str]:
 
 def merge_configs(base_config: EvaluationConfig, override_config: Dict[str, Any]) -> EvaluationConfig:
     """Merge configuration with overrides"""
-    base_dict = base_config.dict()
+    base_dict = base_config.model_dump()
 
     def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
         for key, value in override.items():
@@ -333,7 +333,7 @@ def config_from_args(args: Dict[str, Any]) -> EvaluationConfig:
         'use_agentic': ['generation', 'use_agentic'],
     }
 
-    config_dict = config.dict()
+    config_dict = config.model_dump()
 
     for arg_name, config_path in arg_mapping.items():
         if arg_name in args and args[arg_name] is not None:
@@ -363,7 +363,7 @@ class ConfigManager:
     def update_from_args(self, args: Dict[str, Any]) -> None:
         """Update configuration from command line arguments"""
         override_config = config_from_args(args)
-        self.config = merge_configs(self.config, override_config.dict())
+        self.config = merge_configs(self.config, override_config.model_dump())
 
     def update_from_env(self) -> None:
         """

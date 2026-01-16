@@ -11,7 +11,7 @@ from pathlib import Path
 import os
 from collections import OrderedDict
 import time
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, WebSocket, Form, status
@@ -22,17 +22,13 @@ from pydantic import BaseModel, Field, ValidationError, validator, root_validato
 from .websockets import websocket_manager, handle_websocket_connection, get_progress_tracker
 from ..core.classification import EvaluationTypeClassifier, ClassificationResult
 from ..utils.config import EvaluationType
-from ..core.agentic.agents import Validator # Keep Validator for potential use in evaluation flow
-from ..core.agentic.orchestrator import AgenticBenchmarkOrchestrator # No longer directly used, but kept for context if needed
-from ..core.agentic.models import PipelineConfig, DifficultyLevel
-from ..llm.mock_interface import MockLLMInterface # Keep mock for fallback
-from ..llm.openrouter_interface import OpenRouterInterface, OpenRouterConfig # Keep OpenRouterConfig for OpenRouter specific handling in factory
+
+
 from ..utils.config import EvaluationConfig, create_default_config, ConfigManager
 from ..utils.logging import get_logger
 from ..utils.text_processing import create_smart_chunks_from_files
 from ..llm.llm_factory import get_llm_interface, list_llm_models # Import list_llm_models
 from ..llm.base import BaseLLMInterface, LLMResponse # Import BaseLLMInterface for type hinting
-from dotenv import load_dotenv, set_key
 
 
 # Create router
@@ -99,7 +95,7 @@ class EvaluationRequest(BaseModel):
 
     # LLM Provider and Model Selection
     provider: str = Field(default="openrouter", description="Selected LLM Provider")
-    modelName: str = Field(default="anthropic/claude-sonnet-4", description="Selected LLM Model Name")
+    modelName: str = Field(default="qwen3-0.6b", description="Selected LLM Model Name")
 
 
     @root_validator(pre=True)
@@ -735,8 +731,8 @@ async def start_evaluation(request: EvaluationRequest, background_tasks: Backgro
             "run_id": run_id,
             "status": "queued",
             "phase": None,
-            "request": request.dict(),
-            "config": config.dict(), # Store the final config for this run
+            "request": request.model_dump(),
+            "config": config.model_dump(), # Store the final config for this run
             "start_time": datetime.now(),
             "progress_percent": 0,
             "message": "Evaluation queued",
@@ -788,7 +784,7 @@ async def start_qwen_local_evaluation(request: QwenEvaluationRequest, background
             "run_id": run_id,
             "status": "queued",
             "phase": "qwen_local_testing",
-            "request": request.dict(),
+            "request": request.model_dump(),
             "start_time": datetime.now(),
             "progress_percent": 0,
             "message": "Qwen local evaluation queued",
@@ -1319,7 +1315,6 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
             llm_results = await evaluate_with_real_llm(questions, current_llm_config, tracker, request.corpus_text, llm_evaluator_interface)
         else:
             await tracker.send_log("info", "Using mock LLM evaluation (no API key provided or mock mode enabled)")
-            mock_llm = MockLLMInterface(temperature=request.temperature)
 
             llm_results = []
             for i, question in enumerate(questions):
@@ -1426,7 +1421,7 @@ async def run_evaluation(run_id: str, request: EvaluationRequest, config: Evalua
 
         final_results = {
             "run_id": run_id,
-            "evaluation_config": config.dict(),
+            "evaluation_config": config.model_dump(),
             "classification": classification.to_dict(),
             "aggregate_metrics": {
                 "mean_score": mean_score,
@@ -1482,11 +1477,7 @@ async def run_qwen_local_evaluation(run_id: str, request: QwenEvaluationRequest)
         await evaluation_runs.update_run(run_id, {"status": "running"})
         await tracker.send_log("info", "Starting Qwen local evaluation")
 
-        # Import our local evaluation system
-        import sys
-        from pathlib import Path
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-        from LOCAL_QWEN_TEST import LocalQwenEvaluator
+        from ..core.qwen_evaluators import LocalQwenEvaluator
 
         # Phase 1: Initialize evaluator
         await tracker.start_phase("initialization", "Setting up Qwen local evaluator")
@@ -1548,9 +1539,9 @@ async def run_qwen_local_evaluation(run_id: str, request: QwenEvaluationRequest)
         final_results = {
             "run_id": run_id,
             "evaluation_type": "qwen_local",
-            "model": "Simulated Qwen (Local)",
+            "model": "Qwen3-0.6B (Local)",
             "corpus_info": corpus_info,
-            "request_details": request.dict(),
+            "request_details": request.model_dump(),
             "aggregate_metrics": {
                 "mean_score": mean_score,
                 "max_score": max_score,
@@ -2096,7 +2087,7 @@ async def download_finetune_test_set(run_id: str):
 async def get_default_config():
     """Get default evaluation configuration"""
     config = create_default_config()
-    return config.dict()
+    return config.model_dump()
 
 @router.get("/config/current")
 async def get_current_config():
@@ -2107,7 +2098,7 @@ async def get_current_config():
         config = manager.get_config()
 
         # Don't expose the API key in the response, but indicate if it's configured
-        config_dict = config.dict()
+        config_dict = config.model_dump()
         has_api_key = bool(config_dict.get('llm', {}).get('api_key'))
         if has_api_key:
             config_dict['llm']['api_key'] = '***masked***'
@@ -2139,7 +2130,7 @@ async def update_config(config_update: dict):
         # Load current config via ConfigManager, which will use environment variables
         manager = ConfigManager()
         manager.update_from_env()
-        current_dict = manager.get_config().dict()
+        current_dict = manager.get_config().model_dump()
 
         # Safely update nested config with validation
         def update_nested(base_dict, update_dict):

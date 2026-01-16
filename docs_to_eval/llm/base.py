@@ -17,7 +17,7 @@ class LLMResponse(BaseModel):
     response_time: Optional[float] = None
     
     def to_dict(self) -> Dict[str, Any]:
-        return self.dict()
+        return self.model_dump()
 
 
 class LLMCapability(str, Enum):
