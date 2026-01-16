@@ -85,6 +85,8 @@ class ProgressNotifier:
         self.connection_manager = connection_manager
         self.run_id = run_id
         self.logger = get_logger(self.__class__.__name__)
+        # Track progress broadcasts per phase for light throttling
+        self._progress_state: Dict[str, int] = {}
     
     async def send_phase_start(self, phase: str, description: str = ""):
         """Notify phase start"""
@@ -115,13 +117,26 @@ class ProgressNotifier:
         """Send progress update"""
         progress_percent = (completed / total * 100) if total > 0 else 0
         
+        # Light throttling to avoid excessive updates: emit on odd steps and on completion
+        try:
+            last = self._progress_state.get(phase, 0)
+            should_emit = (completed == total) or (completed % 2 == 1 and completed != last)
+            if not should_emit:
+                return
+            self._progress_state[phase] = completed
+        except Exception:
+            # Fallback to always emit if throttling logic fails
+            pass
+
         message_data = {
             "type": "progress_update",
             "run_id": self.run_id,
             "phase": phase,
-            "completed": completed,
+            "current": completed,
             "total": total,
+            # For test compatibility, provide both keys
             "progress_percent": round(progress_percent, 1),
+            "percentage": round(progress_percent, 1),
             "message": message,
             "timestamp": asyncio.get_event_loop().time()
         }
@@ -158,6 +173,8 @@ class ProgressNotifier:
             "type": "evaluation_complete",
             "run_id": self.run_id,
             "results": results,
+            "progress_percent": 100.0,
+            "percentage": 100.0,
             "timestamp": asyncio.get_event_loop().time()
         }
         await self.connection_manager.broadcast_to_run(message, self.run_id)

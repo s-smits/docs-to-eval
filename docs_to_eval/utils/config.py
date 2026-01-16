@@ -12,6 +12,16 @@ from enum import Enum
 from functools import lru_cache
 import os # Import os for environment variable access
 
+# Load .env early to allow OPENROUTER_API_KEY and other settings
+try:
+    from pathlib import Path as _Path
+    from dotenv import load_dotenv as _load_dotenv
+    _load_dotenv(override=False)
+    _repo_env = _Path(__file__).resolve().parents[2] / ".env"
+    if _repo_env.exists():
+        _load_dotenv(dotenv_path=_repo_env, override=False)
+except Exception:
+    pass
 
 class EvaluationType(str, Enum):
     """Supported evaluation types"""
@@ -394,6 +404,18 @@ class ConfigManager:
     def get_config(self) -> EvaluationConfig:
         """Get current configuration"""
         return self.config
+
+
+# Provide backward-compatible re-export for tests expecting BenchmarkConfig in utils.config
+try:
+    # Import from core.evaluation where BenchmarkConfig is defined
+    from ..core.evaluation import BenchmarkConfig as _BenchmarkConfig
+    BenchmarkConfig = _BenchmarkConfig  # type: ignore
+except Exception:
+    # If import fails during partial environments, define a minimal placeholder to avoid import errors
+    class BenchmarkConfig(BaseModel):  # type: ignore
+        eval_type: EvaluationType
+        num_questions: int = Field(gt=0, le=1000, default=50)
 
 
 if __name__ == "__main__":

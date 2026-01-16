@@ -49,9 +49,9 @@ QUESTION_TYPES = {
     "comparative": {
         "templates": [
             "Compare {concept} with {related_concept}.",
-            "What distinguishes {concept} from other similar concepts?",
-            "How is {concept} different in this context versus typical usage?",
-            "What are the advantages of {concept} over alternatives?"
+            "What distinguishes {concept} from {related_concept}?",
+            "How does {concept} differ from {related_concept} in this context?",
+            "What are the key differences between {concept} and {related_concept}?"
         ],
         "keywords": ["compare", "contrast", "distinguish", "versus", "different"]
     },
@@ -59,7 +59,7 @@ QUESTION_TYPES = {
         "templates": [
             "How would you apply {concept} to solve a similar problem?",
             "Give an example of {concept} in practice.",
-            "When would {concept} be most appropriate to use?",
+            "In what scenarios would {concept} be most effective?",
             "What are the practical implications of {concept}?"
         ],
         "keywords": ["apply", "example", "practice", "implement", "use"]
@@ -200,17 +200,91 @@ Return a simple JSON list of concepts:
     def _extract_with_keywords(self, text: str, num_concepts: int) -> List[str]:
         """Simple keyword extraction as fallback"""
         # Remove common words and extract important terms
-        words = re.findall(r'\b[a-zA-Z]{4,}\b', text.lower())
-        stopwords = {'this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 'what', 'when', 'where', 'which', 'while', 'these', 'those', 'through', 'about', 'after', 'before', 'under', 'over'}
+        words = re.findall(r'\b[a-zA-Z]{4,}\b', text)  # Keep original case for proper noun detection
+        
+        # Comprehensive stopwords list including generic placeholder terms
+        stopwords = {
+            # Common stop words
+            'this', 'that', 'with', 'have', 'will', 'from', 'they', 'been', 'were', 
+            'what', 'when', 'where', 'which', 'while', 'these', 'those', 'through', 
+            'about', 'after', 'before', 'under', 'over', 'their', 'there', 'would',
+            'could', 'should', 'your', 'into', 'very', 'just', 'only', 'also',
+            
+            # Generic/vague terms that make poor concepts
+            'such', 'some', 'many', 'most', 'much', 'more', 'less', 'other', 'another',
+            'different', 'various', 'several', 'certain', 'particular', 'specific',
+            'general', 'common', 'similar', 'related', 'important', 'significant',
+            'major', 'minor', 'large', 'small', 'great', 'good', 'best', 'better',
+            'first', 'last', 'next', 'previous', 'following', 'above', 'below',
+            'same', 'each', 'every', 'both', 'either', 'neither', 'former', 'latter',
+            
+            # Generic question/document words
+            'question', 'answer', 'example', 'instance', 'case', 'situation',
+            'context', 'content', 'text', 'document', 'information', 'data',
+            'thing', 'things', 'element', 'elements', 'item', 'items', 'object',
+            
+            # Time/sequence words (unless specific dates)
+            'time', 'times', 'year', 'years', 'period', 'phase', 'moment',
+            'today', 'tomorrow', 'yesterday', 'recent', 'current', 'ancient',
+            
+            # Generic descriptors
+            'type', 'types', 'kind', 'kinds', 'form', 'forms', 'part', 'parts',
+            'aspect', 'aspects', 'feature', 'features', 'basis', 'nature',
+            
+            # Location generics (unless specific place names)
+            'place', 'places', 'area', 'areas', 'region', 'regions', 'location',
+            
+            # People generics (unless specific names/roles)
+            'people', 'person', 'women', 'woman', 'men', 'man', 'someone', 'anyone'
+        }
         
         word_freq = {}
         for word in words:
-            if word not in stopwords:
-                word_freq[word] = word_freq.get(word, 0) + 1
+            word_lower = word.lower()
+            # Skip stop words and very short words
+            if word_lower not in stopwords and len(word) >= 5:
+                # Prefer proper nouns (capitalized words not at sentence start)
+                if word[0].isupper() and not word.isupper():  # Capitalized but not acronym
+                    word_freq[word] = word_freq.get(word, 0) + 2  # Boost proper nouns
+                else:
+                    word_freq[word_lower] = word_freq.get(word_lower, 0) + 1
         
-        # Get top concepts
+        # Also extract potential technical terms
+        # Look for hyphenated words, CamelCase, acronyms
+        tech_patterns = [
+            (r'\b[A-Z][a-z]+[A-Z][a-zA-Z]*\b', 3),  # CamelCase (high weight)
+            (r'\b[a-z]+(?:-[a-z]+)+\b', 2),         # hyphenated-terms (medium weight)
+            (r'\b[A-Z]{2,}\b', 2),                  # ACRONYMS (medium weight)
+        ]
+        
+        for pattern, weight in tech_patterns:
+            matches = re.findall(pattern, text)
+            for match in matches[:10]:  # Limit technical terms
+                if match.lower() not in stopwords:
+                    word_freq[match] = word_freq.get(match, 0) + weight
+        
+        # Get top concepts, ensuring quality
         sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
-        return [word for word, _ in sorted_words[:num_concepts]]
+        
+        # Filter out any remaining low-quality concepts
+        quality_concepts = []
+        for word, freq in sorted_words:
+            if len(quality_concepts) >= num_concepts:
+                break
+            # Additional quality checks
+            if (len(word) >= 5 or word[0].isupper() or '-' in word or 
+                freq >= 3 or re.match(r'^[A-Z]{2,}$', word)):
+                quality_concepts.append(word)
+        
+        # If we still don't have enough concepts, try to extract from noun phrases
+        if len(quality_concepts) < num_concepts // 2:
+            # Extract potential noun phrases (simple pattern)
+            noun_phrases = re.findall(r'\b(?:[A-Z][a-z]+\s+){1,3}[A-Z][a-z]+\b', text)
+            for phrase in noun_phrases[:5]:
+                if phrase not in quality_concepts:
+                    quality_concepts.append(phrase)
+        
+        return quality_concepts[:num_concepts]
     
     def _find_best_snippet(self, concept: str, text: str, max_length: int = 300) -> str:
         """Find the best snippet containing the concept"""
@@ -342,11 +416,49 @@ Return JSON only:
         template = random.choice(templates)
         
         # Find a related concept for comparative/synthesis questions
-        words = re.findall(r'\b[a-zA-Z]{4,}\b', context.lower())
-        related_concepts = [w for w in words if w != concept.lower() and words.count(w) > 1]
-        related_concept = related_concepts[0] if related_concepts else "other elements"
+        # Extract meaningful words from context, excluding common words
+        words = re.findall(r'\b[a-zA-Z]{5,}\b', context)
+        stopwords = {'these', 'those', 'their', 'there', 'where', 'which', 'while', 'other', 
+                     'some', 'such', 'many', 'much', 'more', 'less', 'elements', 'things'}
         
-        question = template.format(concept=concept, related_concept=related_concept)
+        # Find words that are frequent and meaningful (not stopwords, not the main concept)
+        word_freq = {}
+        for word in words:
+            word_lower = word.lower()
+            if word_lower != concept.lower() and word_lower not in stopwords:
+                word_freq[word_lower] = word_freq.get(word_lower, 0) + 1
+        
+        # Get related concepts sorted by frequency
+        related_candidates = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
+        related_concepts = [word for word, freq in related_candidates if freq > 1][:3]
+        
+        # Fallback: if no good related concepts, use a variation of the main concept
+        if not related_concepts:
+            # Create meaningful variations instead of generic terms
+            if eval_type == "mathematical":
+                related_concept = f"{concept} calculations"
+            elif eval_type == "code_generation":
+                related_concept = f"{concept} implementation"  
+            elif eval_type == "factual_qa":
+                related_concept = f"{concept} details"
+            else:
+                # Use domain-appropriate fallback
+                related_concept = f"the {concept} approach"
+        else:
+            related_concept = related_concepts[0]
+        
+        # Handle template formatting - some templates need multiple concepts
+        if template.count('{') > 2:  # Templates with multiple placeholders
+            # For templates needing 3 concepts
+            extra_concept = related_concepts[1] if len(related_concepts) > 1 else f"{concept} methods"
+            question = template.format(concept, related_concept, extra_concept)
+        elif '{concept}' in template and '{related_concept}' in template:
+            question = template.format(concept=concept, related_concept=related_concept)
+        elif '{concept}' in template:
+            question = template.format(concept=concept)
+        else:
+            # Fallback for templates with positional arguments
+            question = template.format(concept)
         
         # Generate appropriate answer based on question type
         if question_type == "factual":

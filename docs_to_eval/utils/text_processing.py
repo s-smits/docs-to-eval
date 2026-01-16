@@ -482,9 +482,10 @@ def _concatenate_files_to_target_size(file_contents: List[Dict[str, str]], confi
     current_chunk = ""
     current_sources = []
     
-    # Estimate target size in characters (3k tokens ≈ ~11k characters)
-    target_size = config.target_token_size * 3.7 if config.use_token_chunking else config.target_chunk_size
-    max_size = config.max_token_size * 3.7 if config.use_token_chunking else config.max_chunk_size
+    # Estimate sizes in characters using token→char approximation when tokenizer is unavailable
+    target_size = (config.target_token_size * 3.7) if config.use_token_chunking else config.target_chunk_size
+    min_size = (config.min_token_size * 3.7) if config.use_token_chunking else config.min_chunk_size
+    max_size = (config.max_token_size * 3.7) if config.use_token_chunking else config.max_chunk_size
     
     # Try to load tiktoken for accurate token counting
     token_counter = None
@@ -506,9 +507,15 @@ def _concatenate_files_to_target_size(file_contents: List[Dict[str, str]], confi
         return len(text)
     
     def should_add_file(current_text: str, new_content: str) -> bool:
-        """Check if adding this file would exceed max size"""
+        """Decide whether to add a file to the current concatenation block.
+        Prefer landing within [min_size, max_size], allow slight overflow if still under min_size."""
         combined_size = get_size(current_text + "\n\n" + new_content)
-        return combined_size <= max_size
+        if combined_size <= max_size:
+            return True
+        # If current is still undersized, allow up to 5% overflow to avoid tiny chunks
+        if get_size(current_text) < min_size:
+            return combined_size <= max_size * 1.05
+        return False
     
     for file_info in file_contents:
         filename = file_info.get('filename', 'unknown')

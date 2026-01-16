@@ -5,6 +5,19 @@ A comprehensive framework for generating domain-specific benchmarks from text co
 and evaluating LLMs using appropriate metrics and verification methods.
 """
 
+# Ensure environment variables from .env are available as early as possible
+try:
+    from pathlib import Path
+    from dotenv import load_dotenv
+    # Load from current working directory and repository root
+    load_dotenv(override=False)
+    repo_root_env = Path(__file__).resolve().parents[1] / ".env"
+    if repo_root_env.exists():
+        load_dotenv(dotenv_path=repo_root_env, override=False)
+except Exception:
+    # Do not fail import if dotenv is unavailable
+    pass
+
 __version__ = "1.0.0"
 __author__ = "docs-to-eval Team"
 

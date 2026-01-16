@@ -133,6 +133,8 @@ class ConceptMiner(BaseAgent):
             
             # Process chunks in parallel batches
             batch_size = min(5, len(chunks))
+            if batch_size <= 0:
+                batch_size = 1
             for i in range(0, len(chunks), batch_size):
                 batch_chunks = chunks[i:i + batch_size]
                 batch_results = await asyncio.gather(*[

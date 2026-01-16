@@ -43,6 +43,13 @@ from .validation import (
     ComprehensiveValidator
 )
 
+# Backward-compatibility imports (historical public API)
+# Provide AgenticQuestionGenerator and QuestionItem at package level
+from ..agentic_question_generator import (
+    AgenticQuestionGenerator,
+    QuestionItem,
+)
+
 # LM-Evaluation-Harness Integration
 from .lm_eval_exporter import (
     export_agentic_benchmark_to_lm_eval,
@@ -90,6 +97,10 @@ __all__ = [
     'QualityController',
     'ComprehensiveValidator',
     
+     # Legacy public API (back-compat)
+     'AgenticQuestionGenerator',
+     'QuestionItem',
+     
     # LM-Eval Integration
     'export_agentic_benchmark_to_lm_eval',
     'validate_lm_eval_export',

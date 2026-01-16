@@ -20,6 +20,17 @@ from .base import BaseLLMInterface, LLMResponse
 
 logger = logging.getLogger(__name__)
 
+# Load environment variables from .env if present
+try:
+    from pathlib import Path
+    from dotenv import load_dotenv
+    load_dotenv(override=False)
+    repo_root_env = Path(__file__).resolve().parents[2] / ".env"
+    if repo_root_env.exists():
+        load_dotenv(dotenv_path=repo_root_env, override=False)
+except Exception:
+    pass
+
 
 @dataclass
 class OpenRouterConfig:
@@ -112,9 +123,12 @@ class OpenRouterInterface(BaseLLMInterface):
             # Use iRouter's simple Call interface for one-off requests
             # Note: iRouter doesn't directly expose temperature/max_tokens in the simple interface
             # but we can pass them through kwargs if the underlying API supports them
+            # iRouter simple Call interface does not accept arbitrary kwargs
+            response_text = await asyncio.get_event_loop().run_in_executor(
             response_text = await asyncio.get_event_loop().run_in_executor(
                 None, 
                 lambda: self.caller(full_prompt, **call_kwargs)
+            )
             )
             
             # Update usage statistics
